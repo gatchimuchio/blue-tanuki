@@ -1,0 +1,14 @@
+{
+  "name": "@blue-tanuki/channel-discord",
+  "version": "0.0.2",
+  "kind": "channel",
+  "entry": "./dist/index.js",
+  "exports": {
+    "channel": "DiscordChannel"
+  },
+  "permissions": [
+    "network:discord.com",
+    "secrets:DISCORD_BOT_TOKEN"
+  ],
+  "description": "Discord Gateway channel via discord.js v14. DM + mention reactions. Silent fallback when DISCORD_BOT_TOKEN is unset."
+}

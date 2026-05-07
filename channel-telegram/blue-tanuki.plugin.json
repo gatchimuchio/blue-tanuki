@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "name": "@blue-tanuki/channel-telegram",
+  "version": "0.1.0",
+  "kind": "channel",
+  "entry": "./dist/index.js",
+  "permissions": [
+    "network:api.telegram.org",
+    "secrets:TELEGRAM_BOT_TOKEN"
+  ],
+  "exports": {
+    "default": "TelegramChannel",
+    "channel": "TelegramChannel"
+  }
+}

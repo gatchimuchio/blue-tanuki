@@ -1,0 +1,15 @@
+{
+  "name": "@blue-tanuki/channel-slack",
+  "version": "0.0.2",
+  "kind": "channel",
+  "entry": "./dist/index.js",
+  "exports": {
+    "channel": "SlackChannel"
+  },
+  "permissions": [
+    "network:slack.com",
+    "secrets:SLACK_BOT_TOKEN",
+    "secrets:SLACK_APP_TOKEN"
+  ],
+  "description": "Slack Socket Mode channel via @slack/bolt. DM all + mention reactions. Silent fallback when tokens are unset."
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@blue-tanuki/channel-slack",
+  "version": "0.0.2",
+  "private": true,
+  "description": "Slack channel adapter (Phase 3: Bolt + Socket Mode)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@blue-tanuki/protocol": "workspace:*",
+    "@blue-tanuki/channel-base": "workspace:*",
+    "@slack/bolt": "^3.22.0"
+  }
+}
