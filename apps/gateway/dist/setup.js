@@ -1,0 +1,328 @@
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createInterface } from "node:readline/promises";
+import { writeEnvFileAtomic } from "./env_file.js";
+import { createDefaultSetupConfig, renderSetupEnvFile, setupConfigToEnv, validateSetupConfig, } from "./setup_config.js";
+import { formatTextReport, runDoctor } from "./doctor.js";
+function writeLine(stream, text = "") {
+    stream.write(`${text}\n`);
+}
+function requireValue(args, index, flag) {
+    const value = args[index + 1];
+    if (!value || value.startsWith("--")) {
+        throw new Error(`${flag} requires a value`);
+    }
+    return value;
+}
+function parseIntOption(value, flag) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+        throw new Error(`${flag} must be a positive integer`);
+    }
+    return parsed;
+}
+function parseNumberOption(value, flag) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+        throw new Error(`${flag} must be a number`);
+    }
+    return parsed;
+}
+function parseProvider(value) {
+    const provider = value.trim().toLowerCase();
+    if (provider === "stub" ||
+        provider === "anthropic" ||
+        provider === "openai" ||
+        provider === "openai-compatible") {
+        return provider;
+    }
+    throw new Error("--provider must be stub | anthropic | openai | openai-compatible");
+}
+function readFlagValue(arg, flag) {
+    return arg.startsWith(`${flag}=`) ? arg.slice(flag.length + 1) : undefined;
+}
+export function parseSetupArgs(args) {
+    const opts = {};
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === undefined)
+            continue;
+        if (arg === "--setup")
+            continue;
+        if (arg === "--yes" || arg === "-y") {
+            opts.yes = true;
+            continue;
+        }
+        if (arg === "--force") {
+            opts.force = true;
+            continue;
+        }
+        if (arg === "--no-doctor") {
+            opts.no_doctor = true;
+            continue;
+        }
+        if (arg === "--json") {
+            opts.json = true;
+            continue;
+        }
+        const outputInline = readFlagValue(arg, "--output");
+        if (arg === "--output" || outputInline !== undefined) {
+            opts.output = outputInline ?? requireValue(args, i++, "--output");
+            continue;
+        }
+        const baseInline = readFlagValue(arg, "--base-dir");
+        if (arg === "--base-dir" || baseInline !== undefined) {
+            opts.base_dir = baseInline ?? requireValue(args, i++, "--base-dir");
+            continue;
+        }
+        const providerInline = readFlagValue(arg, "--provider");
+        if (arg === "--provider" || providerInline !== undefined) {
+            opts.provider = parseProvider(providerInline ?? requireValue(args, i++, "--provider"));
+            continue;
+        }
+        const modelInline = readFlagValue(arg, "--model");
+        if (arg === "--model" || modelInline !== undefined) {
+            opts.model = modelInline ?? requireValue(args, i++, "--model");
+            continue;
+        }
+        const endpointInline = readFlagValue(arg, "--endpoint");
+        if (arg === "--endpoint" || endpointInline !== undefined) {
+            opts.endpoint = endpointInline ?? requireValue(args, i++, "--endpoint");
+            continue;
+        }
+        const keyInline = readFlagValue(arg, "--api-key");
+        if (arg === "--api-key" || keyInline !== undefined) {
+            opts.api_key = keyInline ?? requireValue(args, i++, "--api-key");
+            continue;
+        }
+        const keyEnvInline = readFlagValue(arg, "--api-key-env");
+        if (arg === "--api-key-env" || keyEnvInline !== undefined) {
+            opts.api_key_env = keyEnvInline ?? requireValue(args, i++, "--api-key-env");
+            continue;
+        }
+        const hostInline = readFlagValue(arg, "--host");
+        if (arg === "--host" || hostInline !== undefined) {
+            opts.host = hostInline ?? requireValue(args, i++, "--host");
+            continue;
+        }
+        const portInline = readFlagValue(arg, "--port");
+        if (arg === "--port" || portInline !== undefined) {
+            opts.port = parseIntOption(portInline ?? requireValue(args, i++, "--port"), "--port");
+            continue;
+        }
+        const fileRootInline = readFlagValue(arg, "--file-root");
+        if (arg === "--file-root" || fileRootInline !== undefined) {
+            opts.file_root = fileRootInline ?? requireValue(args, i++, "--file-root");
+            continue;
+        }
+        const sessionInline = readFlagValue(arg, "--session-dir");
+        if (arg === "--session-dir" || sessionInline !== undefined) {
+            opts.session_dir = sessionInline ?? requireValue(args, i++, "--session-dir");
+            continue;
+        }
+        const auditInline = readFlagValue(arg, "--audit-dir");
+        if (arg === "--audit-dir" || auditInline !== undefined) {
+            opts.audit_dir = auditInline ?? requireValue(args, i++, "--audit-dir");
+            continue;
+        }
+        const tempInline = readFlagValue(arg, "--temperature");
+        if (arg === "--temperature" || tempInline !== undefined) {
+            opts.temperature = parseNumberOption(tempInline ?? requireValue(args, i++, "--temperature"), "--temperature");
+            continue;
+        }
+        const maxInline = readFlagValue(arg, "--max-tokens");
+        if (arg === "--max-tokens" || maxInline !== undefined) {
+            opts.max_tokens = parseIntOption(maxInline ?? requireValue(args, i++, "--max-tokens"), "--max-tokens");
+            continue;
+        }
+        const timeoutInline = readFlagValue(arg, "--timeout-ms");
+        if (arg === "--timeout-ms" || timeoutInline !== undefined) {
+            opts.timeout_ms = parseIntOption(timeoutInline ?? requireValue(args, i++, "--timeout-ms"), "--timeout-ms");
+            continue;
+        }
+        throw new Error(`unknown setup option '${arg}'`);
+    }
+    return opts;
+}
+function resolveFrom(cwd, value) {
+    return path.resolve(cwd, value);
+}
+export function buildSetupConfigFromOptions(opts, cwd = process.cwd()) {
+    const baseDir = resolveFrom(cwd, opts.base_dir ?? ".blue-tanuki");
+    const config = createDefaultSetupConfig({ base_dir: baseDir });
+    if (opts.provider)
+        config.llm.provider = opts.provider;
+    if (opts.model)
+        config.llm.model = opts.model;
+    if (opts.endpoint)
+        config.llm.endpoint = opts.endpoint;
+    if (opts.api_key)
+        config.llm.api_key = opts.api_key;
+    if (opts.api_key_env)
+        config.llm.api_key_env = opts.api_key_env;
+    if (opts.temperature !== undefined)
+        config.llm.temperature = opts.temperature;
+    if (opts.max_tokens !== undefined)
+        config.llm.max_tokens = opts.max_tokens;
+    if (opts.timeout_ms !== undefined)
+        config.llm.timeout_ms = opts.timeout_ms;
+    if (opts.host)
+        config.webchat.host = opts.host;
+    if (opts.port !== undefined)
+        config.webchat.port = opts.port;
+    if (opts.file_root)
+        config.paths.file_root = resolveFrom(cwd, opts.file_root);
+    if (opts.session_dir)
+        config.paths.session_dir = resolveFrom(cwd, opts.session_dir);
+    if (opts.audit_dir)
+        config.paths.audit_dir = resolveFrom(cwd, opts.audit_dir);
+    return validateSetupConfig(config);
+}
+async function ask(rl, label, defaultValue) {
+    const suffix = defaultValue ? ` [${defaultValue}]` : "";
+    const answer = (await rl.question(`${label}${suffix}: `)).trim();
+    return answer || defaultValue || "";
+}
+async function promptForConfig(opts, io) {
+    const baseDir = resolveFrom(io.cwd, opts.base_dir ?? ".blue-tanuki");
+    const config = createDefaultSetupConfig({ base_dir: baseDir });
+    const rl = createInterface({ input: io.stdin, output: io.stdout });
+    try {
+        const providerAnswer = await ask(rl, "LLM provider (stub/openai/anthropic/openai-compatible)", opts.provider ?? "stub");
+        config.llm.provider = parseProvider(providerAnswer);
+        if (config.llm.provider === "anthropic") {
+            config.llm.model = await ask(rl, "Anthropic model", opts.model ?? "");
+            config.llm.endpoint =
+                (await ask(rl, "Anthropic endpoint", opts.endpoint ?? "")) || undefined;
+            config.llm.api_key =
+                (opts.api_key ?? (await ask(rl, "Anthropic API key", ""))) || undefined;
+        }
+        else if (config.llm.provider === "openai") {
+            config.llm.model = await ask(rl, "OpenAI model", opts.model ?? "");
+            config.llm.endpoint =
+                (await ask(rl, "OpenAI endpoint", opts.endpoint ?? "")) || undefined;
+            config.llm.api_key =
+                (opts.api_key ?? (await ask(rl, "OpenAI API key", ""))) || undefined;
+        }
+        else if (config.llm.provider === "openai-compatible") {
+            config.llm.model = await ask(rl, "OpenAI-compatible model", opts.model ?? "");
+            config.llm.endpoint = await ask(rl, "OpenAI-compatible endpoint", opts.endpoint ?? "http://localhost:11434/v1");
+            config.llm.api_key =
+                (opts.api_key ?? (await ask(rl, "API key (blank if not required)", ""))) ||
+                    undefined;
+        }
+        const host = await ask(rl, "WebChat host", opts.host ?? config.webchat.host);
+        config.webchat.host = host;
+        const port = await ask(rl, "WebChat port", String(opts.port ?? config.webchat.port));
+        config.webchat.port = parseIntOption(port, "webchat.port");
+        config.paths.file_root = resolveFrom(io.cwd, await ask(rl, "File sandbox root", opts.file_root ?? config.paths.file_root));
+        config.paths.session_dir = resolveFrom(io.cwd, await ask(rl, "Session directory", opts.session_dir ?? config.paths.session_dir));
+        config.paths.audit_dir = resolveFrom(io.cwd, await ask(rl, "Audit directory", opts.audit_dir ?? config.paths.audit_dir));
+        if (opts.temperature !== undefined)
+            config.llm.temperature = opts.temperature;
+        if (opts.max_tokens !== undefined)
+            config.llm.max_tokens = opts.max_tokens;
+        if (opts.timeout_ms !== undefined)
+            config.llm.timeout_ms = opts.timeout_ms;
+        if (opts.api_key_env)
+            config.llm.api_key_env = opts.api_key_env;
+        return validateSetupConfig(config);
+    }
+    finally {
+        rl.close();
+    }
+}
+async function ensureWritableTarget(outputPath, force) {
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    const exists = await fs
+        .stat(outputPath)
+        .then(() => true)
+        .catch(() => false);
+    if (exists && !force) {
+        throw new Error(`${outputPath} already exists; pass --force to overwrite it`);
+    }
+}
+async function ensureRuntimeDirs(config) {
+    await fs.mkdir(config.paths.file_root, { recursive: true });
+    await fs.mkdir(config.paths.session_dir, { recursive: true });
+    await fs.mkdir(config.paths.audit_dir, { recursive: true });
+}
+export async function runSetupCommand(args = process.argv.slice(2), io = {}) {
+    const opts = parseSetupArgs(args);
+    const cwd = io.cwd ?? process.cwd();
+    const env = io.env ?? process.env;
+    const stdin = io.stdin ?? process.stdin;
+    const stdout = io.stdout ?? process.stdout;
+    const config = opts.yes
+        ? buildSetupConfigFromOptions(opts, cwd)
+        : await promptForConfig(opts, { cwd, env, stdin, stdout });
+    const outputPath = resolveFrom(cwd, opts.output ?? path.join(".blue-tanuki", "blue-tanuki.env"));
+    await ensureWritableTarget(outputPath, opts.force === true);
+    await ensureRuntimeDirs(config);
+    const envFile = renderSetupEnvFile(config, { source_env: env });
+    const writeResult = await writeEnvFileAtomic(outputPath, envFile, {
+        mode: 0o600,
+        backup: opts.force === true,
+        backup_label: "setup",
+    });
+    const setupEnv = setupConfigToEnv(config, { source_env: env });
+    const doctor = opts.no_doctor
+        ? undefined
+        : await runDoctor({
+            env: { ...env, ...setupEnv },
+            probe_port: false,
+        });
+    return {
+        output_path: outputPath,
+        backup_path: writeResult.backup_path,
+        config,
+        env_keys: Object.keys(setupEnv).sort(),
+        doctor,
+    };
+}
+function resultJson(result) {
+    return JSON.stringify({
+        output_path: result.output_path,
+        backup_path: result.backup_path,
+        provider: result.config.llm.provider,
+        env_keys: result.env_keys,
+        doctor_exit_code: result.doctor?.exit_code,
+        doctor_ok: result.doctor?.ok,
+    }, null, 2);
+}
+export async function runSetupCli(args = process.argv.slice(2), io = {}) {
+    const stdout = io.stdout ?? process.stdout;
+    const stderr = io.stderr ?? process.stderr;
+    try {
+        const opts = parseSetupArgs(args);
+        const result = await runSetupCommand(args, io);
+        if (opts.json) {
+            writeLine(stdout, resultJson(result));
+        }
+        else {
+            writeLine(stdout, `blue-tanuki setup wrote ${result.output_path}`);
+            if (result.backup_path) {
+                writeLine(stdout, `previous env backed up to ${result.backup_path}`);
+            }
+            writeLine(stdout, `provider=${result.config.llm.provider}`);
+            writeLine(stdout, "Use this file with --env-file or BLUE_TANUKI_ENV_FILE.");
+            if (result.doctor) {
+                writeLine(stdout);
+                writeLine(stdout, formatTextReport(result.doctor));
+            }
+        }
+        if (result.doctor?.exit_code === 2) {
+            process.exitCode = 2;
+        }
+    }
+    catch (e) {
+        writeLine(stderr, `blue-tanuki setup failed: ${e instanceof Error ? e.message : String(e)}`);
+        process.exitCode = 2;
+    }
+}
+const currentFile = fileURLToPath(import.meta.url);
+if (process.argv[1] && path.resolve(process.argv[1]) === currentFile) {
+    await runSetupCli();
+}
+//# sourceMappingURL=setup.js.map

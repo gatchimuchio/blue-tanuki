@@ -1,0 +1,43 @@
+[Unit]
+Description=BLUE-TANUKI Gateway
+Documentation=file:/opt/blue-tanuki/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=blue-tanuki
+Group=blue-tanuki
+WorkingDirectory=/opt/blue-tanuki
+
+Environment=NODE_ENV=production
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=WEBCHAT_HOST=127.0.0.1
+Environment=WEBCHAT_PORT=8787
+Environment=BLUE_TANUKI_AUDIT_DIR=/var/lib/blue-tanuki/audit
+Environment=BLUE_TANUKI_SESSION_DIR=/var/lib/blue-tanuki/sessions
+EnvironmentFile=/etc/blue-tanuki/blue-tanuki.env
+
+ExecStartPre=/bin/sh -c 'node apps/gateway/dist/main.js --doctor; code=$$?; [ "$$code" -lt 2 ]'
+ExecStart=/usr/bin/env node apps/gateway/dist/main.js --serve
+
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=20s
+KillSignal=SIGTERM
+
+StateDirectory=blue-tanuki
+LogsDirectory=blue-tanuki
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/blue-tanuki /var/log/blue-tanuki
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

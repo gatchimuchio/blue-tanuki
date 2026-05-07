@@ -1,0 +1,31 @@
+{
+  "name": "@blue-tanuki/gateway",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Gateway: wires HDS-BRAIN and BLUE-TANUKI/core together. Phase 2 entry point.",
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node ./dist/main.js",
+    "dev": "tsx ./src/main.ts",
+    "serve": "node ./dist/main.js --serve",
+    "serve:dev": "tsx ./src/main.ts --serve",
+    "setup": "tsx ./src/setup.ts",
+    "setup:dist": "node ./dist/main.js --setup",
+    "doctor": "node ./dist/main.js --doctor",
+    "doctor:dev": "tsx ./src/main.ts --doctor",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@blue-tanuki/protocol": "workspace:*",
+    "@blue-tanuki/hds-brain": "workspace:*",
+    "@blue-tanuki/core": "workspace:*",
+    "@blue-tanuki/channel-base": "workspace:*",
+    "@blue-tanuki/channel-webchat": "workspace:*",
+    "@blue-tanuki/channel-slack": "workspace:*",
+    "@blue-tanuki/channel-discord": "workspace:*",
+    "@blue-tanuki/channel-telegram": "workspace:*"
+  }
+}

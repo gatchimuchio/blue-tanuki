@@ -1,0 +1,582 @@
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { promises as fs } from "node:fs";
+import * as net from "node:net";
+import * as os from "node:os";
+import * as path from "node:path";
+import {
+  runDoctor,
+  formatTextReport,
+  formatJsonReport,
+  compareSemver,
+  MIN_NODE_VERSION,
+} from "../src/doctor.js";
+
+/** Pick an unused TCP port for binding probes. */
+async function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.unref();
+    srv.listen(0, "127.0.0.1", () => {
+      const addr = srv.address();
+      if (addr && typeof addr === "object") {
+        const p = addr.port;
+        srv.close(() => resolve(p));
+      } else {
+        srv.close(() => reject(new Error("no port")));
+      }
+    });
+    srv.on("error", reject);
+  });
+}
+
+const baseEnv = (): NodeJS.ProcessEnv => ({
+  WEBCHAT_TOKEN: "abcdefghijkl",
+  WEBCHAT_RESUME_TOKEN: "resume-abcdefghijkl",
+  LLM_BACKEND: "stub",
+});
+
+const manifestPackages = [
+  ["packages/protocol", "@blue-tanuki/protocol"],
+  ["packages/channel-base", "@blue-tanuki/channel-base"],
+  ["packages/channel-webchat", "@blue-tanuki/channel-webchat"],
+  ["packages/channel-slack", "@blue-tanuki/channel-slack"],
+  ["packages/channel-discord", "@blue-tanuki/channel-discord"],
+  ["packages/hds-brain", "@blue-tanuki/hds-brain"],
+  ["packages/blue-tanuki", "@blue-tanuki/core"],
+] as const;
+
+async function writeManifestFixture(root: string): Promise<void> {
+  for (const [rel, name] of manifestPackages) {
+    const pkgDir = path.join(root, rel);
+    await fs.mkdir(pkgDir, { recursive: true });
+    await fs.writeFile(
+      path.join(pkgDir, "package.json"),
+      JSON.stringify({
+        name,
+        version: "0.0.1",
+        main: "./dist/index.js",
+      }),
+      "utf8",
+    );
+    await fs.writeFile(
+      path.join(pkgDir, "blue-tanuki.plugin.json"),
+      JSON.stringify({
+        name,
+        version: "0.0.1",
+        kind: "core",
+        entry: "./dist/index.js",
+      }),
+      "utf8",
+    );
+  }
+}
+
+describe("compareSemver", () => {
+  it("orders versions correctly", () => {
+    expect(compareSemver("22.14.0", "22.14.0")).toBe(0);
+    expect(compareSemver("22.15.0", "22.14.0")).toBe(1);
+    expect(compareSemver("22.14.0", "22.15.0")).toBe(-1);
+    expect(compareSemver("23.0.0", "22.99.0")).toBe(1);
+    expect(compareSemver("22.13.999", MIN_NODE_VERSION)).toBe(-1);
+  });
+});
+
+describe("runDoctor — happy paths", () => {
+  it("returns exit_code=0 when all required env present and node OK", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    // Optional env unset → warns are present, so default would be 1.
+    // Set the optionals too for a clean OK.
+    const r2 = await runDoctor({
+      env: {
+        ...baseEnv(),
+        SLACK_BOT_TOKEN: "xoxb-aaa-bbb",
+        SLACK_APP_TOKEN: "xapp-aaa-bbb",
+        DISCORD_BOT_TOKEN: "discord-bot-token",
+        ANTHROPIC_API_KEY: "sk-ant-abcdefghijkl",
+      },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r2.exit_code).toBe(0);
+    expect(r2.ok).toBe(true);
+    // r is included to demonstrate the warn-only behavior below.
+    expect(r.exit_code).toBe(1);
+  });
+
+  it("emits warns for unset optional envs (exit_code=1)", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(1);
+    expect(r.ok).toBe(true);
+    const warned = r.checks.filter((c) => c.level === "warn").map((c) => c.id);
+    expect(warned).toEqual(
+      expect.arrayContaining([
+        "env:SLACK_BOT_TOKEN",
+        "env:DISCORD_BOT_TOKEN",
+      ]),
+    );
+  });
+
+  it("accepts a custom LLM backend registered by LLM_PROVIDERS_JSON", async () => {
+    const r = await runDoctor({
+      env: {
+        ...baseEnv(),
+        LLM_BACKEND: "fast",
+        LLM_PROVIDERS_JSON: JSON.stringify([
+          {
+            name: "local-fast",
+            endpoint: "http://localhost:11434/v1",
+            model: "llama-local",
+            aliases: ["fast"],
+          },
+        ]),
+      },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.ok).toBe(true);
+    expect(r.checks.find((c) => c.id === "llm_backend")?.level).toBe("ok");
+    expect(r.checks.find((c) => c.id === "llm_backend")?.detail).toContain(
+      "fast",
+    );
+  });
+
+  it("accepts an upstream LLM command route to a registered alias", async () => {
+    const r = await runDoctor({
+      env: {
+        ...baseEnv(),
+        LLM_PROVIDERS_JSON: JSON.stringify([
+          {
+            name: "local-fast",
+            endpoint: "http://localhost:11434/v1",
+            model: "llama-local",
+            aliases: ["fast"],
+          },
+        ]),
+        BLUE_TANUKI_LLM_BACKEND_HINT: "fast",
+        BLUE_TANUKI_LLM_MODEL: "route-model",
+      },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.ok).toBe(true);
+    expect(
+      r.checks.find((c) => c.id === "llm_command_route")?.detail,
+    ).toContain("backend=fast");
+  });
+});
+
+describe("runDoctor — error paths", () => {
+  it("exit_code=2 when WEBCHAT_TOKEN is missing", async () => {
+    const env = baseEnv();
+    delete env.WEBCHAT_TOKEN;
+    const r = await runDoctor({
+      env,
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.ok).toBe(false);
+    expect(
+      r.checks.find((c) => c.id === "env:WEBCHAT_TOKEN")?.level,
+    ).toBe("error");
+  });
+
+  it("exit_code=2 when WEBCHAT_RESUME_TOKEN is missing", async () => {
+    const env = baseEnv();
+    delete env.WEBCHAT_RESUME_TOKEN;
+    const r = await runDoctor({
+      env,
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.ok).toBe(false);
+    expect(
+      r.checks.find((c) => c.id === "env:WEBCHAT_RESUME_TOKEN")?.level,
+    ).toBe("error");
+  });
+
+  it("exit_code=2 when WebChat tokens are not separated", async () => {
+    const env = {
+      ...baseEnv(),
+      WEBCHAT_RESUME_TOKEN: baseEnv().WEBCHAT_TOKEN,
+    };
+    const r = await runDoctor({
+      env,
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.checks.find((c) => c.id === "webchat_token_separation")?.level).toBe("error");
+  });
+
+  it("exit_code=2 when settings token reuses a WebChat token", async () => {
+    const env = {
+      ...baseEnv(),
+      BLUE_TANUKI_SETTINGS_TOKEN: baseEnv().WEBCHAT_TOKEN,
+    };
+    const r = await runDoctor({
+      env,
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.checks.find((c) => c.id === "settings_token")?.level).toBe("error");
+  });
+
+  it("exit_code=2 when Node.js is below MIN_NODE_VERSION", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "20.0.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.checks.find((c) => c.id === "node_version")?.level).toBe("error");
+  });
+
+  it("exit_code=2 when LLM_BACKEND=anthropic but no key", async () => {
+    const env = { ...baseEnv(), LLM_BACKEND: "anthropic" };
+    const r = await runDoctor({
+      env,
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.checks.find((c) => c.id === "llm_backend")?.level).toBe("error");
+  });
+
+  it("exit_code=2 on unknown LLM_BACKEND value", async () => {
+    const env = { ...baseEnv(), LLM_BACKEND: "made-up" };
+    const r = await runDoctor({
+      env,
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.checks.find((c) => c.id === "llm_backend")?.detail).toContain(
+      "made-up",
+    );
+  });
+
+  it("exit_code=2 on malformed LLM_PROVIDERS_JSON", async () => {
+    const r = await runDoctor({
+      env: {
+        ...baseEnv(),
+        LLM_BACKEND: "fast",
+        LLM_PROVIDERS_JSON: JSON.stringify([{ name: "fast", model: "m" }]),
+      },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.checks.find((c) => c.id === "llm_backend")?.detail).toContain(
+      "LLM_PROVIDERS_JSON",
+    );
+  });
+
+  it("exit_code=2 when upstream LLM command route targets an unregistered backend", async () => {
+    const r = await runDoctor({
+      env: {
+        ...baseEnv(),
+        BLUE_TANUKI_LLM_BACKEND_HINT: "missing",
+      },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.checks.find((c) => c.id === "llm_command_route")?.detail).toContain(
+      "missing",
+    );
+  });
+});
+
+describe("runDoctor — session_dir probe", () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-doc-"));
+  });
+  afterEach(async () => {
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it("ok when session_dir is writable", async () => {
+    const r = await runDoctor({
+      env: { ...baseEnv(), BLUE_TANUKI_SESSION_DIR: dir },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const c = r.checks.find((x) => x.id === "session_dir");
+    expect(c?.level).toBe("ok");
+    expect(c?.detail).toContain(dir);
+  });
+
+  it("creates the directory if it does not exist", async () => {
+    const sub = path.join(dir, "deep", "nest");
+    const r = await runDoctor({
+      env: { ...baseEnv(), BLUE_TANUKI_SESSION_DIR: sub },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.checks.find((x) => x.id === "session_dir")?.level).toBe("ok");
+    const stat = await fs.stat(sub);
+    expect(stat.isDirectory()).toBe(true);
+  });
+
+  it("error when session_dir cannot be created (path collides with file)", async () => {
+    const file = path.join(dir, "conflict");
+    await fs.writeFile(file, "x", "utf8");
+    const r = await runDoctor({
+      env: { ...baseEnv(), BLUE_TANUKI_SESSION_DIR: file },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.checks.find((x) => x.id === "session_dir")?.level).toBe("error");
+    expect(r.exit_code).toBe(2);
+  });
+});
+
+describe("runDoctor — audit_dir probe", () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-aud-"));
+  });
+  afterEach(async () => {
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it("ok when unset (in-memory audit only)", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const c = r.checks.find((x) => x.id === "audit_dir");
+    expect(c?.level).toBe("ok");
+    expect(c?.detail).toMatch(/in-memory/);
+  });
+
+  it("ok when audit_dir is writable", async () => {
+    const r = await runDoctor({
+      env: { ...baseEnv(), BLUE_TANUKI_AUDIT_DIR: dir },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const c = r.checks.find((x) => x.id === "audit_dir");
+    expect(c?.level).toBe("ok");
+    expect(c?.detail).toContain(dir);
+  });
+
+  it("creates the directory if it does not exist", async () => {
+    const sub = path.join(dir, "audit", "deep");
+    const r = await runDoctor({
+      env: { ...baseEnv(), BLUE_TANUKI_AUDIT_DIR: sub },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.checks.find((x) => x.id === "audit_dir")?.level).toBe("ok");
+    const stat = await fs.stat(sub);
+    expect(stat.isDirectory()).toBe(true);
+  });
+
+  it("error when path collides with a file", async () => {
+    const file = path.join(dir, "conflict");
+    await fs.writeFile(file, "x", "utf8");
+    const r = await runDoctor({
+      env: { ...baseEnv(), BLUE_TANUKI_AUDIT_DIR: file },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.checks.find((x) => x.id === "audit_dir")?.level).toBe("error");
+    expect(r.exit_code).toBe(2);
+  });
+});
+
+describe("runDoctor — port probe", () => {
+  it("ok on a free port", async () => {
+    const port = await freePort();
+    const r = await runDoctor({
+      env: {
+        ...baseEnv(),
+        WEBCHAT_PORT: String(port),
+        WEBCHAT_HOST: "127.0.0.1",
+      },
+      probe_port: true,
+      node_version: "22.14.0",
+    });
+    expect(r.checks.find((x) => x.id === "port")?.level).toBe("ok");
+  });
+
+  it("error when port is already in use", async () => {
+    // Hold a port open during the probe.
+    const holder = net.createServer();
+    await new Promise<void>((res, rej) => {
+      holder.listen(0, "127.0.0.1", res);
+      holder.on("error", rej);
+    });
+    const addr = holder.address();
+    const port = (addr as net.AddressInfo).port;
+    try {
+      const r = await runDoctor({
+        env: {
+          ...baseEnv(),
+          WEBCHAT_PORT: String(port),
+          WEBCHAT_HOST: "127.0.0.1",
+        },
+        probe_port: true,
+        node_version: "22.14.0",
+      });
+      expect(r.checks.find((x) => x.id === "port")?.level).toBe("error");
+      expect(r.exit_code).toBe(2);
+    } finally {
+      await new Promise<void>((res) => holder.close(() => res()));
+    }
+  });
+});
+
+describe("runDoctor — bundled manifests", () => {
+  it("locates and reports manifests as ok in this repo", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const c = r.checks.find((x) => x.id === "manifests");
+    expect(c?.level).toBe("ok");
+    expect(c?.detail).toContain("7 manifests valid");
+  });
+
+  it("validates manifest schemas from an explicit root", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-mf-doc-"));
+    try {
+      await writeManifestFixture(root);
+      const r = await runDoctor({
+        env: baseEnv(),
+        probe_port: false,
+        node_version: "22.14.0",
+        manifest_root: root,
+      });
+      const c = r.checks.find((x) => x.id === "manifests");
+      expect(c?.level).toBe("ok");
+      expect(r.exit_code).toBe(1);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("errors when a manifest fails schema validation", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-mf-doc-"));
+    try {
+      await writeManifestFixture(root);
+      await fs.writeFile(
+        path.join(root, "packages", "protocol", "blue-tanuki.plugin.json"),
+        JSON.stringify({
+          name: "@blue-tanuki/protocol",
+          version: "0.0.1",
+          kind: "unknown",
+          entry: "./dist/index.js",
+        }),
+        "utf8",
+      );
+      const r = await runDoctor({
+        env: baseEnv(),
+        probe_port: false,
+        node_version: "22.14.0",
+        manifest_root: root,
+      });
+      const c = r.checks.find((x) => x.id === "manifests");
+      expect(c?.level).toBe("error");
+      expect(c?.detail).toContain("schema mismatch");
+      expect(r.exit_code).toBe(2);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("errors when manifest name/version/entry drifts from package metadata", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-mf-doc-"));
+    try {
+      await writeManifestFixture(root);
+      await fs.writeFile(
+        path.join(root, "packages", "hds-brain", "blue-tanuki.plugin.json"),
+        JSON.stringify({
+          name: "@blue-tanuki/wrong",
+          version: "9.9.9",
+          kind: "core",
+          entry: "./dist/wrong.js",
+        }),
+        "utf8",
+      );
+      const r = await runDoctor({
+        env: baseEnv(),
+        probe_port: false,
+        node_version: "22.14.0",
+        manifest_root: root,
+      });
+      const detail = r.checks.find((x) => x.id === "manifests")?.detail ?? "";
+      expect(detail).toContain("name mismatch");
+      expect(detail).toContain("version mismatch");
+      expect(detail).toContain("entry must be ./dist/index.js");
+      expect(r.exit_code).toBe(2);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("Output formatters", () => {
+  it("formatTextReport contains all check labels", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const text = formatTextReport(r);
+    for (const c of r.checks) {
+      expect(text).toContain(c.label);
+    }
+    expect(text).toMatch(/^blue-tanuki doctor —/);
+    expect(text).toContain(`Exit code: ${r.exit_code}`);
+  });
+
+  it("formatJsonReport produces parseable JSON with all fields", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const json = formatJsonReport(r);
+    const parsed = JSON.parse(json);
+    expect(parsed.ok).toBe(r.ok);
+    expect(parsed.exit_code).toBe(r.exit_code);
+    expect(parsed.timestamp).toBe(r.timestamp);
+    expect(Array.isArray(parsed.checks)).toBe(true);
+    expect(parsed.checks.length).toBe(r.checks.length);
+  });
+
+  it("never logs the WebChat token values (length only)", async () => {
+    const env = {
+      ...baseEnv(),
+      WEBCHAT_TOKEN: "SECRET-VALUE-XYZ",
+      WEBCHAT_RESUME_TOKEN: "RESUME-SECRET-VALUE-XYZ",
+    };
+    const r = await runDoctor({
+      env,
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const text = formatTextReport(r);
+    expect(text).not.toContain("SECRET-VALUE-XYZ");
+    expect(text).not.toContain("RESUME-SECRET-VALUE-XYZ");
+    const json = formatJsonReport(r);
+    expect(json).not.toContain("SECRET-VALUE-XYZ");
+    expect(json).not.toContain("RESUME-SECRET-VALUE-XYZ");
+  });
+});

@@ -1,0 +1,146 @@
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
+function parseEnvValue(raw, lineNo) {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('"')) {
+        try {
+            const parsed = JSON.parse(trimmed);
+            if (typeof parsed !== "string") {
+                throw new Error("quoted value did not parse to a string");
+            }
+            return parsed;
+        }
+        catch (e) {
+            throw new Error(`line ${lineNo}: invalid double-quoted value (${e instanceof Error ? e.message : String(e)})`);
+        }
+    }
+    if (trimmed.startsWith("'") && trimmed.endsWith("'") && trimmed.length >= 2) {
+        return trimmed.slice(1, -1);
+    }
+    return trimmed;
+}
+export function parseEnvFile(raw) {
+    const values = {};
+    const warnings = [];
+    const lines = raw.split(/\r?\n/);
+    for (const [index, line] of lines.entries()) {
+        const lineNo = index + 1;
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#"))
+            continue;
+        const eq = trimmed.indexOf("=");
+        if (eq <= 0) {
+            warnings.push(`line ${lineNo}: ignored malformed env entry`);
+            continue;
+        }
+        const key = trimmed.slice(0, eq).trim();
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+            warnings.push(`line ${lineNo}: ignored invalid env key '${key}'`);
+            continue;
+        }
+        values[key] = parseEnvValue(trimmed.slice(eq + 1), lineNo);
+    }
+    return { values, warnings };
+}
+export async function loadEnvFile(filePath, options = {}) {
+    const env = options.env ?? process.env;
+    const resolved = path.resolve(filePath);
+    const parsed = parseEnvFile(await fs.readFile(resolved, "utf8"));
+    const applied = [];
+    const skipped = [];
+    for (const [key, value] of Object.entries(parsed.values)) {
+        if (!options.override && env[key] !== undefined) {
+            skipped.push(key);
+            continue;
+        }
+        env[key] = value;
+        applied.push(key);
+    }
+    return {
+        path: resolved,
+        applied,
+        skipped,
+        warnings: parsed.warnings,
+    };
+}
+function backupSuffix(label) {
+    const safeLabel = label.replace(/[^A-Za-z0-9_.-]/g, "-") || "backup";
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    return `${stamp}.${process.pid}.${safeLabel}.bak`;
+}
+export async function backupEnvFileIfExists(filePath, label = "backup") {
+    const resolved = path.resolve(filePath);
+    const exists = await fs
+        .stat(resolved)
+        .then((stat) => stat.isFile())
+        .catch(() => false);
+    if (!exists)
+        return undefined;
+    const backupPath = `${resolved}.${backupSuffix(label)}`;
+    await fs.copyFile(resolved, backupPath);
+    return backupPath;
+}
+export async function writeEnvFileAtomic(filePath, content, options = {}) {
+    const resolved = path.resolve(filePath);
+    await fs.mkdir(path.dirname(resolved), { recursive: true });
+    const backupPath = options.backup
+        ? await backupEnvFileIfExists(resolved, options.backup_label)
+        : undefined;
+    const tmpPath = `${resolved}.tmp-${process.pid}-${Date.now()}`;
+    try {
+        await fs.writeFile(tmpPath, content, {
+            encoding: "utf8",
+            mode: options.mode ?? 0o600,
+        });
+        await fs.rename(tmpPath, resolved);
+        await fs.chmod(resolved, options.mode ?? 0o600).catch(() => undefined);
+        return backupPath
+            ? { path: resolved, backup_path: backupPath }
+            : { path: resolved };
+    }
+    catch (e) {
+        await fs.rm(tmpPath, { force: true }).catch(() => undefined);
+        throw e;
+    }
+}
+export function envFilePathFromArgv(argv, env = process.env) {
+    for (let i = 0; i < argv.length; i++) {
+        const arg = argv[i];
+        if (arg === "--env-file") {
+            const value = argv[i + 1];
+            if (!value)
+                throw new Error("--env-file requires a path");
+            return value;
+        }
+        if (arg?.startsWith("--env-file=")) {
+            const value = arg.slice("--env-file=".length);
+            if (!value)
+                throw new Error("--env-file requires a path");
+            return value;
+        }
+    }
+    return env.BLUE_TANUKI_ENV_FILE;
+}
+export function stripEnvFileArgs(argv) {
+    const out = [];
+    for (let i = 0; i < argv.length; i++) {
+        const arg = argv[i];
+        if (arg === undefined)
+            continue;
+        if (arg === "--env-file") {
+            i += 1;
+            continue;
+        }
+        if (arg?.startsWith("--env-file="))
+            continue;
+        out.push(arg);
+    }
+    return out;
+}
+export async function loadEnvFileFromArgv(argv, env = process.env) {
+    const envFile = envFilePathFromArgv(argv, env);
+    if (!envFile)
+        return undefined;
+    return loadEnvFile(envFile, { env });
+}
+//# sourceMappingURL=env_file.js.map
