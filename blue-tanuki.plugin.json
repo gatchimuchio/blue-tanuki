@@ -1,0 +1,13 @@
+{
+  "name": "@blue-tanuki/hds-brain",
+  "version": "0.0.1",
+  "kind": "core",
+  "entry": "./dist/index.js",
+  "exports": {
+    "default": "HDSUpperController"
+  },
+  "permissions": [
+    "fs:append:audit_dir"
+  ],
+  "description": "Upstream control core. F→M→C judgement, detector registry, policy, audit JSONL with hash-chain, SUSPEND/RESUME state machine. Never calls an LLM. The 'fs:append:audit_dir' permission covers the audit log target directory configured by the host."
+}

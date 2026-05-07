@@ -1,0 +1,205 @@
+import type { InboundRequest } from "@blue-tanuki/protocol";
+
+export interface ToolActionRoute {
+  type: "tool_call";
+  tool_name: string;
+  arguments: Record<string, unknown>;
+  allowed_capabilities: string[];
+  timeout_ms: number;
+}
+
+export interface NoopActionRoute {
+  type: "noop";
+  reason: string;
+}
+
+export type ActionRoute = ToolActionRoute | NoopActionRoute | null;
+
+interface ToolSpec {
+  allowed_capabilities: string[];
+  timeout_ms: number;
+}
+
+const TOOL_SPECS: Record<string, ToolSpec> = {
+  echo: {
+    allowed_capabilities: ["tool:echo"],
+    timeout_ms: 5_000,
+  },
+  "file.search": {
+    allowed_capabilities: ["tool:file.search", "fs:read"],
+    timeout_ms: 10_000,
+  },
+  "http.fetch": {
+    allowed_capabilities: ["tool:http.fetch", "network:http"],
+    timeout_ms: 15_000,
+  },
+};
+
+/**
+ * Route explicit tool requests to a bounded command envelope.
+ *
+ * Supported content forms:
+ *   - tool:file.search root=. query=needle max_results=5
+ *   - tool:http.fetch url=https://example.com method=HEAD
+ *   - /tool echo text="hello"
+ *   - tool:http.fetch {"url":"https://example.com","method":"GET"}
+ *
+ * Supported metadata forms:
+ *   - metadata["blue_tanuki.tool_call"] = { tool_name, arguments }
+ *   - metadata.tool_call = { tool_name, arguments }
+ */
+export function routeAction(req: InboundRequest): ActionRoute {
+  const fromMetadata = routeMetadata(req);
+  if (fromMetadata) return fromMetadata;
+  return routeContent(req.content);
+}
+
+function routeMetadata(req: InboundRequest): ActionRoute {
+  const raw =
+    req.metadata?.["blue_tanuki.tool_call"] ?? req.metadata?.["tool_call"];
+  if (raw === undefined) return null;
+  if (!isRecord(raw)) {
+    return { type: "noop", reason: "tool_call metadata must be an object" };
+  }
+  const toolName = stringField(raw, "tool_name") ?? stringField(raw, "tool");
+  if (!toolName) {
+    return { type: "noop", reason: "tool_call metadata missing tool_name" };
+  }
+  const argsRaw = raw.arguments ?? raw.args ?? {};
+  if (!isRecord(argsRaw)) {
+    return { type: "noop", reason: "tool_call metadata arguments must be an object" };
+  }
+  return buildToolRoute(toolName, { ...argsRaw });
+}
+
+function routeContent(content: string): ActionRoute {
+  const trimmed = content.trim();
+  const match = /^(?:tool:([A-Za-z0-9_.-]+)|\/tool\s+([A-Za-z0-9_.-]+))(?:\s+([\s\S]*))?$/.exec(trimmed);
+  if (!match) return null;
+  const toolName = match[1] ?? match[2] ?? "";
+  const rest = (match[3] ?? "").trim();
+  let args: Record<string, unknown>;
+  try {
+    args = parseArgs(rest);
+  } catch (e) {
+    return {
+      type: "noop",
+      reason: e instanceof Error ? e.message : String(e),
+    };
+  }
+  return buildToolRoute(toolName, args);
+}
+
+function buildToolRoute(
+  toolName: string,
+  args: Record<string, unknown>,
+): ActionRoute {
+  const spec = TOOL_SPECS[toolName];
+  if (!spec) {
+    return { type: "noop", reason: `unsupported tool: ${toolName}` };
+  }
+  return {
+    type: "tool_call",
+    tool_name: toolName,
+    arguments: coerceToolArgs(toolName, args),
+    allowed_capabilities: [...spec.allowed_capabilities],
+    timeout_ms: spec.timeout_ms,
+  };
+}
+
+function parseArgs(rest: string): Record<string, unknown> {
+  if (!rest) return {};
+  if (rest.startsWith("{")) {
+    const parsed = JSON.parse(rest) as unknown;
+    if (!isRecord(parsed)) {
+      throw new Error("tool arguments JSON must be an object");
+    }
+    return { ...parsed };
+  }
+  const out: Record<string, unknown> = {};
+  for (const token of tokenize(rest)) {
+    const eq = token.indexOf("=");
+    if (eq <= 0) {
+      throw new Error(`tool argument must be key=value: ${token}`);
+    }
+    const key = token.slice(0, eq);
+    const value = token.slice(eq + 1);
+    out[key] = value;
+  }
+  return out;
+}
+
+function tokenize(input: string): string[] {
+  const tokens: string[] = [];
+  let current = "";
+  let quote: '"' | "'" | null = null;
+  let escaped = false;
+  for (const ch of input) {
+    if (escaped) {
+      current += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (ch === quote) {
+        quote = null;
+      } else {
+        current += ch;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (/\s/.test(ch)) {
+      if (current.length > 0) {
+        tokens.push(current);
+        current = "";
+      }
+      continue;
+    }
+    current += ch;
+  }
+  if (escaped) current += "\\";
+  if (quote) throw new Error("unterminated quoted tool argument");
+  if (current.length > 0) tokens.push(current);
+  return tokens;
+}
+
+function coerceToolArgs(
+  toolName: string,
+  args: Record<string, unknown>,
+): Record<string, unknown> {
+  const next = { ...args };
+  if (toolName === "file.search") {
+    coercePositiveInt(next, "max_results");
+  }
+  if (toolName === "http.fetch") {
+    coercePositiveInt(next, "max_bytes");
+    if (typeof next.method === "string") {
+      next.method = next.method.toUpperCase();
+    }
+  }
+  return next;
+}
+
+function coercePositiveInt(args: Record<string, unknown>, key: string): void {
+  const value = args[key];
+  if (typeof value === "string" && /^[1-9]\d*$/.test(value)) {
+    args[key] = parseInt(value, 10);
+  }
+}
+
+function stringField(obj: Record<string, unknown>, key: string): string | undefined {
+  const value = obj[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}

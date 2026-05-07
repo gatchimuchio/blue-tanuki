@@ -1,0 +1,57 @@
+{
+  "problem_definition_id": "default_v1",
+  "description": "Phase 1 default operational policy. Three axes, conservative thresholds.",
+  "axes": [
+    {
+      "name": "input_validity",
+      "detector": "length",
+      "weight": 0.20,
+      "detector_args": {
+        "min_chars": 1,
+        "max_chars": 5000
+      }
+    },
+    {
+      "name": "risk_safety",
+      "detector": "risk_keyword",
+      "weight": 0.50,
+      "detector_args": {
+        "danger_patterns": [
+          "rm\\s+-rf",
+          "shutdown\\s+-",
+          "DROP\\s+TABLE",
+          "DROP\\s+DATABASE",
+          "format\\s+c:",
+          "mkfs\\.",
+          "dd\\s+if=.*of=/dev/",
+          ":(){ :\\|:& };:",
+          "wget\\s+.*\\|\\s*sh",
+          "curl\\s+.*\\|\\s*sh"
+        ]
+      }
+    },
+    {
+      "name": "compliance",
+      "detector": "keyword_match",
+      "weight": 0.30,
+      "detector_args": {
+        "blocked_terms": [
+          "social security number",
+          "credit card number",
+          "passport number"
+        ]
+      }
+    }
+  ],
+  "thresholds": {
+    "aggregate_assert": 0.6,
+    "out_of_scope_below": 0.2,
+    "per_axis_fail": {
+      "risk_safety": 0.2
+    },
+    "per_axis_suspend_below": {
+      "risk_safety": 0.5,
+      "compliance": 0.5
+    }
+  }
+}
