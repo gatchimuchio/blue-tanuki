@@ -1,0 +1,33 @@
+{
+  "name": "@blue-tanuki/core",
+  "version": "0.0.1",
+  "kind": "core",
+  "entry": "./dist/index.js",
+  "exports": {
+    "default": "Executor",
+    "tools": "registerBuiltinTools",
+    "llm_registry": "LLMRegistry",
+    "llm_stub": "StubBackend",
+    "llm_anthropic": "AnthropicBackend",
+    "llm_openai_compatible": "OpenAICompatibleBackend"
+  },
+  "permissions": [
+    "fs:append:session_dir",
+    "fs:read:session_dir",
+    "fs:write:session_dir",
+    "secrets:ANTHROPIC_API_KEY",
+    "secrets:OPENAI_API_KEY",
+    "secrets:OPENAI_COMPAT_API_KEY",
+    "secrets:LLM_API_KEY",
+    "secrets:LLM_PROVIDERS_JSON",
+    "secrets:OPENAI_COMPAT_HEADERS_JSON",
+    "secrets:LLM_HEADERS_JSON",
+    "network:llm-provider",
+    "tool:echo",
+    "tool:file.search",
+    "tool:http.fetch",
+    "fs:read",
+    "network:http"
+  ],
+  "description": "BLUE-TANUKI executor: provider-neutral LLM backend registry, permission-gated tool registry, OutboundDispatcher integration, SessionStore (memory + json file). Network/secrets permissions apply only when a non-stub LLM or network tool is configured; fs permissions apply only when sessions or fs tools are allowed."
+}

@@ -1,0 +1,1 @@
+{"version":3,"file":"stub.d.ts","sourceRoot":"","sources":["../../src/llm/stub.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,UAAU,EAAE,UAAU,EAAE,WAAW,EAAE,MAAM,WAAW,CAAC;AAErE;;;GAGG;AACH,qBAAa,WAAY,YAAW,UAAU;IAC5C,QAAQ,CAAC,IAAI,UAAU;IAEjB,IAAI,CAAC,GAAG,EAAE,UAAU,GAAG,OAAO,CAAC,WAAW,CAAC;CASlD"}
