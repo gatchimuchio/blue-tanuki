@@ -1,0 +1,41 @@
+services:
+  blue-tanuki:
+    build:
+      context: .
+    image: blue-tanuki:local
+    restart: unless-stopped
+    ports:
+      - "${WEBCHAT_PORT:-8787}:${WEBCHAT_PORT:-8787}"
+    environment:
+      WEBCHAT_HOST: "0.0.0.0"
+      WEBCHAT_PORT: "${WEBCHAT_PORT:-8787}"
+      WEBCHAT_TOKEN: "${WEBCHAT_TOKEN:?WEBCHAT_TOKEN is required}"
+      WEBCHAT_RESUME_TOKEN: "${WEBCHAT_RESUME_TOKEN:?WEBCHAT_RESUME_TOKEN is required}"
+      BLUE_TANUKI_SETTINGS_TOKEN: "${BLUE_TANUKI_SETTINGS_TOKEN:-}"
+      LLM_BACKEND: "${LLM_BACKEND:-stub}"
+      LLM_DEFAULT_BACKEND: "${LLM_DEFAULT_BACKEND:-}"
+      LLM_PROVIDERS_JSON: "${LLM_PROVIDERS_JSON:-}"
+      LLM_ENDPOINT: "${LLM_ENDPOINT:-}"
+      LLM_MODEL: "${LLM_MODEL:-}"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_HEADERS_JSON: "${LLM_HEADERS_JSON:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      ANTHROPIC_MODEL: "${ANTHROPIC_MODEL:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_MODEL: "${OPENAI_MODEL:-}"
+      OPENAI_COMPAT_ENDPOINT: "${OPENAI_COMPAT_ENDPOINT:-}"
+      OPENAI_COMPAT_MODEL: "${OPENAI_COMPAT_MODEL:-}"
+      OPENAI_COMPAT_API_KEY: "${OPENAI_COMPAT_API_KEY:-}"
+      SLACK_BOT_TOKEN: "${SLACK_BOT_TOKEN:-}"
+      SLACK_APP_TOKEN: "${SLACK_APP_TOKEN:-}"
+      DISCORD_BOT_TOKEN: "${DISCORD_BOT_TOKEN:-}"
+      BLUE_TANUKI_AUDIT_DIR: "/data/audit"
+      BLUE_TANUKI_SESSION_DIR: "/data/sessions"
+      BLUE_TANUKI_LOG_LEVEL: "${BLUE_TANUKI_LOG_LEVEL:-info}"
+      BLUE_TANUKI_LOG_FORMAT: "${BLUE_TANUKI_LOG_FORMAT:-text}"
+      BLUE_TANUKI_HTTP_ALLOWLIST: "${BLUE_TANUKI_HTTP_ALLOWLIST:-}"
+    volumes:
+      - blue_tanuki_data:/data
+
+volumes:
+  blue_tanuki_data:

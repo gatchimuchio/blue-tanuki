@@ -1,0 +1,39 @@
+{
+  "name": "blue-tanuki-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BLUE-TANUKI: HDS-BRAIN (upstream control) + BLUE-TANUKI (executor) — an OpenClaw-superset AI agent",
+  "license": "MIT",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/*\" --filter \"./apps/*\" build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "gateway": "pnpm --filter @blue-tanuki/gateway start",
+    "gateway:dev": "pnpm --filter @blue-tanuki/gateway dev",
+    "gateway:serve": "pnpm --filter @blue-tanuki/gateway serve",
+    "gateway:serve:dev": "pnpm --filter @blue-tanuki/gateway serve:dev",
+    "setup": "pnpm --filter @blue-tanuki/gateway run setup",
+    "setup:dist": "pnpm --filter @blue-tanuki/gateway run setup:dist",
+    "doctor": "pnpm --filter @blue-tanuki/gateway run doctor",
+    "doctor:dev": "pnpm --filter @blue-tanuki/gateway run doctor:dev",
+    "smoke:serve": "tsx ./scripts/smoke_serve.ts",
+    "smoke:resume": "tsx ./scripts/smoke_resume.ts",
+    "smoke:live": "pnpm --filter @blue-tanuki/gateway exec tsx src/smoke_live.ts",
+    "validate:packaging": "tsx ./scripts/validate_packaging.ts",
+    "release:bundle": "tsx ./scripts/create_release_bundle.ts",
+    "release:verify": "tsx ./scripts/verify_release_bundle.ts",
+    "clean": "pnpm -r exec rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "ws": "^8.18.0"
+  }
+}
