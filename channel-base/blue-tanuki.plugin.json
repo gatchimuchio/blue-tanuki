@@ -1,0 +1,11 @@
+{
+  "name": "@blue-tanuki/channel-base",
+  "version": "0.0.1",
+  "kind": "core",
+  "entry": "./dist/index.js",
+  "exports": {
+    "default": "*"
+  },
+  "permissions": [],
+  "description": "Channel abstraction. InboundChannel/OutboundChannel interfaces, InboundRouter, OutboundDispatcher, TokenBucket, withRetryBackoff. No I/O on its own."
+}

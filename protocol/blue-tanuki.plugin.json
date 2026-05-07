@@ -1,0 +1,11 @@
+{
+  "name": "@blue-tanuki/protocol",
+  "version": "0.0.1",
+  "kind": "core",
+  "entry": "./dist/index.js",
+  "exports": {
+    "default": "*"
+  },
+  "permissions": [],
+  "description": "HDS-BRAIN ↔ BLUE-TANUKI message schemas (zod) and PluginManifest spec. Pure types, no runtime side effects."
+}

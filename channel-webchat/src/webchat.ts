@@ -1,0 +1,831 @@
+import { randomUUID } from "node:crypto";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+  type Server as HttpServer,
+} from "node:http";
+import { URL } from "node:url";
+import { WebSocketServer, WebSocket } from "ws";
+import type {
+  InboundRequest,
+  ChannelSendPayload,
+} from "@blue-tanuki/protocol";
+import {
+  TokenBucket,
+  type Clock,
+  type InboundChannel,
+  type InboundHandler,
+  type OutboundChannel,
+  type SendMeta,
+  type SendResult,
+} from "@blue-tanuki/channel-base";
+import {
+  MemoryTicketStore,
+  type TicketStore,
+} from "./ticket_store.js";
+import {
+  MemoryResumeApprovalTokenStore,
+  type ResumeApprovalTokenIssued,
+  type ResumeApprovalTokenStore,
+} from "./resume_approval_token_store.js";
+import { renderControlCenterHtml } from "./control_center_html.js";
+
+export interface WebChatRateLimit {
+  /** Burst capacity. */
+  capacity: number;
+  /** Sustained refill rate (tokens/sec). */
+  refill_per_sec: number;
+}
+
+/**
+ * Rate-limit configuration for the three authenticated endpoints.
+ *
+ * Defaults (Phase 4):
+ *   - inbound:    capacity 10, refill 1.0/sec  ≈ 60/min/user with burst
+ *   - resume:     capacity  5, refill 0.5/sec  ≈ 30/min global with burst
+ *   - ws_ticket:  capacity  3, refill 10/60/sec ≈ 10/min/user with burst
+ *
+ * Pass `rate_limits: false` to disable entirely (used in tests).
+ */
+export interface WebChatRateLimits {
+  inbound?: WebChatRateLimit;
+  resume?: WebChatRateLimit;
+  ws_ticket?: WebChatRateLimit;
+}
+
+export interface WebChatResumeApprovalOptions {
+  /** If true, the gateway may convert this approval into a reusable grant. */
+  remember?: boolean;
+  /** Optional duration for the reusable grant. Null means no expiry. */
+  duration_ms?: number | null;
+  /** Optional widen mode. `full_access` remains final-review guarded downstream. */
+  mode?: "remember_this_decision" | "full_access";
+}
+
+export interface WebChatResumeContext {
+  actor: string;
+  token_kind: "resume";
+  approval?: WebChatResumeApprovalOptions;
+}
+
+export interface WebChatSettingsSurface {
+  /** Dedicated bearer token for settings API endpoints. */
+  token: string;
+  /** Static settings HTML or a function that renders it. */
+  html: string | (() => string);
+  /** Return a redacted current-settings snapshot. */
+  getSnapshot: () => Promise<unknown>;
+  /** Persist a settings update. When omitted, POST is rejected. */
+  update?: (body: Record<string, unknown>) => Promise<unknown>;
+}
+
+export interface WebChatRuntimeSurface {
+  /** Return the HDS/process/memory/authority state visible to the local console. */
+  getSnapshot: () => Promise<unknown>;
+}
+
+export interface WebChatOptions {
+  /** HTTP/WS port. Required. */
+  port: number;
+  /**
+   * Bearer token required on POST /inbound and POST /ws-ticket.
+   * Must be ≥8 chars; throws on construction otherwise.
+   */
+  token: string;
+  /** Separate Bearer token required on POST /resume. Must differ from token. */
+  resume_token?: string;
+  /** Bind host. Defaults to 127.0.0.1 (loopback only). */
+  host?: string;
+  /**
+   * Optional human-resume sink. If provided, POST /resume routes here.
+   */
+  onResume?: (
+    request_id: string,
+    verdict: "approve" | "reject" | "block",
+    context: WebChatResumeContext,
+  ) => Promise<unknown>;
+  /**
+   * TTL for /ws-ticket entries in milliseconds. Default 30_000 (30s).
+   */
+  ws_ticket_ttl_ms?: number;
+  /**
+   * Hard cap on the live ticket store. Default 10_000. Only consulted
+   * when `ticket_store` is not supplied (default MemoryTicketStore).
+   */
+  ws_ticket_cap?: number;
+  /**
+   * Inject a custom TicketStore (Phase 4-3). When unset, an internal
+   * MemoryTicketStore is created with `cap = ws_ticket_cap`.
+   */
+  ticket_store?: TicketStore;
+  /**
+   * One-time token store for human resume approvals. Default: in-memory,
+   * enabled. Pass `false` only for legacy/custom deployments that supply an
+   * equivalent gate outside WebChat.
+   */
+  resume_approval_tokens?: ResumeApprovalTokenStore | false;
+  /**
+   * TTL for request_id-bound resume approval tokens. Default 600_000 (10 min).
+   */
+  resume_approval_token_ttl_ms?: number;
+  /**
+   * Hard cap on the live approval-token store. Default 10_000. Only consulted
+   * when `resume_approval_tokens` is not supplied.
+   */
+  resume_approval_token_cap?: number;
+  /** Optional local settings window/API surface. */
+  settings?: WebChatSettingsSurface;
+  /** Optional local runtime/status API surface. Uses the normal inbound bearer token. */
+  runtime?: WebChatRuntimeSurface;
+  /**
+   * Per-endpoint rate limit configuration. Pass `false` to disable
+   * rate limiting entirely. Default: enabled with the per-endpoint
+   * defaults documented on `WebChatRateLimits`.
+   */
+  rate_limits?: WebChatRateLimits | false;
+  /**
+   * Periodic TokenBucket prune interval in milliseconds. The prune sweep
+   * drops bucket entries that are both idle and conceptually full (i.e.
+   * carry no rate-limit memory). Set to 0 to disable. Default 60_000.
+   *
+   * Sets a guard against unbounded keyspace growth on long-running
+   * gateways receiving traffic from many distinct (user, endpoint)
+   * pairs. Without it, in-memory `state` map grows monotonically.
+   */
+  rate_limit_prune_interval_ms?: number;
+  /**
+   * Idle threshold (ms) for an entry to become prune-eligible. Default
+   * 5 × the prune interval, so a key that sees traffic more than once
+   * per prune sweep is never dropped. Has no effect when
+   * `rate_limit_prune_interval_ms === 0`.
+   */
+  rate_limit_prune_idle_ms?: number;
+  /** Clock injection for tests. */
+  clock?: Clock;
+}
+
+const DEFAULT_RATE_LIMITS: Required<WebChatRateLimits> = {
+  inbound: { capacity: 10, refill_per_sec: 1.0 },
+  resume: { capacity: 5, refill_per_sec: 0.5 },
+  ws_ticket: { capacity: 3, refill_per_sec: 10 / 60 },
+};
+
+const RESUME_GLOBAL_KEY = "*";
+
+/**
+ * WebChat channel — Phase 4.
+ *
+ * Endpoint summary:
+ *   POST /ws-ticket  body:{user}  auth:Bearer  rate-limited per-user
+ *   POST /inbound    body:{user, content}  auth:Bearer  rate-limited per-user
+ *   POST /resume     body:{request_id, verdict, approval_token}  auth:Bearer  rate-limited (global)
+ *   GET  /ws         query:?ticket=...
+ *   GET  /healthz    no auth, not rate-limited
+ *
+ * Rate-limit response:
+ *   HTTP 429
+ *   Retry-After: <seconds>
+ *   { "error": "rate_limited", "retry_after_ms": <ms> }
+ */
+export class WebChatChannel implements InboundChannel, OutboundChannel {
+  readonly name = "webchat";
+  private server: HttpServer | null = null;
+  private wss: WebSocketServer | null = null;
+  private handler: InboundHandler | null = null;
+  private readonly conns = new Map<string, Set<WebSocket>>();
+  private readonly ticketStore: TicketStore;
+  private readonly ticketTtlMs: number;
+  private readonly resumeApprovalTokenStore: ResumeApprovalTokenStore | null;
+  private readonly resumeApprovalTokenTtlMs: number;
+  private readonly buckets: {
+    inbound: TokenBucket | null;
+    resume: TokenBucket | null;
+    ws_ticket: TokenBucket | null;
+  };
+  private starting = false;
+  private started = false;
+  private pruneTimer: NodeJS.Timeout | null = null;
+
+  constructor(private readonly opts: WebChatOptions) {
+    if (!opts.token || opts.token.length < 8) {
+      throw new Error(
+        "WebChatChannel: opts.token is required and must be ≥8 chars",
+      );
+    }
+    if (opts.resume_token !== undefined && opts.resume_token.length < 8) {
+      throw new Error(
+        "WebChatChannel: opts.resume_token must be >=8 chars when set",
+      );
+    }
+    if (opts.resume_token !== undefined && opts.resume_token === opts.token) {
+      throw new Error("WebChatChannel: opts.resume_token must differ from opts.token");
+    }
+    if (opts.onResume && !opts.resume_token) {
+      throw new Error("WebChatChannel: opts.resume_token is required when onResume is set");
+    }
+    if (opts.settings && opts.settings.token.length < 16) {
+      throw new Error("WebChatChannel: opts.settings.token must be >=16 chars");
+    }
+    if (
+      opts.settings &&
+      (opts.settings.token === opts.token ||
+        opts.settings.token === opts.resume_token)
+    ) {
+      throw new Error("WebChatChannel: opts.settings.token must differ from WebChat tokens");
+    }
+    if (!Number.isInteger(opts.port) || opts.port < 1 || opts.port > 65535) {
+      throw new Error("WebChatChannel: opts.port must be a valid TCP port");
+    }
+    this.ticketTtlMs = opts.ws_ticket_ttl_ms ?? 30_000;
+    if (this.ticketTtlMs < 1_000) {
+      throw new Error("WebChatChannel: ws_ticket_ttl_ms must be ≥ 1000");
+    }
+    this.resumeApprovalTokenTtlMs =
+      opts.resume_approval_token_ttl_ms ?? 10 * 60_000;
+    if (this.resumeApprovalTokenTtlMs < 1_000) {
+      throw new Error(
+        "WebChatChannel: resume_approval_token_ttl_ms must be >= 1000",
+      );
+    }
+    this.ticketStore =
+      opts.ticket_store ??
+      new MemoryTicketStore({
+        cap: opts.ws_ticket_cap ?? 10_000,
+        now: opts.clock ? () => opts.clock!.now() : undefined,
+      });
+    this.resumeApprovalTokenStore =
+      opts.resume_approval_tokens === false
+        ? null
+        : opts.resume_approval_tokens ??
+          new MemoryResumeApprovalTokenStore({
+            cap: opts.resume_approval_token_cap ?? 10_000,
+            now: opts.clock ? () => opts.clock!.now() : undefined,
+          });
+
+    if (opts.rate_limits === false) {
+      this.buckets = { inbound: null, resume: null, ws_ticket: null };
+    } else {
+      const cfg = opts.rate_limits ?? {};
+      this.buckets = {
+        inbound: new TokenBucket({
+          ...DEFAULT_RATE_LIMITS.inbound,
+          ...cfg.inbound,
+          clock: opts.clock,
+        }),
+        resume: new TokenBucket({
+          ...DEFAULT_RATE_LIMITS.resume,
+          ...cfg.resume,
+          clock: opts.clock,
+        }),
+        ws_ticket: new TokenBucket({
+          ...DEFAULT_RATE_LIMITS.ws_ticket,
+          ...cfg.ws_ticket,
+          clock: opts.clock,
+        }),
+      };
+    }
+  }
+
+  async issueResumeApprovalToken(
+    request_id: string,
+    ttl_ms = this.resumeApprovalTokenTtlMs,
+  ): Promise<ResumeApprovalTokenIssued | null> {
+    if (!this.resumeApprovalTokenStore) return null;
+    return this.resumeApprovalTokenStore.issue(request_id, ttl_ms);
+  }
+
+  async start(handler: InboundHandler): Promise<void> {
+    if (this.started || this.starting) {
+      throw new Error("WebChatChannel: already started");
+    }
+    this.starting = true;
+    this.handler = handler;
+
+    this.server = createServer((req, res) => {
+      this.handleHttp(req, res).catch((e) => {
+        // eslint-disable-next-line no-console
+        console.error("[webchat] http handler error:", e);
+        if (!res.headersSent) {
+          res.writeHead(500, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "internal_error" }));
+        }
+      });
+    });
+
+    this.wss = new WebSocketServer({ noServer: true });
+    this.server.on("upgrade", (req, socket, head) => {
+      void (async () => {
+        try {
+          const url = new URL(req.url ?? "/", "http://internal");
+          if (url.pathname !== "/ws") {
+            socket.destroy();
+            return;
+          }
+          const ticket = url.searchParams.get("ticket");
+          if (!ticket) {
+            socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+            socket.destroy();
+            return;
+          }
+          const user = await this.ticketStore.consume(ticket);
+          if (!user) {
+            socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+            socket.destroy();
+            return;
+          }
+          this.wss!.handleUpgrade(req, socket, head, (ws) => {
+            this.attachConnection(user, ws);
+          });
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error("[webchat] upgrade error:", e);
+          socket.destroy();
+        }
+      })();
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const onError = (e: Error): void => {
+        this.starting = false;
+        reject(e);
+      };
+      this.server!.once("error", onError);
+      this.server!.listen(this.opts.port, this.opts.host ?? "127.0.0.1", () => {
+        this.server!.off("error", onError);
+        resolve();
+      });
+    });
+
+    // Periodic TokenBucket prune. Keeps the per-key state map from
+    // growing unboundedly on long-running processes that see many
+    // distinct (user, endpoint) pairs.
+    const prune_interval = this.opts.rate_limit_prune_interval_ms ?? 60_000;
+    if (prune_interval > 0) {
+      const idle_ms =
+        this.opts.rate_limit_prune_idle_ms ?? prune_interval * 5;
+      this.pruneTimer = setInterval(() => {
+        this.buckets.inbound?.prune(idle_ms);
+        this.buckets.resume?.prune(idle_ms);
+        this.buckets.ws_ticket?.prune(idle_ms);
+      }, prune_interval);
+      // Don't keep the event loop alive solely for prune.
+      this.pruneTimer.unref?.();
+    }
+
+    this.starting = false;
+    this.started = true;
+  }
+
+  async stop(): Promise<void> {
+    if (!this.started) return;
+    this.started = false;
+    if (this.pruneTimer) {
+      clearInterval(this.pruneTimer);
+      this.pruneTimer = null;
+    }
+    for (const set of this.conns.values()) {
+      for (const ws of set) {
+        try {
+          ws.close(1001, "server_shutdown");
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    this.conns.clear();
+    await new Promise<void>((resolve) => {
+      this.wss?.close(() => resolve());
+    });
+    await new Promise<void>((resolve) => {
+      this.server?.close(() => resolve());
+    });
+    this.server = null;
+    this.wss = null;
+    this.handler = null;
+  }
+
+  async send(
+    payload: ChannelSendPayload,
+    meta: SendMeta,
+  ): Promise<SendResult> {
+    const set = this.conns.get(payload.target);
+    if (!set || set.size === 0) {
+      return { delivered: false, error: "no_active_connection" };
+    }
+    const frame = JSON.stringify({
+      kind: "channel_send",
+      command_id: meta.command_id,
+      upstream_commit_hash: meta.upstream_commit_hash,
+      content: payload.content,
+    });
+    let any = false;
+    for (const ws of set) {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(frame);
+        any = true;
+      }
+    }
+    return any
+      ? { delivered: true, external_id: `webchat-${meta.command_id}` }
+      : { delivered: false, error: "no_open_socket" };
+  }
+
+  connectionCount(user?: string): number {
+    if (user) return this.conns.get(user)?.size ?? 0;
+    let n = 0;
+    for (const s of this.conns.values()) n += s.size;
+    return n;
+  }
+
+  /** Live ticket count (test/diagnostic). Backed by the ticket store. */
+  async ticketCount(): Promise<number> {
+    return this.ticketStore.size();
+  }
+
+  private attachConnection(user: string, ws: WebSocket): void {
+    let set = this.conns.get(user);
+    if (!set) {
+      set = new Set();
+      this.conns.set(user, set);
+    }
+    set.add(ws);
+    ws.on("close", () => {
+      const s = this.conns.get(user);
+      if (!s) return;
+      s.delete(ws);
+      if (s.size === 0) this.conns.delete(user);
+    });
+    ws.on("error", () => {
+      try {
+        ws.close();
+      } catch {
+        /* ignore */
+      }
+    });
+    setImmediate(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ kind: "hello", user }));
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+  }
+
+  /** Apply rate-limit check; on miss, write 429 + Retry-After and return false. */
+  private rateLimitOr429(
+    bucket: TokenBucket | null,
+    key: string,
+    res: ServerResponse,
+  ): boolean {
+    if (!bucket) return true;
+    const r = bucket.consume(key);
+    if (r.ok) return true;
+    const retry_after_sec = Math.max(1, Math.ceil(r.retry_after_ms / 1000));
+    res.writeHead(429, {
+      "content-type": "application/json",
+      "retry-after": String(retry_after_sec),
+    });
+    res.end(
+      JSON.stringify({
+        error: "rate_limited",
+        retry_after_ms: r.retry_after_ms,
+      }),
+    );
+    return false;
+  }
+
+  private async handleHttp(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    const url = new URL(req.url ?? "/", "http://internal");
+
+    if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/app")) {
+      res.writeHead(200, {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
+      });
+      res.end(renderControlCenterHtml());
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/healthz") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: true, channel: "webchat" }));
+      return;
+    }
+
+    if (url.pathname === "/settings") {
+      await this.handleSettingsPage(req, res);
+      return;
+    }
+
+    if (url.pathname === "/settings/config") {
+      await this.handleSettingsConfig(req, res);
+      return;
+    }
+
+    if (url.pathname === "/runtime/snapshot") {
+      await this.handleRuntimeSnapshot(req, res);
+      return;
+    }
+
+    if (req.method !== "POST") {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "not_found" }));
+      return;
+    }
+
+    const tokenKind =
+      url.pathname === "/resume"
+        ? "resume"
+        : url.pathname === "/inbound" || url.pathname === "/ws-ticket"
+        ? "inbound"
+        : null;
+    if (!tokenKind) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "not_found" }));
+      return;
+    }
+
+    if (!this.checkAuth(req, tokenKind)) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+
+    const body = await readJson(req);
+
+    if (url.pathname === "/ws-ticket") {
+      const user = typeof body?.user === "string" ? body.user.trim() : "";
+      if (!user) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "user is required string" }));
+        return;
+      }
+      if (!this.rateLimitOr429(this.buckets.ws_ticket, user, res)) return;
+      const issued = await this.ticketStore.issue(user, this.ticketTtlMs);
+      const expires_in_sec = Math.max(
+        0,
+        Math.floor((issued.expires_at_ms - Date.now()) / 1000),
+      );
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ticket: issued.ticket, expires_in_sec }));
+      return;
+    }
+
+    if (url.pathname === "/inbound") {
+      const user = typeof body?.user === "string" ? body.user : null;
+      const content = typeof body?.content === "string" ? body.content : null;
+      if (!user || !content) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(
+          JSON.stringify({ error: "user and content are required strings" }),
+        );
+        return;
+      }
+      if (!this.rateLimitOr429(this.buckets.inbound, user, res)) return;
+      const inboundReq: InboundRequest = {
+        id: randomUUID(),
+        channel: "webchat",
+        user,
+        content,
+        timestamp: Date.now(),
+        // WebChat targets users by literal user name (the WS connection map
+        // is keyed on it). reply_to mirrors that for symmetry with Slack/Discord.
+        metadata: { reply_to: user },
+      };
+      this.handler?.(inboundReq).catch((e) => {
+        // eslint-disable-next-line no-console
+        console.error("[webchat] inbound handler error:", e);
+      });
+      res.writeHead(202, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({ accepted: true, request_id: inboundReq.id }),
+      );
+      return;
+    }
+
+    if (url.pathname === "/resume") {
+      const request_id =
+        typeof body?.request_id === "string" ? body.request_id : null;
+      const verdict = body?.verdict;
+      if (
+        !request_id ||
+        (verdict !== "approve" && verdict !== "reject" && verdict !== "block")
+      ) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error: "request_id and verdict (approve|reject|block) required",
+          }),
+        );
+        return;
+      }
+      if (!this.opts.onResume) {
+        res.writeHead(501, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "resume_not_configured" }));
+        return;
+      }
+      const actor =
+        typeof body?.actor === "string" && body.actor.trim().length > 0
+          ? body.actor.trim()
+          : "webchat-human";
+      if (!this.rateLimitOr429(this.buckets.resume, RESUME_GLOBAL_KEY, res))
+        return;
+      if (this.resumeApprovalTokenStore) {
+        const approval_token =
+          typeof body?.approval_token === "string"
+            ? body.approval_token.trim()
+            : "";
+        if (!approval_token) {
+          res.writeHead(400, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "approval_token required" }));
+          return;
+        }
+        const ok = await this.resumeApprovalTokenStore.consume(
+          request_id,
+          approval_token,
+        );
+        if (!ok) {
+          res.writeHead(403, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "invalid_approval_token" }));
+          return;
+        }
+      }
+      try {
+        const result = await this.opts.onResume(request_id, verdict, {
+          actor,
+          token_kind: "resume",
+          approval: readResumeApprovalOptions(body),
+        });
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: true, result }));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: msg }));
+      }
+      return;
+    }
+
+    res.writeHead(404, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "not_found" }));
+  }
+
+  private checkAuth(req: IncomingMessage, kind: "inbound" | "resume"): boolean {
+    const h = req.headers["authorization"];
+    if (typeof h !== "string") return false;
+    const m = /^Bearer\s+(.+)$/i.exec(h);
+    if (!m) return false;
+    const expected = kind === "resume" ? this.opts.resume_token : this.opts.token;
+    return typeof expected === "string" && m[1] === expected;
+  }
+
+  private checkSettingsAuth(req: IncomingMessage): boolean {
+    const h = req.headers["authorization"];
+    if (typeof h !== "string") return false;
+    const m = /^Bearer\s+(.+)$/i.exec(h);
+    return Boolean(m && this.opts.settings && m[1] === this.opts.settings.token);
+  }
+
+
+  private async handleRuntimeSnapshot(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    if (!this.opts.runtime) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "runtime_not_configured" }));
+      return;
+    }
+    if (req.method !== "GET") {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    if (!this.checkAuth(req, "inbound")) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+    const snapshot = await this.opts.runtime.getSnapshot();
+    res.writeHead(200, {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    });
+    res.end(JSON.stringify(snapshot));
+  }
+
+  private async handleSettingsPage(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    if (!this.opts.settings) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "settings_not_configured" }));
+      return;
+    }
+    if (req.method !== "GET") {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    const html =
+      typeof this.opts.settings.html === "function"
+        ? this.opts.settings.html()
+        : this.opts.settings.html;
+    res.writeHead(200, {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+    });
+    res.end(html);
+  }
+
+  private async handleSettingsConfig(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    if (!this.opts.settings) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "settings_not_configured" }));
+      return;
+    }
+    if (!this.checkSettingsAuth(req)) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+    if (req.method === "GET") {
+      const snapshot = await this.opts.settings.getSnapshot();
+      res.writeHead(200, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      });
+      res.end(JSON.stringify(snapshot));
+      return;
+    }
+    if (req.method === "POST") {
+      if (!this.opts.settings.update) {
+        res.writeHead(501, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "settings_update_not_configured" }));
+        return;
+      }
+      const body = await readJson(req);
+      if (!body) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "json_body_required" }));
+        return;
+      }
+      const result = await this.opts.settings.update(body);
+      res.writeHead(200, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      });
+      res.end(JSON.stringify({ ok: true, result }));
+      return;
+    }
+    res.writeHead(405, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "method_not_allowed" }));
+  }
+}
+
+function readResumeApprovalOptions(body: Record<string, unknown> | null): WebChatResumeApprovalOptions | undefined {
+  if (!body) return undefined;
+  const remember = body.remember === true || body.remember === "true";
+  const modeRaw = body.approval_mode ?? body.mode;
+  const mode = modeRaw === "full_access" || modeRaw === "remember_this_decision" ? modeRaw : undefined;
+  const durationRaw = body.duration_ms ?? body.remember_duration_ms;
+  let duration_ms: number | null | undefined;
+  if (durationRaw === null || durationRaw === "always") duration_ms = null;
+  else if (typeof durationRaw === "number" && Number.isFinite(durationRaw) && durationRaw > 0) duration_ms = Math.floor(durationRaw);
+  else if (typeof durationRaw === "string" && /^\d+$/.test(durationRaw)) duration_ms = Math.floor(Number(durationRaw));
+  if (!remember && !mode && duration_ms === undefined) return undefined;
+  return { remember, mode, duration_ms };
+}
+
+async function readJson(
+  req: IncomingMessage,
+): Promise<Record<string, unknown> | null> {
+  const chunks: Buffer[] = [];
+  for await (const c of req) {
+    chunks.push(c as Buffer);
+    if (chunks.reduce((n, b) => n + b.length, 0) > 1024 * 1024) {
+      throw new Error("body_too_large");
+    }
+  }
+  if (chunks.length === 0) return null;
+  const text = Buffer.concat(chunks).toString("utf8");
+  if (!text.trim()) return null;
+  try {
+    const v = JSON.parse(text);
+    return typeof v === "object" && v !== null
+      ? (v as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}

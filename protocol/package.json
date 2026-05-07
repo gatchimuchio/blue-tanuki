@@ -1,0 +1,26 @@
+{
+  "name": "@blue-tanuki/protocol",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Connection protocol between HDS-BRAIN (upstream) and BLUE-TANUKI (executor)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  }
+}
