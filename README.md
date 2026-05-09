@@ -136,6 +136,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 ```
 
 The HTTP dump is read-only and does not accept a filesystem path. It reports the live HDS audit chain with the same report shape as `--audit-dump`.
+Control Center uses the JSON form to display `chain_valid` and `entry_count` as the resident hash-chain validator.
 
 ## Authority trace HTTP
 

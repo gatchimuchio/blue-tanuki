@@ -251,6 +251,8 @@ describe("WebChatChannel — Control Center shell", () => {
       expect(r.headers.get("content-type")).toContain("text/html");
       expect(html).toContain("BLUE-TANUKI Control Center");
       expect(html).toContain("Approval Policy");
+      expect(html).toContain("Verify Chain");
+      expect(html).toContain("Authority Trace");
     } finally {
       await ctx.teardown();
     }

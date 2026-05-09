@@ -120,7 +120,9 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #0a0f16; borde
     </div>
     <h2>Authority Audit</h2>
     <div class="card stack">
-      <button id="load-audit">Load Audit</button>
+      <div class="row"><button id="load-audit">Load Audit</button><button id="verify-audit">Verify Chain</button></div>
+      <div class="metric"><span>Chain valid</span><span id="audit-chain-valid">not loaded</span></div>
+      <div class="metric"><span>Entries</span><span id="audit-entry-count">not loaded</span></div>
       <pre id="audit-text">No audit dump loaded.</pre>
     </div>
     <h2>Authority Trace</h2>
@@ -190,6 +192,16 @@ document.querySelector('#load-audit').addEventListener('click', async () => {
   sessionStorage.setItem('blue_tanuki_webchat_token', token);
   const res = await fetch('/audit/dump?format=text', { headers: auth(token) });
   document.querySelector('#audit-text').textContent = await res.text();
+});
+document.querySelector('#verify-audit').addEventListener('click', async () => {
+  const token = runtimeToken.value.trim();
+  if (!token) return;
+  sessionStorage.setItem('blue_tanuki_webchat_token', token);
+  const res = await fetch('/audit/dump', { headers: auth(token) });
+  const body = await res.json().catch(() => ({ error: 'invalid_json' }));
+  document.querySelector('#audit-chain-valid').textContent = body && body.chain_valid === true ? 'true' : 'false';
+  document.querySelector('#audit-entry-count').textContent = body && typeof body.entry_count === 'number' ? String(body.entry_count) : 'unavailable';
+  document.querySelector('#audit-text').textContent = compactJson(body);
 });
 document.querySelector('#load-authority').addEventListener('click', async () => {
   const token = runtimeToken.value.trim();

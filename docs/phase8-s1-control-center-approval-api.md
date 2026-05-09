@@ -14,6 +14,7 @@ This step adds a WebChat-hosted approval surface:
 - Control Center pending approval loading and approve / reject / block actions
 - `GET /audit/dump`
 - Control Center Authority Audit loading
+- Control Center hash-chain validator display
 - `GET /authority/trace`
 - Control Center Authority Trace loading
 
@@ -34,4 +35,5 @@ The approval API is not a new authority path.
 `/runtime/snapshot` continues to use `WEBCHAT_TOKEN` and remains read-only.
 `/approval` uses `WEBCHAT_RESUME_TOKEN` because it can drive human approval decisions.
 `/audit/dump` uses `WEBCHAT_TOKEN` and returns the same report shape as the CLI audit dump.
+Control Center verifies the live hash-chain by reading `/audit/dump` JSON and displaying `chain_valid` plus `entry_count`.
 `/authority/trace` uses `WEBCHAT_TOKEN` and exposes a compact, read-only authority timeline for Control Center.
