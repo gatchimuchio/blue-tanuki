@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@blue-tanuki/protocol':
-        specifier: workspace:*
-        version: link:protocol
     devDependencies:
       '@types/node':
         specifier: ^22.7.0
@@ -29,42 +25,42 @@ importers:
     dependencies:
       '@blue-tanuki/channel-base':
         specifier: workspace:*
-        version: link:../../channel-base
+        version: link:../../packages/channel-base
       '@blue-tanuki/channel-discord':
         specifier: workspace:*
-        version: link:../../channel-discord
+        version: link:../../packages/channel-discord
       '@blue-tanuki/channel-slack':
         specifier: workspace:*
-        version: link:../../channel-slack
+        version: link:../../packages/channel-slack
       '@blue-tanuki/channel-telegram':
         specifier: workspace:*
-        version: link:../../channel-telegram
+        version: link:../../packages/channel-telegram
       '@blue-tanuki/channel-webchat':
         specifier: workspace:*
-        version: link:../../channel-webchat
+        version: link:../../packages/channel-webchat
       '@blue-tanuki/core':
         specifier: workspace:*
-        version: link:../../blue-tanuki
+        version: link:../../packages/blue-tanuki
       '@blue-tanuki/hds-brain':
         specifier: workspace:*
-        version: link:../..
+        version: link:../../packages/hds-brain
       '@blue-tanuki/protocol':
         specifier: workspace:*
-        version: link:../../protocol
+        version: link:../../packages/protocol
 
-  blue-tanuki:
+  packages/blue-tanuki:
     dependencies:
       '@blue-tanuki/protocol':
         specifier: workspace:*
         version: link:../protocol
 
-  channel-base:
+  packages/channel-base:
     dependencies:
       '@blue-tanuki/protocol':
         specifier: workspace:*
         version: link:../protocol
 
-  channel-discord:
+  packages/channel-discord:
     dependencies:
       '@blue-tanuki/channel-base':
         specifier: workspace:*
@@ -76,7 +72,7 @@ importers:
         specifier: ^14.16.0
         version: 14.26.3
 
-  channel-slack:
+  packages/channel-slack:
     dependencies:
       '@blue-tanuki/channel-base':
         specifier: workspace:*
@@ -88,7 +84,7 @@ importers:
         specifier: ^3.22.0
         version: 3.22.0
 
-  channel-telegram:
+  packages/channel-telegram:
     dependencies:
       '@blue-tanuki/channel-base':
         specifier: workspace:*
@@ -97,7 +93,7 @@ importers:
         specifier: workspace:*
         version: link:../protocol
 
-  channel-webchat:
+  packages/channel-webchat:
     dependencies:
       '@blue-tanuki/channel-base':
         specifier: workspace:*
@@ -113,7 +109,13 @@ importers:
         specifier: ^8.5.13
         version: 8.18.1
 
-  protocol:
+  packages/hds-brain:
+    dependencies:
+      '@blue-tanuki/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
+  packages/protocol:
     dependencies:
       zod:
         specifier: ^3.23.0

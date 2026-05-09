@@ -129,17 +129,20 @@ MIT. See [LICENSE](./LICENSE).
 
 ## Package map
 
-| Package | Role |
-|---|---|
-| `@blue-tanuki/protocol` | HDS-BRAIN ↔ Executor protocol |
-| `@blue-tanuki/hds-brain` | upstream authority core |
-| `@blue-tanuki/core` | executor, LLM backend, tools, sessions |
-| `@blue-tanuki/channel-base` | channel interfaces/router/dispatcher |
-| `@blue-tanuki/channel-webchat` | local Control Center + HTTP/WS channel |
-| `@blue-tanuki/channel-telegram` | Telegram Bot API channel |
-| `@blue-tanuki/channel-slack` | Slack channel adapter |
-| `@blue-tanuki/channel-discord` | Discord channel adapter |
-| `@blue-tanuki/gateway` | runtime wiring |
+Source packages live under `packages/`; runtime apps live under `apps/`.
+Root files are limited to workspace config, docs, install/deploy scripts, and release tooling.
+
+| Path | Package | Role |
+|---|---|---|
+| `packages/protocol` | `@blue-tanuki/protocol` | HDS-BRAIN ↔ Executor protocol |
+| `packages/hds-brain` | `@blue-tanuki/hds-brain` | upstream authority core |
+| `packages/blue-tanuki` | `@blue-tanuki/core` | executor, LLM backend, tools, sessions |
+| `packages/channel-base` | `@blue-tanuki/channel-base` | channel interfaces/router/dispatcher |
+| `packages/channel-webchat` | `@blue-tanuki/channel-webchat` | local Control Center + HTTP/WS channel |
+| `packages/channel-telegram` | `@blue-tanuki/channel-telegram` | Telegram Bot API channel |
+| `packages/channel-slack` | `@blue-tanuki/channel-slack` | Slack channel adapter |
+| `packages/channel-discord` | `@blue-tanuki/channel-discord` | Discord channel adapter |
+| `apps/gateway` | `@blue-tanuki/gateway` | runtime wiring |
 
 ## Release boundary
 

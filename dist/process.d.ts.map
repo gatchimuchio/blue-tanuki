@@ -1,1 +1,0 @@
-{"version":3,"file":"process.d.ts","sourceRoot":"","sources":["../src/process.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,uBAAuB,CAAC;AAC5D,OAAO,KAAK,EAEV,QAAQ,EACR,oBAAoB,EAIrB,MAAM,YAAY,CAAC;AAoCpB,wBAAgB,YAAY,CAAC,GAAG,EAAE,cAAc,GAAG,QAAQ,CAkB1D;AAED,wBAAgB,cAAc,CAAC,GAAG,EAAE,cAAc,EAAE,KAAK,EAAE,QAAQ,GAAG,oBAAoB,CAsCzF"}

@@ -1,28 +1,28 @@
 {
-  "name": "@blue-tanuki/hds-brain",
+  "name": "blue-tanuki-workspace",
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
-  "description": "HDS-BRAIN: upstream control core. F→M→C judgment, state machine, audit. No LLM calls.",
+  "description": "BLUE-TANUKI workspace root. HDS-BRAIN owns authority; packages and apps live under packages/ and apps/.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --passWithNoTests"
-  },
-  "dependencies": {
-    "@blue-tanuki/protocol": "workspace:*"
+    "build": "node scripts/pnpm_exec.mjs -r build",
+    "typecheck": "node scripts/pnpm_exec.mjs -r typecheck",
+    "test": "node node_modules/vitest/vitest.mjs run --passWithNoTests",
+    "gateway": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway start",
+    "gateway:dev": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway dev",
+    "gateway:serve": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway serve",
+    "gateway:serve:dev": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway serve:dev",
+    "doctor": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway doctor",
+    "doctor:dev": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway doctor:dev",
+    "setup": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway setup",
+    "setup:dist": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway setup:dist",
+    "smoke:serve": "node node_modules/tsx/dist/cli.mjs scripts/smoke_serve.ts",
+    "smoke:resume": "node node_modules/tsx/dist/cli.mjs scripts/smoke_resume.ts",
+    "smoke:live": "node node_modules/tsx/dist/cli.mjs apps/gateway/src/smoke_live.ts",
+    "validate:packaging": "node node_modules/tsx/dist/cli.mjs scripts/validate_packaging.ts",
+    "release:bundle": "node node_modules/tsx/dist/cli.mjs scripts/create_release_bundle.ts",
+    "release:verify": "node node_modules/tsx/dist/cli.mjs scripts/verify_release_bundle.ts"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",
