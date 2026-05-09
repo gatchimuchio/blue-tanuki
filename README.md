@@ -110,6 +110,20 @@ Expected invariants:
 }
 ```
 
+## Approval queue
+
+```bash
+curl -H "Authorization: Bearer $WEBCHAT_RESUME_TOKEN" \
+  http://127.0.0.1:8787/approval
+
+curl -X POST -H "Authorization: Bearer $WEBCHAT_RESUME_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"verdict":"approve","approval_token":"<one-time-token>"}' \
+  http://127.0.0.1:8787/approval/<command_id>
+```
+
+`/approval` is a Control Center surface over the existing human resume gate. It does not create a second authority path: approval still uses the separated resume token, request-bound one-time approval token, Approval Gate audit, and HDS-BRAIN lifecycle trace.
+
 ## Documents
 
 - [docs/ROADMAP.md](./docs/ROADMAP.md) — internal roadmap v6 and Sacred Constraints

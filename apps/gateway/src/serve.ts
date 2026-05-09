@@ -25,6 +25,7 @@ import type {
 } from "@blue-tanuki/protocol";
 import type {
   WebChatChannel,
+  WebChatApprovalQueueItem,
   WebChatResumeContext,
 } from "@blue-tanuki/channel-webchat";
 import { renderCommandOutput } from "./result_render.js";
@@ -53,6 +54,15 @@ const discordLog = createLogger({ scope: "discord" });
 const telegramLog = createLogger({ scope: "telegram" });
 const cronLog = createLogger({ scope: "cron" });
 
+interface PendingApproval {
+  command: ExecuteCommand;
+  log: DecisionLog;
+  origin: InboundRequest;
+  evaluation: ApprovalEvaluation;
+  approval_token?: string;
+  approval_token_expires_at_ms?: number;
+}
+
 /** Resolve the address to send replies back to. */
 function replyTarget(req: InboundRequest): string {
   const m = req.metadata?.["reply_to"];
@@ -79,7 +89,7 @@ export async function serve(): Promise<ServeShutdown> {
     llm_route: buildLLMCommandRouteFromEnv(),
   });
   const approval = buildApprovalRuntime(process.env);
-  const pendingApprovals = new Map<string, { command: ExecuteCommand; log: DecisionLog; origin: InboundRequest; evaluation: ApprovalEvaluation }>();
+  const pendingApprovals = new Map<string, PendingApproval>();
   const router = new InboundRouter();
   const dispatcher = new OutboundDispatcher();
 
@@ -128,9 +138,16 @@ export async function serve(): Promise<ServeShutdown> {
       const evaluation = approval.evaluate(cmd, opts.actor ?? origin.user);
       hds.onApprovalEvaluation(evaluation, { request_id: log.request_id });
       if (evaluation.decision === "ask") {
-        pendingApprovals.set(cmd.id, { command: cmd, log, origin, evaluation });
         hds.onCommandLifecycle(cmd.id, "approval_pending", { actor: opts.actor ?? origin.user, reason: evaluation.reason });
         const issued = await webchat.issueResumeApprovalToken(cmd.id);
+        pendingApprovals.set(cmd.id, {
+          command: cmd,
+          log,
+          origin,
+          evaluation,
+          approval_token: issued?.token,
+          approval_token_expires_at_ms: issued?.expires_at_ms,
+        });
         await dispatcher.dispatch(
           { channel: origin.channel, target: replyTarget(origin), content: approvalRequiredMessage(evaluation, cmd.id, issued?.token) },
           { command_id: `approval-${cmd.id}`, upstream_commit_hash: log.commit.hash },
@@ -195,15 +212,11 @@ export async function serve(): Promise<ServeShutdown> {
       runtime: {
         getSnapshot: async () => ({
           hds: hds.getRuntimeSnapshot(),
-          pending_approvals: Array.from(pendingApprovals.values()).map((p) => ({
-            command_id: p.command.id,
-            request_id: p.log.request_id,
-            operation: p.evaluation.context.operation,
-            risk: p.evaluation.risk,
-            final_review_required: p.evaluation.final_review_required,
-            reason: p.evaluation.reason,
-          })),
+          pending_approvals: pendingApprovalSnapshot(),
         }),
+      },
+      approval: {
+        list: async () => pendingApprovalSnapshot(),
       },
       onResume: async (
         request_id: string,
@@ -221,6 +234,20 @@ export async function serve(): Promise<ServeShutdown> {
       },
     }],
   });
+
+  function pendingApprovalSnapshot(): WebChatApprovalQueueItem[] {
+    return Array.from(pendingApprovals.values()).map((p) => ({
+      command_id: p.command.id,
+      request_id: p.log.request_id,
+      operation: p.evaluation.context.operation,
+      risk: p.evaluation.risk,
+      final_review_required: p.evaluation.final_review_required,
+      reason: p.evaluation.reason,
+      approval_token: p.approval_token,
+      approval_token_expires_at_ms: p.approval_token_expires_at_ms,
+      authority_trace: p.evaluation.authority_trace,
+    }));
+  }
 
   const telegramPermissions = [
     "network:api.telegram.org",

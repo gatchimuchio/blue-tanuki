@@ -85,6 +85,23 @@ export interface WebChatRuntimeSurface {
   getSnapshot: () => Promise<unknown>;
 }
 
+export interface WebChatApprovalQueueItem {
+  command_id: string;
+  request_id: string;
+  operation: string;
+  risk: string;
+  final_review_required: boolean;
+  reason: string;
+  approval_token?: string;
+  approval_token_expires_at_ms?: number;
+  authority_trace?: unknown;
+}
+
+export interface WebChatApprovalSurface {
+  /** Return pending human approval work for the local console. */
+  list: () => Promise<readonly WebChatApprovalQueueItem[]>;
+}
+
 export interface WebChatOptions {
   /** HTTP/WS port. Required. */
   port: number;
@@ -138,6 +155,8 @@ export interface WebChatOptions {
   settings?: WebChatSettingsSurface;
   /** Optional local runtime/status API surface. Uses the normal inbound bearer token. */
   runtime?: WebChatRuntimeSurface;
+  /** Optional local approval queue API surface. Uses the resume bearer token. */
+  approval?: WebChatApprovalSurface;
   /**
    * Per-endpoint rate limit configuration. Pass `false` to disable
    * rate limiting entirely. Default: enabled with the per-endpoint
@@ -180,6 +199,8 @@ const RESUME_GLOBAL_KEY = "*";
  *   POST /ws-ticket  body:{user}  auth:Bearer  rate-limited per-user
  *   POST /inbound    body:{user, content}  auth:Bearer  rate-limited per-user
  *   POST /resume     body:{request_id, verdict, approval_token}  auth:Bearer  rate-limited (global)
+ *   GET  /approval   auth:Bearer resume-token
+ *   POST /approval/:id body:{verdict, approval_token} auth:Bearer resume-token
  *   GET  /ws         query:?ticket=...
  *   GET  /healthz    no auth, not rate-limited
  *
@@ -533,6 +554,11 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       return;
     }
 
+    if (url.pathname === "/approval" || url.pathname.startsWith("/approval/")) {
+      await this.handleApproval(req, res, url);
+      return;
+    }
+
     if (req.method !== "POST") {
       res.writeHead(404, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: "not_found" }));
@@ -637,24 +663,8 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       if (!this.rateLimitOr429(this.buckets.resume, RESUME_GLOBAL_KEY, res))
         return;
       if (this.resumeApprovalTokenStore) {
-        const approval_token =
-          typeof body?.approval_token === "string"
-            ? body.approval_token.trim()
-            : "";
-        if (!approval_token) {
-          res.writeHead(400, { "content-type": "application/json" });
-          res.end(JSON.stringify({ error: "approval_token required" }));
+        if (!(await this.consumeResumeApprovalToken(request_id, body, res)))
           return;
-        }
-        const ok = await this.resumeApprovalTokenStore.consume(
-          request_id,
-          approval_token,
-        );
-        if (!ok) {
-          res.writeHead(403, { "content-type": "application/json" });
-          res.end(JSON.stringify({ error: "invalid_approval_token" }));
-          return;
-        }
       }
       try {
         const result = await this.opts.onResume(request_id, verdict, {
@@ -692,6 +702,111 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     return Boolean(m && this.opts.settings && m[1] === this.opts.settings.token);
   }
 
+  private async handleApproval(
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+  ): Promise<void> {
+    if (!this.checkAuth(req, "resume")) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+
+    if (url.pathname === "/approval") {
+      if (req.method !== "GET") {
+        res.writeHead(405, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "method_not_allowed" }));
+        return;
+      }
+      if (!this.opts.approval) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "approval_not_configured" }));
+        return;
+      }
+      const pending_approvals = await this.opts.approval.list();
+      res.writeHead(200, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      });
+      res.end(JSON.stringify({ pending_approvals }));
+      return;
+    }
+
+    const prefix = "/approval/";
+    if (!url.pathname.startsWith(prefix) || req.method !== "POST") {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    if (!this.opts.onResume) {
+      res.writeHead(501, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "approval_not_configured" }));
+      return;
+    }
+    const approval_id = decodeURIComponent(url.pathname.slice(prefix.length));
+    if (!approval_id) {
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "approval id required" }));
+      return;
+    }
+
+    const body = await readJson(req);
+    const verdict = body?.verdict;
+    if (verdict !== "approve" && verdict !== "reject" && verdict !== "block") {
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "verdict (approve|reject|block) required" }));
+      return;
+    }
+    if (!this.rateLimitOr429(this.buckets.resume, RESUME_GLOBAL_KEY, res))
+      return;
+    if (!(await this.consumeResumeApprovalToken(approval_id, body, res))) return;
+
+    const actor =
+      typeof body?.actor === "string" && body.actor.trim().length > 0
+        ? body.actor.trim()
+        : "webchat-human";
+    try {
+      const result = await this.opts.onResume(approval_id, verdict, {
+        actor,
+        token_kind: "resume",
+        approval: readResumeApprovalOptions(body),
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: true, result }));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: msg }));
+    }
+  }
+
+  private async consumeResumeApprovalToken(
+    request_id: string,
+    body: Record<string, unknown> | null,
+    res: ServerResponse,
+  ): Promise<boolean> {
+    if (!this.resumeApprovalTokenStore) return true;
+    const approval_token =
+      typeof body?.approval_token === "string"
+        ? body.approval_token.trim()
+        : "";
+    if (!approval_token) {
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "approval_token required" }));
+      return false;
+    }
+    const ok = await this.resumeApprovalTokenStore.consume(
+      request_id,
+      approval_token,
+    );
+    if (!ok) {
+      res.writeHead(403, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "invalid_approval_token" }));
+      return false;
+    }
+    return true;
+  }
 
   private async handleRuntimeSnapshot(
     req: IncomingMessage,

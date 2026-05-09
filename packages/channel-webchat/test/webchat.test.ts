@@ -7,6 +7,7 @@ import {
   MemoryTicketStore,
   type TicketStore,
   type WebChatRateLimits,
+  type WebChatApprovalSurface,
   type WebChatSettingsSurface,
 } from "../src/index.js";
 
@@ -36,6 +37,7 @@ function setup(
       ticket_store?: TicketStore;
       rate_limits?: WebChatRateLimits | false;
       settings?: WebChatSettingsSurface;
+      approval?: WebChatApprovalSurface;
     }
   > = {},
 ): Ctx & { teardown: () => Promise<void> } {
@@ -52,6 +54,7 @@ function setup(
     ws_ticket_ttl_ms: opts.ws_ticket_ttl_ms,
     ticket_store: opts.ticket_store,
     settings: opts.settings,
+    approval: opts.approval,
     // Default: disable rate limiting in legacy tests so existing flows
     // keep working without thinking about bursts. Rate-limit behavior is
     // covered by its own describe() block below.
@@ -427,6 +430,102 @@ describe("WebChatChannel — settings surface", () => {
     });
     expect(updates).toEqual([{ llm: { provider: "stub" } }]);
     await ctx.teardown();
+  });
+});
+
+describe("WebChatChannel — approval API", () => {
+  it("lists pending approvals only with the resume token", async () => {
+    const ctx = setup({
+      approval: {
+        list: async () => [
+          {
+            command_id: "cmd-1",
+            request_id: "req-1",
+            operation: "tool.shell.exec",
+            risk: "critical",
+            final_review_required: true,
+            reason: "final_review_required",
+            approval_token: "one-time-token",
+            approval_token_expires_at_ms: 12345,
+            authority_trace: { black_box_boundary: "none_in_hds_authority_path" },
+          },
+        ],
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      expect((await getRaw(ctx.port, "/approval")).status).toBe(401);
+      expect(
+        (await getRaw(ctx.port, "/approval", {
+          authorization: `Bearer ${TOKEN}`,
+        })).status,
+      ).toBe(401);
+
+      const ok = await getRaw(ctx.port, "/approval", {
+        authorization: `Bearer ${RESUME_TOKEN}`,
+      });
+      expect(ok.status).toBe(200);
+      const body = JSON.parse(ok.text);
+      expect(body.pending_approvals).toHaveLength(1);
+      expect(body.pending_approvals[0]).toMatchObject({
+        command_id: "cmd-1",
+        request_id: "req-1",
+        operation: "tool.shell.exec",
+        risk: "critical",
+      });
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("routes POST /approval/:id through the same one-time resume approval gate", async () => {
+    const calls: unknown[] = [];
+    const ctx = setup({
+      onResume: async (id, verdict, resumeCtx) => {
+        calls.push({ id, verdict, resumeCtx });
+        return { handled: true };
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      const issued = await ctx.ch.issueResumeApprovalToken("cmd-approve");
+      const r = await postJson(
+        ctx.port,
+        "/approval/cmd-approve",
+        {
+          verdict: "approve",
+          approval_token: issued?.token,
+          actor: "alice",
+        },
+        { authorization: `Bearer ${RESUME_TOKEN}` },
+      );
+      expect(r.status).toBe(200);
+      expect(r.body).toEqual({ ok: true, result: { handled: true } });
+      expect(calls).toEqual([
+        {
+          id: "cmd-approve",
+          verdict: "approve",
+          resumeCtx: {
+            actor: "alice",
+            token_kind: "resume",
+            approval: undefined,
+          },
+        },
+      ]);
+
+      const replay = await postJson(
+        ctx.port,
+        "/approval/cmd-approve",
+        {
+          verdict: "approve",
+          approval_token: issued?.token,
+        },
+        { authorization: `Bearer ${RESUME_TOKEN}` },
+      );
+      expect(replay.status).toBe(403);
+    } finally {
+      await ctx.teardown();
+    }
   });
 });
 

@@ -54,6 +54,10 @@ aside { border-left: 1px solid var(--line); background: var(--panel-2); padding:
 .policy-row small { display: block; color: var(--muted); margin-top: 2px; line-height: 1.35; }
 .risk { color: var(--warn); }
 .stop { width: 100%; margin-top: 8px; border-color: #8b3030; background: #381818; color: #ffdede; font-weight: 700; }
+.stack { display: grid; gap: 8px; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.queue-item { border: 1px solid var(--line); border-radius: 12px; background: #0d141d; padding: 10px; margin-top: 8px; }
+.queue-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #0a0f16; border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-size: 12px; color: var(--muted); }
 @media (max-width: 980px) { .shell { grid-template-columns: 1fr; } nav, aside { border: 0; border-bottom: 1px solid var(--line); } }
 </style>
@@ -103,12 +107,16 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #0a0f16; borde
       <label class="policy-row"><input type="radio" name="policy" checked><span>Full access<small><span class="risk">Default.</span> Local operations proceed unless final review is required: delete / shell / external send / credentials / settings / payment / schedules.</small></span></label>
     </div>
     <h2>Runtime Snapshot</h2>
-    <div class="card">
-      <div class="metric"><span>Endpoint</span><span>/runtime/snapshot</span></div>
-      <div class="metric"><span>Auth</span><span>WEBCHAT_TOKEN</span></div>
-      <div class="metric"><span>Shows</span><span>HDS / pending / memory</span></div>
-      <div class="metric"><span>Invariant</span><span>process policy enforced</span></div>
-      <div class="metric"><span>Metadata</span><span>no external escalation</span></div>
+    <div class="card stack">
+      <div class="row"><input id="runtime-token" type="password" placeholder="WEBCHAT_TOKEN"><button id="load-runtime">Load</button></div>
+      <div class="metric"><span>Invariant</span><span id="runtime-invariant">not loaded</span></div>
+      <div class="metric"><span>Audit chain</span><span id="runtime-audit">not loaded</span></div>
+      <pre id="runtime-json">No runtime snapshot loaded.</pre>
+    </div>
+    <h2>Approval Queue</h2>
+    <div class="card stack">
+      <div class="row"><input id="approval-token" type="password" placeholder="WEBCHAT_RESUME_TOKEN"><button id="load-approvals">Load</button></div>
+      <div id="approval-list"><div class="metric"><span>Pending</span><span>not loaded</span></div></div>
     </div>
     <h2>Scope</h2>
     <div class="card">
@@ -136,16 +144,79 @@ External metadata cannot upgrade actor/process authority.</pre>
 <script>
 const log = document.querySelector('#log');
 const input = document.querySelector('#input');
+const runtimeToken = document.querySelector('#runtime-token');
+const approvalToken = document.querySelector('#approval-token');
+runtimeToken.value = sessionStorage.getItem('blue_tanuki_webchat_token') || '';
+approvalToken.value = sessionStorage.getItem('blue_tanuki_resume_token') || '';
+function auth(token) { return { authorization: 'Bearer ' + token }; }
+function compactJson(value) { return JSON.stringify(value, null, 2); }
+function escapeHtml(text) { return String(text).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 document.querySelector('#send').addEventListener('click', () => {
   const text = input.value.trim();
   if (!text) return;
   const div = document.createElement('div');
   div.className = 'msg';
-  div.innerHTML = '<div class="meta">local draft</div>' + text.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  div.innerHTML = '<div class="meta">local draft</div>' + escapeHtml(text);
   log.appendChild(div);
   input.value = '';
   log.scrollTop = log.scrollHeight;
 });
+document.querySelector('#load-runtime').addEventListener('click', async () => {
+  const token = runtimeToken.value.trim();
+  if (!token) return;
+  sessionStorage.setItem('blue_tanuki_webchat_token', token);
+  const res = await fetch('/runtime/snapshot', { headers: auth(token) });
+  const body = await res.json().catch(() => ({ error: 'invalid_json' }));
+  document.querySelector('#runtime-json').textContent = compactJson(body);
+  const inv = body && body.hds && body.hds.invariants;
+  document.querySelector('#runtime-invariant').textContent = inv && inv.process_policy_enforced ? 'process policy enforced' : 'unavailable';
+  const audit = body && body.hds && body.hds.audit;
+  document.querySelector('#runtime-audit').textContent = audit ? String(audit.chain_valid) : 'unavailable';
+});
+document.querySelector('#load-approvals').addEventListener('click', loadApprovals);
+async function loadApprovals() {
+  const token = approvalToken.value.trim();
+  if (!token) return;
+  sessionStorage.setItem('blue_tanuki_resume_token', token);
+  const res = await fetch('/approval', { headers: auth(token) });
+  const body = await res.json().catch(() => ({ error: 'invalid_json' }));
+  const list = document.querySelector('#approval-list');
+  if (!res.ok) {
+    list.innerHTML = '<pre>' + escapeHtml(compactJson(body)) + '</pre>';
+    return;
+  }
+  const pending = Array.isArray(body.pending_approvals) ? body.pending_approvals : [];
+  if (pending.length === 0) {
+    list.innerHTML = '<div class="metric"><span>Pending</span><span>0</span></div>';
+    return;
+  }
+  list.innerHTML = pending.map(item => '<div class="queue-item" data-id="' + escapeHtml(item.command_id) + '" data-token="' + escapeHtml(item.approval_token || '') + '">'
+    + '<div class="metric"><span>Command</span><b>' + escapeHtml(item.command_id) + '</b></div>'
+    + '<div class="metric"><span>Operation</span><span>' + escapeHtml(item.operation) + '</span></div>'
+    + '<div class="metric"><span>Risk</span><span>' + escapeHtml(item.risk) + '</span></div>'
+    + '<div class="metric"><span>Reason</span><span>' + escapeHtml(item.reason) + '</span></div>'
+    + '<div class="queue-actions"><button data-verdict="approve">Approve</button><button data-verdict="reject">Reject</button><button class="danger" data-verdict="block">Block</button></div>'
+    + '</div>').join('');
+  list.querySelectorAll('button[data-verdict]').forEach(button => {
+    button.addEventListener('click', () => submitApproval(button.closest('.queue-item'), button.dataset.verdict));
+  });
+}
+async function submitApproval(node, verdict) {
+  const token = approvalToken.value.trim();
+  const commandId = node.dataset.id;
+  const approvalOneTimeToken = node.dataset.token;
+  const res = await fetch('/approval/' + encodeURIComponent(commandId), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...auth(token) },
+    body: JSON.stringify({ verdict, approval_token: approvalOneTimeToken })
+  });
+  const body = await res.json().catch(() => ({ error: 'invalid_json' }));
+  const div = document.createElement('div');
+  div.className = 'msg';
+  div.innerHTML = '<div class="meta">approval ' + escapeHtml(verdict) + '</div><pre>' + escapeHtml(compactJson(body)) + '</pre>';
+  log.appendChild(div);
+  await loadApprovals();
+}
 </script>
 </body>
 </html>`;
