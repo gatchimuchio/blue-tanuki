@@ -253,6 +253,7 @@ describe("WebChatChannel — Control Center shell", () => {
       expect(html).toContain("Approval Policy");
       expect(html).toContain("Verify Chain");
       expect(html).toContain("Authority Trace");
+      expect(html).toContain("Scheduled Tasks");
     } finally {
       await ctx.teardown();
     }

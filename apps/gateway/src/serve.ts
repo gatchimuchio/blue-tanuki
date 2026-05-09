@@ -124,6 +124,13 @@ export async function serve(): Promise<ServeShutdown> {
   if (resumeToken === token) {
     throw new Error("WEBCHAT_RESUME_TOKEN must differ from WEBCHAT_TOKEN");
   }
+  const cronConfig = dailyBriefCronFromEnv(process.env);
+  const cron = cronConfig
+    ? new DailyBriefCronChannel({
+        ...cronConfig,
+        log: (line: string) => cronLog.info(line),
+      })
+    : null;
 
   // Forward declarations: resume/approval closures resolve at call time.
   // eslint-disable-next-line prefer-const
@@ -219,6 +226,7 @@ export async function serve(): Promise<ServeShutdown> {
         getSnapshot: async () => ({
           hds: hds.getRuntimeSnapshot(),
           pending_approvals: pendingApprovalSnapshot(),
+          scheduled_tasks: cron ? [cron.snapshot()] : [],
         }),
       },
       approval: {
@@ -349,14 +357,6 @@ export async function serve(): Promise<ServeShutdown> {
       log: (line: string) => telegramLog.info(line),
     }],
   });
-
-  const cronConfig = dailyBriefCronFromEnv(process.env);
-  const cron = cronConfig
-    ? new DailyBriefCronChannel({
-        ...cronConfig,
-        log: (line: string) => cronLog.info(line),
-      })
-    : null;
 
   const slackPermissions = [
     "network:slack.com",

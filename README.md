@@ -13,6 +13,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - WebChat Control Center at `/` and `/app`
 - Runtime snapshot at `/runtime/snapshot`
 - Authority trace at `/authority/trace`
+- Scheduled task snapshot in Control Center
 - HDS Process / Memory / Authority closure
 - deterministic `MemoryTrace` with `used_for_authority=false`
 - Approval Gate with final-review boundary
@@ -91,6 +92,7 @@ pnpm gateway:serve
 ```
 
 v0.1 Daily Brief is a scheduled `channel_send` smoke. Real Gmail/GCal/Drive-backed brief is v0.2+.
+When enabled, the Control Center runtime snapshot shows the configured Daily Brief schedule and next fire time without exposing the brief content.
 
 ## Runtime snapshot
 

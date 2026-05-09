@@ -113,6 +113,11 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #0a0f16; borde
       <div class="metric"><span>Audit chain</span><span id="runtime-audit">not loaded</span></div>
       <pre id="runtime-json">No runtime snapshot loaded.</pre>
     </div>
+    <h2>Scheduled Tasks</h2>
+    <div class="card stack">
+      <div class="metric"><span>Configured</span><span id="schedule-count">not loaded</span></div>
+      <pre id="schedule-json">No scheduled task snapshot loaded.</pre>
+    </div>
     <h2>Approval Queue</h2>
     <div class="card stack">
       <div class="row"><input id="approval-token" type="password" placeholder="WEBCHAT_RESUME_TOKEN"><button id="load-approvals">Load</button></div>
@@ -184,6 +189,9 @@ document.querySelector('#load-runtime').addEventListener('click', async () => {
   document.querySelector('#runtime-invariant').textContent = inv && inv.process_policy_enforced ? 'process policy enforced' : 'unavailable';
   const audit = body && body.hds && body.hds.audit;
   document.querySelector('#runtime-audit').textContent = audit ? String(audit.chain_valid) : 'unavailable';
+  const scheduled = Array.isArray(body.scheduled_tasks) ? body.scheduled_tasks : [];
+  document.querySelector('#schedule-count').textContent = String(scheduled.length);
+  document.querySelector('#schedule-json').textContent = compactJson(scheduled);
 });
 document.querySelector('#load-approvals').addEventListener('click', loadApprovals);
 document.querySelector('#load-audit').addEventListener('click', async () => {

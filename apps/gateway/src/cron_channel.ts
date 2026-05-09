@@ -15,6 +15,18 @@ export interface DailyBriefCronOptions {
   now?: () => Date;
 }
 
+export interface DailyBriefCronSnapshot {
+  name: "daily_brief";
+  enabled: boolean;
+  running: boolean;
+  channel: string;
+  target: string;
+  time: string;
+  interval_ms?: number;
+  next_fire_at_ms: number | null;
+  last_fire_at_ms: number | null;
+}
+
 /**
  * Minimal v0.1 cron source.
  *
@@ -26,6 +38,8 @@ export class DailyBriefCronChannel implements InboundChannel {
   readonly name = "cron";
   private timer: NodeJS.Timeout | null = null;
   private started = false;
+  private nextFireAtMs: number | null = null;
+  private lastFireAtMs: number | null = null;
 
   constructor(private readonly opts: DailyBriefCronOptions) {}
 
@@ -37,7 +51,11 @@ export class DailyBriefCronChannel implements InboundChannel {
       return;
     }
     if (this.opts.interval_ms && this.opts.interval_ms > 0) {
-      this.timer = setInterval(() => void this.fire(handler), this.opts.interval_ms);
+      this.nextFireAtMs = this.nowMs() + this.opts.interval_ms;
+      this.timer = setInterval(() => {
+        this.nextFireAtMs = this.nowMs() + this.opts.interval_ms!;
+        void this.fire(handler);
+      }, this.opts.interval_ms);
       this.timer.unref?.();
       this.log(`[cron] daily brief interval enabled interval_ms=${this.opts.interval_ms}`);
       return;
@@ -48,11 +66,28 @@ export class DailyBriefCronChannel implements InboundChannel {
   async stop(): Promise<void> {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+    this.nextFireAtMs = null;
     this.started = false;
   }
 
+  snapshot(): DailyBriefCronSnapshot {
+    return {
+      name: "daily_brief",
+      enabled: this.opts.enabled === true,
+      running: this.started && this.opts.enabled === true,
+      channel: this.opts.channel,
+      target: this.opts.target,
+      time: this.opts.time ?? "07:00",
+      interval_ms: this.opts.interval_ms,
+      next_fire_at_ms: this.nextFireAtMs,
+      last_fire_at_ms: this.lastFireAtMs,
+    };
+  }
+
   private scheduleNext(handler: InboundHandler): void {
-    const delay = delayUntilLocalTime(this.opts.time ?? "07:00", this.opts.now?.() ?? new Date());
+    const now = this.opts.now?.() ?? new Date();
+    const delay = delayUntilLocalTime(this.opts.time ?? "07:00", now);
+    this.nextFireAtMs = now.getTime() + delay;
     this.timer = setTimeout(() => {
       void this.fire(handler).finally(() => {
         if (this.started) this.scheduleNext(handler);
@@ -63,6 +98,7 @@ export class DailyBriefCronChannel implements InboundChannel {
   }
 
   private async fire(handler: InboundHandler): Promise<void> {
+    this.lastFireAtMs = this.nowMs();
     const inbound: InboundRequest = {
       id: randomUUID(),
       channel: "cron",
@@ -85,6 +121,10 @@ export class DailyBriefCronChannel implements InboundChannel {
 
   private log(line: string): void {
     (this.opts.log ?? console.log)(line);
+  }
+
+  private nowMs(): number {
+    return this.opts.now?.().getTime() ?? Date.now();
   }
 }
 
