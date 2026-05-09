@@ -50,6 +50,46 @@ export interface AuditDumpOptions {
   env?: NodeJS.ProcessEnv;
 }
 
+export interface LiveAuditDumpOptions {
+  /** Optional source label/path. HTTP live dumps normally use null. */
+  filepath?: string | null;
+  timestamp?: string;
+}
+
+/** Build the same report shape from the live in-memory/file-backed AuditLog. */
+export function auditDumpReportFromLog(
+  log: AuditLog,
+  opts: LiveAuditDumpOptions = {},
+): AuditDumpReport {
+  const entries = [...log.list()];
+  const chain_valid = log.verify();
+  const timestamp = opts.timestamp ?? new Date().toISOString();
+  if (entries.length === 0) {
+    return {
+      status: "empty",
+      exit_code: 0,
+      filepath: opts.filepath ?? null,
+      entry_count: 0,
+      chain_valid,
+      detail: "live audit chain is empty",
+      entries: [],
+      timestamp,
+    };
+  }
+  return {
+    status: chain_valid ? "ok" : "broken",
+    exit_code: chain_valid ? 0 : 1,
+    filepath: opts.filepath ?? null,
+    entry_count: entries.length,
+    chain_valid,
+    detail: chain_valid
+      ? `loaded ${entries.length} live entries; chain verified`
+      : `loaded ${entries.length} live entries; chain DOES NOT verify`,
+    entries,
+    timestamp,
+  };
+}
+
 /**
  * Run the audit-dump procedure. Pure: no I/O beyond reading the audit file.
  */

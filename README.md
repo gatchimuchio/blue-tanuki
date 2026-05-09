@@ -124,6 +124,18 @@ curl -X POST -H "Authorization: Bearer $WEBCHAT_RESUME_TOKEN" \
 
 `/approval` is a Control Center surface over the existing human resume gate. It does not create a second authority path: approval still uses the separated resume token, request-bound one-time approval token, Approval Gate audit, and HDS-BRAIN lifecycle trace.
 
+## Audit dump HTTP
+
+```bash
+curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
+  http://127.0.0.1:8787/audit/dump
+
+curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
+  "http://127.0.0.1:8787/audit/dump?format=text"
+```
+
+The HTTP dump is read-only and does not accept a filesystem path. It reports the live HDS audit chain with the same report shape as `--audit-dump`.
+
 ## Documents
 
 - [docs/ROADMAP.md](./docs/ROADMAP.md) — internal roadmap v6 and Sacred Constraints

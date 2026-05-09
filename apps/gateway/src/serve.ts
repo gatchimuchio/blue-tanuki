@@ -33,6 +33,11 @@ import { approvalDeniedFeedback, approvalRequiredMessage, buildApprovalRuntime }
 import { loadPluginRuntime } from "./plugin_loader.js";
 import { createWebChatSettingsSurface } from "./settings_surface.js";
 import { DailyBriefCronChannel, dailyBriefCronFromEnv } from "./cron_channel.js";
+import {
+  auditDumpReportFromLog,
+  formatAuditJsonReport,
+  formatAuditTextReport,
+} from "./audit_dump.js";
 
 /**
  * Gateway serve mode.
@@ -217,6 +222,20 @@ export async function serve(): Promise<ServeShutdown> {
       },
       approval: {
         list: async () => pendingApprovalSnapshot(),
+      },
+      audit: {
+        dump: async (format: "json" | "text") => {
+          const report = auditDumpReportFromLog(hds.getAudit());
+          return format === "text"
+            ? {
+                content_type: "text/plain; charset=utf-8",
+                body: formatAuditTextReport(report),
+              }
+            : {
+                content_type: "application/json",
+                body: formatAuditJsonReport(report),
+              };
+        },
       },
       onResume: async (
         request_id: string,

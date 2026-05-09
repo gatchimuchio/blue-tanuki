@@ -102,6 +102,14 @@ export interface WebChatApprovalSurface {
   list: () => Promise<readonly WebChatApprovalQueueItem[]>;
 }
 
+export interface WebChatAuditSurface {
+  /** Return a read-only audit dump. The channel never accepts a filesystem path. */
+  dump: (format: "json" | "text") => Promise<{
+    content_type: string;
+    body: string;
+  }>;
+}
+
 export interface WebChatOptions {
   /** HTTP/WS port. Required. */
   port: number;
@@ -157,6 +165,8 @@ export interface WebChatOptions {
   runtime?: WebChatRuntimeSurface;
   /** Optional local approval queue API surface. Uses the resume bearer token. */
   approval?: WebChatApprovalSurface;
+  /** Optional local audit dump API surface. Uses the normal inbound bearer token. */
+  audit?: WebChatAuditSurface;
   /**
    * Per-endpoint rate limit configuration. Pass `false` to disable
    * rate limiting entirely. Default: enabled with the per-endpoint
@@ -201,6 +211,7 @@ const RESUME_GLOBAL_KEY = "*";
  *   POST /resume     body:{request_id, verdict, approval_token}  auth:Bearer  rate-limited (global)
  *   GET  /approval   auth:Bearer resume-token
  *   POST /approval/:id body:{verdict, approval_token} auth:Bearer resume-token
+ *   GET  /audit/dump auth:Bearer inbound-token
  *   GET  /ws         query:?ticket=...
  *   GET  /healthz    no auth, not rate-limited
  *
@@ -559,6 +570,11 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       return;
     }
 
+    if (url.pathname === "/audit/dump") {
+      await this.handleAuditDump(req, res, url);
+      return;
+    }
+
     if (req.method !== "POST") {
       res.writeHead(404, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: "not_found" }));
@@ -624,7 +640,7 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
         // is keyed on it). reply_to mirrors that for symmetry with Slack/Discord.
         metadata: { reply_to: user },
       };
-      this.handler?.(inboundReq).catch((e) => {
+      this.handler?.(inboundReq).catch((e: unknown) => {
         // eslint-disable-next-line no-console
         console.error("[webchat] inbound handler error:", e);
       });
@@ -806,6 +822,35 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       return false;
     }
     return true;
+  }
+
+  private async handleAuditDump(
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+  ): Promise<void> {
+    if (!this.opts.audit) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "audit_not_configured" }));
+      return;
+    }
+    if (req.method !== "GET") {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    if (!this.checkAuth(req, "inbound")) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+    const format = url.searchParams.get("format") === "text" ? "text" : "json";
+    const dump = await this.opts.audit.dump(format);
+    res.writeHead(200, {
+      "content-type": dump.content_type,
+      "cache-control": "no-store",
+    });
+    res.end(dump.body);
   }
 
   private async handleRuntimeSnapshot(

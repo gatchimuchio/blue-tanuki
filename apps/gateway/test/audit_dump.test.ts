@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { AuditLog } from "@blue-tanuki/hds-brain";
 import {
   runAuditDump,
+  auditDumpReportFromLog,
   formatAuditTextReport,
   formatAuditJsonReport,
   type AuditDumpReport,
@@ -146,5 +147,19 @@ describe("audit-dump format", () => {
     expect(parsed.entry_count).toBe(1);
     expect(Array.isArray(parsed.entries)).toBe(true);
     expect(parsed.entries[0].log.request_id).toBe("r1");
+  });
+
+  it("uses the same report shape for live AuditLog dumps", () => {
+    const log = new AuditLog();
+    log.append(makeLog("live-r1"));
+    const report = auditDumpReportFromLog(log, {
+      timestamp: "2026-05-09T00:00:00.000Z",
+    });
+    expect(report.status).toBe("ok");
+    expect(report.exit_code).toBe(0);
+    expect(report.filepath).toBeNull();
+    expect(report.entry_count).toBe(1);
+    expect(report.chain_valid).toBe(true);
+    expect(report.entries[0]?.log.request_id).toBe("live-r1");
   });
 });

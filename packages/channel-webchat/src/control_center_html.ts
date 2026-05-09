@@ -118,6 +118,11 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #0a0f16; borde
       <div class="row"><input id="approval-token" type="password" placeholder="WEBCHAT_RESUME_TOKEN"><button id="load-approvals">Load</button></div>
       <div id="approval-list"><div class="metric"><span>Pending</span><span>not loaded</span></div></div>
     </div>
+    <h2>Authority Audit</h2>
+    <div class="card stack">
+      <button id="load-audit">Load Audit</button>
+      <pre id="audit-text">No audit dump loaded.</pre>
+    </div>
     <h2>Scope</h2>
     <div class="card">
       <div class="metric"><span>This file</span><span>narrow</span></div>
@@ -174,6 +179,13 @@ document.querySelector('#load-runtime').addEventListener('click', async () => {
   document.querySelector('#runtime-audit').textContent = audit ? String(audit.chain_valid) : 'unavailable';
 });
 document.querySelector('#load-approvals').addEventListener('click', loadApprovals);
+document.querySelector('#load-audit').addEventListener('click', async () => {
+  const token = runtimeToken.value.trim();
+  if (!token) return;
+  sessionStorage.setItem('blue_tanuki_webchat_token', token);
+  const res = await fetch('/audit/dump?format=text', { headers: auth(token) });
+  document.querySelector('#audit-text').textContent = await res.text();
+});
 async function loadApprovals() {
   const token = approvalToken.value.trim();
   if (!token) return;

@@ -8,6 +8,7 @@ import {
   type TicketStore,
   type WebChatRateLimits,
   type WebChatApprovalSurface,
+  type WebChatAuditSurface,
   type WebChatSettingsSurface,
 } from "../src/index.js";
 
@@ -38,6 +39,7 @@ function setup(
       rate_limits?: WebChatRateLimits | false;
       settings?: WebChatSettingsSurface;
       approval?: WebChatApprovalSurface;
+      audit?: WebChatAuditSurface;
     }
   > = {},
 ): Ctx & { teardown: () => Promise<void> } {
@@ -55,6 +57,7 @@ function setup(
     ticket_store: opts.ticket_store,
     settings: opts.settings,
     approval: opts.approval,
+    audit: opts.audit,
     // Default: disable rate limiting in legacy tests so existing flows
     // keep working without thinking about bursts. Rate-limit behavior is
     // covered by its own describe() block below.
@@ -430,6 +433,71 @@ describe("WebChatChannel — settings surface", () => {
     });
     expect(updates).toEqual([{ llm: { provider: "stub" } }]);
     await ctx.teardown();
+  });
+});
+
+describe("WebChatChannel — audit dump API", () => {
+  it("serves read-only audit dump only with the inbound token", async () => {
+    const ctx = setup({
+      audit: {
+        dump: async (format) => ({
+          content_type:
+            format === "text"
+              ? "text/plain; charset=utf-8"
+              : "application/json",
+          body:
+            format === "text"
+              ? "blue-tanuki audit-dump — OK"
+              : JSON.stringify({ status: "ok", entry_count: 1 }),
+        }),
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      expect((await getRaw(ctx.port, "/audit/dump")).status).toBe(401);
+      expect(
+        (await getRaw(ctx.port, "/audit/dump", {
+          authorization: `Bearer ${RESUME_TOKEN}`,
+        })).status,
+      ).toBe(401);
+
+      const json = await getRaw(ctx.port, "/audit/dump", {
+        authorization: `Bearer ${TOKEN}`,
+      });
+      expect(json.status).toBe(200);
+      expect(JSON.parse(json.text)).toEqual({ status: "ok", entry_count: 1 });
+
+      const text = await getRaw(ctx.port, "/audit/dump?format=text", {
+        authorization: `Bearer ${TOKEN}`,
+      });
+      expect(text.status).toBe(200);
+      expect(text.text).toContain("blue-tanuki audit-dump");
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("does not accept POST /audit/dump", async () => {
+    const ctx = setup({
+      audit: {
+        dump: async () => ({
+          content_type: "application/json",
+          body: JSON.stringify({ status: "ok" }),
+        }),
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      const r = await postJson(
+        ctx.port,
+        "/audit/dump",
+        {},
+        { authorization: `Bearer ${TOKEN}` },
+      );
+      expect(r.status).toBe(405);
+    } finally {
+      await ctx.teardown();
+    }
   });
 });
 
