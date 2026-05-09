@@ -9,6 +9,8 @@ export {
   type WebChatApprovalQueueItem,
   type WebChatApprovalSurface,
   type WebChatAuditSurface,
+  type WebChatAuthorityTraceItem,
+  type WebChatAuthoritySurface,
 } from "./webchat.js";
 export {
   MemoryResumeApprovalTokenStore,

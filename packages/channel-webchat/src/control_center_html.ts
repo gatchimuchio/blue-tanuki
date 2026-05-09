@@ -123,6 +123,11 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #0a0f16; borde
       <button id="load-audit">Load Audit</button>
       <pre id="audit-text">No audit dump loaded.</pre>
     </div>
+    <h2>Authority Trace</h2>
+    <div class="card stack">
+      <button id="load-authority">Load Trace</button>
+      <pre id="authority-json">No authority trace loaded.</pre>
+    </div>
     <h2>Scope</h2>
     <div class="card">
       <div class="metric"><span>This file</span><span>narrow</span></div>
@@ -185,6 +190,14 @@ document.querySelector('#load-audit').addEventListener('click', async () => {
   sessionStorage.setItem('blue_tanuki_webchat_token', token);
   const res = await fetch('/audit/dump?format=text', { headers: auth(token) });
   document.querySelector('#audit-text').textContent = await res.text();
+});
+document.querySelector('#load-authority').addEventListener('click', async () => {
+  const token = runtimeToken.value.trim();
+  if (!token) return;
+  sessionStorage.setItem('blue_tanuki_webchat_token', token);
+  const res = await fetch('/authority/trace', { headers: auth(token) });
+  const body = await res.json().catch(() => ({ error: 'invalid_json' }));
+  document.querySelector('#authority-json').textContent = compactJson(body);
 });
 async function loadApprovals() {
   const token = approvalToken.value.trim();

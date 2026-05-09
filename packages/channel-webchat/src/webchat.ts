@@ -110,6 +110,27 @@ export interface WebChatAuditSurface {
   }>;
 }
 
+export interface WebChatAuthorityTraceItem {
+  index: number;
+  entry_hash: string;
+  kind: "approval_gate" | "authority_event" | "command_lifecycle";
+  event: string;
+  request_id: string | null;
+  command_id?: string;
+  actor?: string;
+  operation?: string;
+  risk?: string;
+  reason?: string;
+  decision?: string;
+  authority_trace?: unknown;
+  timestamp: number;
+}
+
+export interface WebChatAuthoritySurface {
+  /** Return a read-only authority trace projected from the live audit chain. */
+  trace: () => Promise<readonly WebChatAuthorityTraceItem[]>;
+}
+
 export interface WebChatOptions {
   /** HTTP/WS port. Required. */
   port: number;
@@ -167,6 +188,8 @@ export interface WebChatOptions {
   approval?: WebChatApprovalSurface;
   /** Optional local audit dump API surface. Uses the normal inbound bearer token. */
   audit?: WebChatAuditSurface;
+  /** Optional local authority trace API surface. Uses the normal inbound bearer token. */
+  authority?: WebChatAuthoritySurface;
   /**
    * Per-endpoint rate limit configuration. Pass `false` to disable
    * rate limiting entirely. Default: enabled with the per-endpoint
@@ -212,6 +235,7 @@ const RESUME_GLOBAL_KEY = "*";
  *   GET  /approval   auth:Bearer resume-token
  *   POST /approval/:id body:{verdict, approval_token} auth:Bearer resume-token
  *   GET  /audit/dump auth:Bearer inbound-token
+ *   GET  /authority/trace auth:Bearer inbound-token
  *   GET  /ws         query:?ticket=...
  *   GET  /healthz    no auth, not rate-limited
  *
@@ -575,6 +599,11 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       return;
     }
 
+    if (url.pathname === "/authority/trace") {
+      await this.handleAuthorityTrace(req, res);
+      return;
+    }
+
     if (req.method !== "POST") {
       res.writeHead(404, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: "not_found" }));
@@ -851,6 +880,33 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       "cache-control": "no-store",
     });
     res.end(dump.body);
+  }
+
+  private async handleAuthorityTrace(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    if (!this.opts.authority) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "authority_trace_not_configured" }));
+      return;
+    }
+    if (req.method !== "GET") {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    if (!this.checkAuth(req, "inbound")) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+    const authority_trace = await this.opts.authority.trace();
+    res.writeHead(200, {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    });
+    res.end(JSON.stringify({ authority_trace }));
   }
 
   private async handleRuntimeSnapshot(

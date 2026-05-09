@@ -12,6 +12,7 @@ BLUE-TANUKI is a local resident AI control plane.
 
 - WebChat Control Center at `/` and `/app`
 - Runtime snapshot at `/runtime/snapshot`
+- Authority trace at `/authority/trace`
 - HDS Process / Memory / Authority closure
 - deterministic `MemoryTrace` with `used_for_authority=false`
 - Approval Gate with final-review boundary
@@ -135,6 +136,15 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 ```
 
 The HTTP dump is read-only and does not accept a filesystem path. It reports the live HDS audit chain with the same report shape as `--audit-dump`.
+
+## Authority trace HTTP
+
+```bash
+curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
+  http://127.0.0.1:8787/authority/trace
+```
+
+`/authority/trace` is read-only. It projects Approval Gate, authority event, and command lifecycle entries from the live hash-chain audit so Control Center can inspect authority decisions without creating a second authority path.
 
 ## Documents
 

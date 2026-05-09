@@ -14,6 +14,8 @@ This step adds a WebChat-hosted approval surface:
 - Control Center pending approval loading and approve / reject / block actions
 - `GET /audit/dump`
 - Control Center Authority Audit loading
+- `GET /authority/trace`
+- Control Center Authority Trace loading
 
 ## Safety boundary
 
@@ -25,9 +27,11 @@ The approval API is not a new authority path.
 - Gateway execution still flows through HDS-BRAIN, Approval Gate lifecycle events, executor feedback, and hash-chain audit.
 - Channel metadata does not escalate authority.
 - `/audit/dump` is read-only, accepts no filesystem path, and reports the live HDS audit chain.
+- `/authority/trace` is read-only and only projects Approval Gate, authority event, and command lifecycle audit entries.
 
 ## Notes
 
 `/runtime/snapshot` continues to use `WEBCHAT_TOKEN` and remains read-only.
 `/approval` uses `WEBCHAT_RESUME_TOKEN` because it can drive human approval decisions.
 `/audit/dump` uses `WEBCHAT_TOKEN` and returns the same report shape as the CLI audit dump.
+`/authority/trace` uses `WEBCHAT_TOKEN` and exposes a compact, read-only authority timeline for Control Center.

@@ -9,6 +9,7 @@ import {
   type WebChatRateLimits,
   type WebChatApprovalSurface,
   type WebChatAuditSurface,
+  type WebChatAuthoritySurface,
   type WebChatSettingsSurface,
 } from "../src/index.js";
 
@@ -40,6 +41,7 @@ function setup(
       settings?: WebChatSettingsSurface;
       approval?: WebChatApprovalSurface;
       audit?: WebChatAuditSurface;
+      authority?: WebChatAuthoritySurface;
     }
   > = {},
 ): Ctx & { teardown: () => Promise<void> } {
@@ -58,6 +60,7 @@ function setup(
     settings: opts.settings,
     approval: opts.approval,
     audit: opts.audit,
+    authority: opts.authority,
     // Default: disable rate limiting in legacy tests so existing flows
     // keep working without thinking about bursts. Rate-limit behavior is
     // covered by its own describe() block below.
@@ -491,6 +494,75 @@ describe("WebChatChannel — audit dump API", () => {
       const r = await postJson(
         ctx.port,
         "/audit/dump",
+        {},
+        { authorization: `Bearer ${TOKEN}` },
+      );
+      expect(r.status).toBe(405);
+    } finally {
+      await ctx.teardown();
+    }
+  });
+});
+
+describe("WebChatChannel — authority trace API", () => {
+  it("serves read-only authority trace only with the inbound token", async () => {
+    const ctx = setup({
+      authority: {
+        trace: async () => [
+          {
+            index: 3,
+            entry_hash: "abc123",
+            kind: "authority_event",
+            event: "approval_allowed",
+            request_id: "req-1",
+            command_id: "cmd-1",
+            actor: "alice",
+            operation: "tool.file.write",
+            risk: "medium",
+            reason: "default_full_access_without_final_review_exception",
+            timestamp: 12345,
+          },
+        ],
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      expect((await getRaw(ctx.port, "/authority/trace")).status).toBe(401);
+      expect(
+        (await getRaw(ctx.port, "/authority/trace", {
+          authorization: `Bearer ${RESUME_TOKEN}`,
+        })).status,
+      ).toBe(401);
+
+      const ok = await getRaw(ctx.port, "/authority/trace", {
+        authorization: `Bearer ${TOKEN}`,
+      });
+      expect(ok.status).toBe(200);
+      const body = JSON.parse(ok.text);
+      expect(body.authority_trace).toHaveLength(1);
+      expect(body.authority_trace[0]).toMatchObject({
+        kind: "authority_event",
+        event: "approval_allowed",
+        request_id: "req-1",
+        command_id: "cmd-1",
+        actor: "alice",
+      });
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("does not accept POST /authority/trace", async () => {
+    const ctx = setup({
+      authority: {
+        trace: async () => [],
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      const r = await postJson(
+        ctx.port,
+        "/authority/trace",
         {},
         { authorization: `Bearer ${TOKEN}` },
       );

@@ -26,6 +26,7 @@ import type {
 import type {
   WebChatChannel,
   WebChatApprovalQueueItem,
+  WebChatAuthorityTraceItem,
   WebChatResumeContext,
 } from "@blue-tanuki/channel-webchat";
 import { renderCommandOutput } from "./result_render.js";
@@ -237,6 +238,9 @@ export async function serve(): Promise<ServeShutdown> {
               };
         },
       },
+      authority: {
+        trace: async () => authorityTraceSnapshot(),
+      },
       onResume: async (
         request_id: string,
         verdict: "approve" | "reject" | "block",
@@ -266,6 +270,63 @@ export async function serve(): Promise<ServeShutdown> {
       approval_token_expires_at_ms: p.approval_token_expires_at_ms,
       authority_trace: p.evaluation.authority_trace,
     }));
+  }
+
+  function authorityTraceSnapshot(): WebChatAuthorityTraceItem[] {
+    const items: WebChatAuthorityTraceItem[] = [];
+    for (const entry of hds.getAudit().list()) {
+      const log = entry.log;
+      if (!("kind" in log)) continue;
+      const base = {
+        index: entry.index,
+        entry_hash: entry.entry_hash,
+        request_id: log.request_id,
+        timestamp: log.timestamp,
+      };
+
+      if (log.kind === "approval_gate") {
+        items.push({
+          ...base,
+          kind: "approval_gate",
+          event: "approval_gate",
+          command_id: log.command_id,
+          actor: log.evaluation.context.actor,
+          operation: log.evaluation.context.operation,
+          risk: log.evaluation.risk,
+          reason: log.evaluation.reason,
+          decision: log.evaluation.decision,
+          authority_trace: log.evaluation.authority_trace,
+        });
+        continue;
+      }
+
+      if (log.kind === "authority_event") {
+        items.push({
+          ...base,
+          kind: "authority_event",
+          event: log.event,
+          command_id: log.command_id,
+          actor: log.actor,
+          operation: log.operation,
+          risk: log.risk,
+          reason: log.reason,
+          authority_trace: log.authority_trace,
+        });
+        continue;
+      }
+
+      if (log.kind === "command_lifecycle") {
+        items.push({
+          ...base,
+          kind: "command_lifecycle",
+          event: log.phase,
+          command_id: log.command_id,
+          actor: log.actor,
+          reason: log.reason,
+        });
+      }
+    }
+    return items;
   }
 
   const telegramPermissions = [
