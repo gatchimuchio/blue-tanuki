@@ -48,7 +48,7 @@ The transparency claim is limited to BLUE-TANUKI's own authority path.
 
 ## v0.1 Explicit Preview / Deferred
 
-- WhatsApp: experimental/deferred because Baileys-style unofficial Web dependency is operationally unstable
+- WhatsApp: reserved-third-party only. BLUE-TANUKI does not ship first-party WhatsApp core support, Baileys/WAHA/WhatsApp Web automation, Business API support, or Twilio WhatsApp support.
 - Gmail / Google Calendar / Drive: interface/docs only, real integration v0.2+
 - Voice / Mobile: interface/design only, real product quality v0.2+
 - Rich Canvas / A2UI: v0.2+

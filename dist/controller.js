@@ -451,7 +451,7 @@ export class HDSUpperController {
                 payload: scheduledSend,
                 constraints: {
                     allowed_capabilities: ["channel:send"],
-                    timeout_ms: Math.min(this.llm_route.timeout_ms ?? 30000, 30000),
+                    timeout_ms: Math.min(this.llm_route.timeout_ms ?? 30_000, 30_000),
                 },
                 upstream_decision,
             };

@@ -28,7 +28,7 @@ import { z } from "zod";
  *   - "tool"     : executor tool registered into ToolRegistry.
  *   - "detector" : HDS-BRAIN axis detector.
  */
-export declare const PluginKindSchema: any;
+export declare const PluginKindSchema: z.ZodEnum<["core", "channel", "llm", "tool", "detector"]>;
 export type PluginKind = z.infer<typeof PluginKindSchema>;
 /**
  * Permission scopes that a plugin may request. Format: "<scope>:<target>".
@@ -49,8 +49,57 @@ export type PluginKind = z.infer<typeof PluginKindSchema>;
  * have to be revved every time a new scope is added; the conventions
  * above are documentation, not validation.
  */
-export declare const PermissionSchema: any;
-export declare const PluginManifestSchema: any;
+export declare const PermissionSchema: z.ZodString;
+export declare const PluginManifestSchema: z.ZodObject<{
+    /** Package name. Must match package.json name for the loader to find it. */
+    name: z.ZodString;
+    /** Semver. Should match package.json version. */
+    version: z.ZodString;
+    /** What kind of extension this is. Determines wiring at boot. */
+    kind: z.ZodEnum<["core", "channel", "llm", "tool", "detector"]>;
+    /**
+     * Path to the entry module relative to the package root. Typically
+     * the same as package.json "main", but kept explicit so the loader
+     * does not need to re-read package.json.
+     */
+    entry: z.ZodString;
+    /**
+     * Named exports of the entry module. The loader imports `entry` and
+     * resolves the named exports below. The named export under the key
+     * matching `kind` (e.g. "channel" → exports.channel) is the primary
+     * extension class; "default" is the fallback.
+     */
+    exports: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodString>>;
+    /**
+     * Path to a config schema (JSON Schema or zod-printed JSON) that
+     * describes accepted runtime options. Optional for now.
+     */
+    config_schema: z.ZodOptional<z.ZodString>;
+    /**
+     * Declared runtime permissions. See PermissionSchema doc for scopes.
+     */
+    permissions: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    /** Free-form, single-line description. Optional. */
+    description: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    name: string;
+    version: string;
+    kind: "channel" | "core" | "llm" | "tool" | "detector";
+    entry: string;
+    exports: Record<string, string>;
+    permissions: string[];
+    config_schema?: string | undefined;
+    description?: string | undefined;
+}, {
+    name: string;
+    version: string;
+    kind: "channel" | "core" | "llm" | "tool" | "detector";
+    entry: string;
+    exports?: Record<string, string> | undefined;
+    config_schema?: string | undefined;
+    permissions?: string[] | undefined;
+    description?: string | undefined;
+}>;
 export type PluginManifest = z.infer<typeof PluginManifestSchema>;
 /**
  * Read and validate a manifest file from disk.

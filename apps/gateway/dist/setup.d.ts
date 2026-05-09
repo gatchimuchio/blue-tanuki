@@ -36,7 +36,7 @@ export interface SetupResult {
     doctor?: DoctorReport;
 }
 export declare function parseSetupArgs(args: string[]): SetupCliOptions;
-export declare function buildSetupConfigFromOptions(opts: SetupCliOptions, cwd?: any): BlueTanukiSetupConfig;
+export declare function buildSetupConfigFromOptions(opts: SetupCliOptions, cwd?: string): BlueTanukiSetupConfig;
 export declare function runSetupCommand(args?: string[], io?: SetupCommandIO): Promise<SetupResult>;
 export declare function runSetupCli(args?: string[], io?: SetupCommandIO): Promise<void>;
 //# sourceMappingURL=setup.d.ts.map

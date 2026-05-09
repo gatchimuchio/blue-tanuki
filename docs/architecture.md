@@ -2,8 +2,11 @@
 
 ## 設計の核
 
-BLUE-TANUKI は OpenClaw の上位互換を目指す AI エージェント。
-OpenClaw との決定的な違いは **LLM の位置付け**。
+BLUE-TANUKI は safety-first resident AI control plane であり、active roadmap は `docs/ROADMAP.md` を正とする。
+OpenClaw との決定的な違いは **authority path と LLM の位置付け**。
+
+OpenClaw は LLM agent に手足を与える設計。
+BLUE-TANUKI は HDS authority core の下に LLM / tools / channels / plugins / memory を従属させる設計。
 
 | | OpenClaw | BLUE-TANUKI |
 |---|---|---|

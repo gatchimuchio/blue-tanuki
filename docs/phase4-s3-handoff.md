@@ -54,7 +54,7 @@ E2E:
 
 ---
 
-## 2. Roadmap remaining (per `blue-tanuki-roadmap-v1.md`)
+## 2. Roadmap remaining (per `docs/history/blue-tanuki-roadmap-v1.md`)
 
 Phase 4 sub-items still open after S2:
 - **4-7** Channel-level integration tests (real Slack / Discord token, per env). Deliberately scoped out of `--doctor`.

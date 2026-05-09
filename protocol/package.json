@@ -2,6 +2,7 @@
   "name": "@blue-tanuki/protocol",
   "version": "0.0.1",
   "private": true,
+  "license": "MIT",
   "description": "Connection protocol between HDS-BRAIN (upstream) and BLUE-TANUKI (executor)",
   "type": "module",
   "main": "./dist/index.js",

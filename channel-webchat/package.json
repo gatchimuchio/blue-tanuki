@@ -2,6 +2,7 @@
   "name": "@blue-tanuki/channel-webchat",
   "version": "0.0.2",
   "private": true,
+  "license": "MIT",
   "description": "WebChat channel adapter (HTTP inbound + WebSocket outbound, ticket-auth)",
   "type": "module",
   "main": "./dist/index.js",

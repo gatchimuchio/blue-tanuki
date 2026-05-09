@@ -19,6 +19,7 @@ export function renderCommandOutput(cmd, feedback, opts = {}) {
             return truncate(reason ? `[noop] ${reason}` : "[noop]", maxChars);
         }
     }
+    return null;
 }
 function renderLLMResult(result, maxChars) {
     if (isRecord(result) && typeof result.content === "string") {

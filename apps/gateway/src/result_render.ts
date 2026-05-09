@@ -38,6 +38,7 @@ export function renderCommandOutput(
       return truncate(reason ? `[noop] ${reason}` : "[noop]", maxChars);
     }
   }
+  return null;
 }
 
 function renderLLMResult(result: unknown, maxChars: number): string | null {

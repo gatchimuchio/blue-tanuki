@@ -25,7 +25,7 @@ export interface ChannelPluginOptions {
     required_permissions: readonly string[];
     action: string;
 }
-export declare function findWorkspaceRoot(start?: any): Promise<string>;
+export declare function findWorkspaceRoot(start?: string): Promise<string>;
 export declare function parseWorkspacePackagePatterns(raw: string): string[];
 export declare function discoverWorkspacePackageDirs(root: string): Promise<string[]>;
 export declare function loadWorkspacePlugins(opts?: PluginRuntimeOptions): Promise<WorkspacePlugin[]>;

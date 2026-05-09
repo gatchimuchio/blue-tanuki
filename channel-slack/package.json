@@ -2,6 +2,7 @@
   "name": "@blue-tanuki/channel-slack",
   "version": "0.0.2",
   "private": true,
+  "license": "MIT",
   "description": "Slack channel adapter (Phase 3: Bolt + Socket Mode)",
   "type": "module",
   "main": "./dist/index.js",

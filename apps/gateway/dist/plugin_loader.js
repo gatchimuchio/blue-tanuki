@@ -160,6 +160,9 @@ function verifyExportBindings(plugin) {
     if (!plugin.module)
         return;
     for (const [key, exportName] of Object.entries(plugin.manifest.exports)) {
+        if (typeof exportName !== "string") {
+            throw new Error(`${plugin.manifest.name}: manifest export '${key}' must be a string`);
+        }
         if (exportName === "*")
             continue;
         if (!(exportName in plugin.module)) {

@@ -1,3 +1,10 @@
 packages:
-  - "packages/*"
+  - "."
+  - "blue-tanuki"
+  - "channel-base"
+  - "channel-discord"
+  - "channel-slack"
+  - "channel-telegram"
+  - "channel-webchat"
+  - "protocol"
   - "apps/*"

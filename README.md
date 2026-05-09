@@ -6,7 +6,7 @@ BLUE-TANUKI is a local resident AI control plane.
 
 1. **HDS-BRAIN owns authority.** LLMs, tools, cron, and channels are downstream devices.
 2. **No black box in the HDS authority path.** Actor/process/memory/approval/execution/audit are structured and inspectable.
-3. **Safety first, UX second.** Full access is allowed for owner-operated local work, but final-review operations remain gated.
+3. **Safety first, robustness second, comfort/UX third.** Feature coverage and channel coverage never outrank the HDS authority boundary.
 
 ## v0.1 completed surface
 
@@ -22,7 +22,7 @@ BLUE-TANUKI is a local resident AI control plane.
 
 ## v0.1 explicit boundaries
 
-- WhatsApp is not completion-quality in v0.1; use later experimental integration.
+- WhatsApp is not a first-party core target. It is `reserved-third-party` and may only be approached through the generic adapter interface.
 - Gmail / Google Calendar / Drive are not read by v0.1 Daily Brief.
 - Voice / Mobile / rich Canvas are deferred to v0.2+.
 - Public third-party Skill registry is intentionally excluded.
@@ -112,11 +112,20 @@ Expected invariants:
 
 ## Documents
 
+- [docs/ROADMAP.md](./docs/ROADMAP.md) — internal roadmap v6 and Sacred Constraints
+- [docs/ADAPTER_CONTRACT.md](./docs/ADAPTER_CONTRACT.md) — downstream adapter boundary
+- [docs/CAPABILITY_ENVELOPE.md](./docs/CAPABILITY_ENVELOPE.md) — manifest-driven capability rules
+- [docs/CONFORMANCE.md](./docs/CONFORMANCE.md) — preview quarantine and release gates
+- [docs/LLM_DEVELOPMENT_GUIDE.md](./docs/LLM_DEVELOPMENT_GUIDE.md) — Codex/LLM implementation rules
 - [CLAIM.md](./CLAIM.md) — product claim and non-claim boundary
 - [SECURITY.md](./SECURITY.md) — authority and memory security model
 - [AUDIT.md](./AUDIT.md) — hash-chain audit and runtime snapshot
 - [CONFIG.md](./CONFIG.md) — environment variables
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) — operational fixes
+
+## License
+
+MIT. See [LICENSE](./LICENSE).
 
 ## Package map
 

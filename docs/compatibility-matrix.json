@@ -1,0 +1,35 @@
+{
+  "channels": {
+    "webchat": {
+      "status": "first-party",
+      "target_release": "v0.1"
+    },
+    "telegram": {
+      "status": "first-party",
+      "target_release": "v0.1"
+    },
+    "discord": {
+      "status": "first-party-preview",
+      "target_release": "v0.1-preview"
+    },
+    "slack": {
+      "status": "first-party-preview",
+      "target_release": "v0.1-preview"
+    },
+    "teams": {
+      "status": "first-party",
+      "target_release": "v0.2"
+    },
+    "line": {
+      "status": "first-party",
+      "target_release": "v0.2"
+    },
+    "whatsapp": {
+      "status": "reserved-third-party",
+      "target_release": null,
+      "core_supported": false,
+      "warranty": "none",
+      "notes": "Not implemented as first-party core. May be possible only through the generic third-party adapter interface."
+    }
+  }
+}

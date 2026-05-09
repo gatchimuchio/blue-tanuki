@@ -126,16 +126,17 @@ describe("manifestPathFor() / MANIFEST_FILENAME", () => {
 });
 
 describe("Bundled manifests in this repo are valid", () => {
-  // packages/protocol/test/ → repo root is two levels up.
-  const repo_root = path.resolve(__dirname, "..", "..", "..");
+  // protocol/test/ -> repo root is two levels up.
+  const repo_root = path.resolve(__dirname, "..", "..");
   const expected_packages = [
-    "packages/protocol",
-    "packages/channel-base",
-    "packages/channel-webchat",
-    "packages/channel-slack",
-    "packages/channel-discord",
-    "packages/hds-brain",
-    "packages/blue-tanuki",
+    ".",
+    "protocol",
+    "blue-tanuki",
+    "channel-base",
+    "channel-webchat",
+    "channel-slack",
+    "channel-discord",
+    "channel-telegram",
   ];
 
   for (const rel of expected_packages) {

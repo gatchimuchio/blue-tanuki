@@ -79,13 +79,14 @@ export interface DoctorOptions {
 export const MIN_NODE_VERSION = "22.14.0";
 
 const EXPECTED_MANIFEST_PACKAGES = [
-  "packages/protocol",
-  "packages/channel-base",
-  "packages/channel-webchat",
-  "packages/channel-slack",
-  "packages/channel-discord",
-  "packages/hds-brain",
-  "packages/blue-tanuki",
+  ".",
+  "protocol",
+  "blue-tanuki",
+  "channel-base",
+  "channel-webchat",
+  "channel-slack",
+  "channel-discord",
+  "channel-telegram",
 ] as const;
 
 /** Compare two semver-like strings. Returns -1/0/1. */

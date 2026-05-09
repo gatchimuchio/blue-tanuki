@@ -2,6 +2,7 @@
   "name": "@blue-tanuki/channel-discord",
   "version": "0.0.2",
   "private": true,
+  "license": "MIT",
   "description": "Discord channel adapter (Phase 3: discord.js v14 Gateway)",
   "type": "module",
   "main": "./dist/index.js",

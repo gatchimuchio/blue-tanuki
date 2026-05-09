@@ -2,6 +2,7 @@
   "name": "@blue-tanuki/channel-telegram",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Telegram Bot API channel adapter for BLUE-TANUKI v0.1",
   "type": "module",
   "main": "./dist/index.js",

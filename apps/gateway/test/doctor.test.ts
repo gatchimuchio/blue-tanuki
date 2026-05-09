@@ -36,13 +36,14 @@ const baseEnv = (): NodeJS.ProcessEnv => ({
 });
 
 const manifestPackages = [
-  ["packages/protocol", "@blue-tanuki/protocol"],
-  ["packages/channel-base", "@blue-tanuki/channel-base"],
-  ["packages/channel-webchat", "@blue-tanuki/channel-webchat"],
-  ["packages/channel-slack", "@blue-tanuki/channel-slack"],
-  ["packages/channel-discord", "@blue-tanuki/channel-discord"],
-  ["packages/hds-brain", "@blue-tanuki/hds-brain"],
-  ["packages/blue-tanuki", "@blue-tanuki/core"],
+  [".", "@blue-tanuki/hds-brain"],
+  ["protocol", "@blue-tanuki/protocol"],
+  ["blue-tanuki", "@blue-tanuki/core"],
+  ["channel-base", "@blue-tanuki/channel-base"],
+  ["channel-webchat", "@blue-tanuki/channel-webchat"],
+  ["channel-slack", "@blue-tanuki/channel-slack"],
+  ["channel-discord", "@blue-tanuki/channel-discord"],
+  ["channel-telegram", "@blue-tanuki/channel-telegram"],
 ] as const;
 
 async function writeManifestFixture(root: string): Promise<void> {
@@ -450,7 +451,7 @@ describe("runDoctor — bundled manifests", () => {
     });
     const c = r.checks.find((x) => x.id === "manifests");
     expect(c?.level).toBe("ok");
-    expect(c?.detail).toContain("7 manifests valid");
+    expect(c?.detail).toContain("8 manifests valid");
   });
 
   it("validates manifest schemas from an explicit root", async () => {
@@ -476,7 +477,7 @@ describe("runDoctor — bundled manifests", () => {
     try {
       await writeManifestFixture(root);
       await fs.writeFile(
-        path.join(root, "packages", "protocol", "blue-tanuki.plugin.json"),
+        path.join(root, "protocol", "blue-tanuki.plugin.json"),
         JSON.stringify({
           name: "@blue-tanuki/protocol",
           version: "0.0.1",
@@ -505,7 +506,7 @@ describe("runDoctor — bundled manifests", () => {
     try {
       await writeManifestFixture(root);
       await fs.writeFile(
-        path.join(root, "packages", "hds-brain", "blue-tanuki.plugin.json"),
+        path.join(root, "blue-tanuki.plugin.json"),
         JSON.stringify({
           name: "@blue-tanuki/wrong",
           version: "9.9.9",

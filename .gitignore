@@ -1,0 +1,14 @@
+node_modules/
+**/node_modules/
+
+.env
+.env.*
+*.env.bak
+*.env.local.bak
+blue-tanuki.env
+blue-tanuki.env.*.bak
+
+release/
+.codex-tmp/
+.tmp/
+*.log
