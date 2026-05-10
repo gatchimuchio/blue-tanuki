@@ -60,6 +60,14 @@ BLUE_TANUKI_FILE_ROOT=/path/to/workspace
 `file.search`, `file.write`, and `file.edit` only operate under this root.
 Secret-like paths and symlink escapes are denied.
 
+Request examples:
+
+```text
+tool:file.search root=. query=needle max_results=5
+tool:file.write path=notes/today.md content="hello" mode=create
+tool:file.edit path=notes/today.md search=hello replace=hi expected_replacements=1
+```
+
 ## Web search
 
 ```bash
