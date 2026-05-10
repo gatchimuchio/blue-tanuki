@@ -141,6 +141,11 @@ export interface WebChatOptions {
   token: string;
   /** Separate Bearer token required on POST /resume. Must differ from token. */
   resume_token?: string;
+  /**
+   * Optional dedicated token for POST /webhook. When omitted, /webhook is
+   * disabled; webhook-origin metadata is never allowed to carry authority.
+   */
+  webhook_token?: string;
   /** Bind host. Defaults to 127.0.0.1 (loopback only). */
   host?: string;
   /**
@@ -231,6 +236,7 @@ const RESUME_GLOBAL_KEY = "*";
  * Endpoint summary:
  *   POST /ws-ticket  body:{user}  auth:Bearer  rate-limited per-user
  *   POST /inbound    body:{user, content}  auth:Bearer  rate-limited per-user
+ *   POST /webhook    body:{content|text|event,user?,source?,reply_to?} auth:Bearer webhook-token
  *   POST /resume     body:{request_id, verdict, approval_token}  auth:Bearer  rate-limited (global)
  *   GET  /approval   auth:Bearer resume-token
  *   POST /approval/:id body:{verdict, approval_token} auth:Bearer resume-token
@@ -277,6 +283,18 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     if (opts.resume_token !== undefined && opts.resume_token === opts.token) {
       throw new Error("WebChatChannel: opts.resume_token must differ from opts.token");
     }
+    if (opts.webhook_token !== undefined && opts.webhook_token.length < 8) {
+      throw new Error(
+        "WebChatChannel: opts.webhook_token must be >=8 chars when set",
+      );
+    }
+    if (
+      opts.webhook_token !== undefined &&
+      (opts.webhook_token === opts.token ||
+        opts.webhook_token === opts.resume_token)
+    ) {
+      throw new Error("WebChatChannel: opts.webhook_token must differ from WebChat tokens");
+    }
     if (opts.onResume && !opts.resume_token) {
       throw new Error("WebChatChannel: opts.resume_token is required when onResume is set");
     }
@@ -286,7 +304,8 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     if (
       opts.settings &&
       (opts.settings.token === opts.token ||
-        opts.settings.token === opts.resume_token)
+        opts.settings.token === opts.resume_token ||
+        opts.settings.token === opts.webhook_token)
     ) {
       throw new Error("WebChatChannel: opts.settings.token must differ from WebChat tokens");
     }
@@ -613,12 +632,19 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     const tokenKind =
       url.pathname === "/resume"
         ? "resume"
+        : url.pathname === "/webhook"
+        ? "webhook"
         : url.pathname === "/inbound" || url.pathname === "/ws-ticket"
         ? "inbound"
         : null;
     if (!tokenKind) {
       res.writeHead(404, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: "not_found" }));
+      return;
+    }
+    if (tokenKind === "webhook" && !this.opts.webhook_token) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "webhook_not_configured" }));
       return;
     }
 
@@ -680,6 +706,50 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       return;
     }
 
+    if (url.pathname === "/webhook") {
+      const content = readWebhookContent(body);
+      if (!content) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error: "content, text, or event is required",
+          }),
+        );
+        return;
+      }
+      const user = nonEmptyString(body?.user) ?? "webhook";
+      const source = nonEmptyString(body?.source) ?? "generic";
+      const reply_to = nonEmptyString(body?.reply_to) ?? user;
+      if (
+        !this.rateLimitOr429(
+          this.buckets.inbound,
+          `webhook:${source}:${user}`,
+          res,
+        )
+      )
+        return;
+      const inboundReq: InboundRequest = {
+        id: randomUUID(),
+        channel: "webchat",
+        user,
+        content,
+        timestamp: Date.now(),
+        metadata: {
+          reply_to,
+          webhook_source: source,
+        },
+      };
+      this.handler?.(inboundReq).catch((e: unknown) => {
+        // eslint-disable-next-line no-console
+        console.error("[webchat] webhook handler error:", e);
+      });
+      res.writeHead(202, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({ accepted: true, request_id: inboundReq.id }),
+      );
+      return;
+    }
+
     if (url.pathname === "/resume") {
       const request_id =
         typeof body?.request_id === "string" ? body.request_id : null;
@@ -731,12 +801,20 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     res.end(JSON.stringify({ error: "not_found" }));
   }
 
-  private checkAuth(req: IncomingMessage, kind: "inbound" | "resume"): boolean {
+  private checkAuth(
+    req: IncomingMessage,
+    kind: "inbound" | "resume" | "webhook",
+  ): boolean {
     const h = req.headers["authorization"];
     if (typeof h !== "string") return false;
     const m = /^Bearer\s+(.+)$/i.exec(h);
     if (!m) return false;
-    const expected = kind === "resume" ? this.opts.resume_token : this.opts.token;
+    const expected =
+      kind === "resume"
+        ? this.opts.resume_token
+        : kind === "webhook"
+        ? this.opts.webhook_token
+        : this.opts.token;
     return typeof expected === "string" && m[1] === expected;
   }
 
@@ -1021,6 +1099,23 @@ function readResumeApprovalOptions(body: Record<string, unknown> | null): WebCha
   else if (typeof durationRaw === "string" && /^\d+$/.test(durationRaw)) duration_ms = Math.floor(Number(durationRaw));
   if (!remember && !mode && duration_ms === undefined) return undefined;
   return { remember, mode, duration_ms };
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : undefined;
+}
+
+function readWebhookContent(body: Record<string, unknown> | null): string | null {
+  const direct = nonEmptyString(body?.content) ?? nonEmptyString(body?.text);
+  if (direct) return direct;
+  if (!body || !Object.hasOwn(body, "event")) return null;
+  try {
+    return JSON.stringify(body.event);
+  } catch {
+    return null;
+  }
 }
 
 async function readJson(

@@ -41,6 +41,16 @@ For smoke testing:
 BLUE_TANUKI_DAILY_BRIEF_INTERVAL_MS=60000
 ```
 
+## Webhook ingress
+
+```bash
+WEBHOOK_TOKEN=...
+```
+
+When set, `POST /webhook` accepts JSON with `content`, `text`, or `event`.
+The webhook token must differ from the WebChat inbound and resume tokens.
+Webhook metadata is normalized and cannot carry authority.
+
 ## File tools
 
 ```bash

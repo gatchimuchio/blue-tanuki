@@ -21,6 +21,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Telegram Bot API channel
 - Slack / Discord adapters with silent fallback when credentials are absent
 - Daily Brief scheduled-message smoke via internal cron
+- Optional token-gated HTTP webhook ingress at `/webhook`
 - Built-in `file.search`, `file.write`, `file.edit`, and `http.fetch` with sandbox / SSRF guards
 
 ## v0.1 explicit boundaries
@@ -94,6 +95,18 @@ pnpm gateway:serve
 
 v0.1 Daily Brief is a scheduled `channel_send` smoke. Real Gmail/GCal/Drive-backed brief is v0.2+.
 When enabled, the Control Center runtime snapshot shows the configured Daily Brief schedule and next fire time without exposing the brief content.
+
+## Webhook ingress
+
+```bash
+export WEBHOOK_TOKEN="replace-with-32chars-webhook-token"
+curl -X POST http://127.0.0.1:8787/webhook \
+  -H "Authorization: Bearer $WEBHOOK_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"source":"ci","user":"ci-bot","content":"build finished"}'
+```
+
+`/webhook` is disabled unless `WEBHOOK_TOKEN` is set. Webhook metadata is normalized to `reply_to` and `webhook_source` only; it cannot escalate authority.
 
 ## File tools
 

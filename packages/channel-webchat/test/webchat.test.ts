@@ -21,6 +21,7 @@ function nextPort(): number {
 const TOKEN = "test-token-1234";
 const RESUME_TOKEN = "resume-token-1234";
 const SETTINGS_TOKEN = "settings-token-1234";
+const WEBHOOK_TOKEN = "webhook-token-1234";
 
 interface Ctx {
   ch: WebChatChannel;
@@ -33,6 +34,7 @@ function setup(
     Ctx & {
       onResume?: (id: string, v: string, ctx: { actor: string; token_kind: "resume" }) => Promise<unknown>;
       resume_token?: string;
+      webhook_token?: string;
       resume_approval_tokens?: false;
       resume_approval_token_ttl_ms?: number;
       ws_ticket_ttl_ms?: number;
@@ -51,6 +53,7 @@ function setup(
     port: p,
     token: TOKEN,
     resume_token: opts.resume_token ?? RESUME_TOKEN,
+    webhook_token: opts.webhook_token,
     host: "127.0.0.1",
     onResume: opts.onResume as never,
     resume_approval_tokens: opts.resume_approval_tokens,
@@ -194,6 +197,34 @@ describe("WebChatChannel — construction", () => {
     ).toThrow(/resume_token/);
   });
 
+  it("rejects invalid webhook token configuration", () => {
+    expect(
+      () =>
+        new WebChatChannel({
+          port: 1234,
+          token: TOKEN,
+          webhook_token: "short",
+        }),
+    ).toThrow(/webhook_token/);
+    expect(
+      () =>
+        new WebChatChannel({
+          port: 1234,
+          token: TOKEN,
+          webhook_token: TOKEN,
+        }),
+    ).toThrow(/webhook_token/);
+    expect(
+      () =>
+        new WebChatChannel({
+          port: 1234,
+          token: TOKEN,
+          resume_token: RESUME_TOKEN,
+          webhook_token: RESUME_TOKEN,
+        }),
+    ).toThrow(/webhook_token/);
+  });
+
   it("rejects bad port", () => {
     expect(() => new WebChatChannel({ port: 0, token: "x".repeat(10) })).toThrow();
     expect(
@@ -310,6 +341,118 @@ describe("WebChatChannel — HTTP inbound", () => {
   it("/healthz needs no auth", async () => {
     const r = await getRaw(ctx.port, "/healthz");
     expect(r.status).toBe(200);
+  });
+});
+
+describe("WebChatChannel - HTTP webhook inbound", () => {
+  it("keeps /webhook disabled unless a dedicated token is configured", async () => {
+    const ctx = setup();
+    try {
+      await ctx.ch.start(async () => undefined);
+      const r = await postJson(
+        ctx.port,
+        "/webhook",
+        { content: "ci event" },
+        { authorization: `Bearer ${TOKEN}` },
+      );
+      expect(r.status).toBe(404);
+      expect(r.body).toMatchObject({ error: "webhook_not_configured" });
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("rejects /webhook without the webhook token", async () => {
+    const ctx = setup({ webhook_token: WEBHOOK_TOKEN });
+    try {
+      await ctx.ch.start(async () => undefined);
+      expect((await postJson(ctx.port, "/webhook", { content: "x" })).status).toBe(401);
+      expect(
+        (
+          await postJson(
+            ctx.port,
+            "/webhook",
+            { content: "x" },
+            { authorization: `Bearer ${TOKEN}` },
+          )
+        ).status,
+      ).toBe(401);
+      expect(
+        (
+          await postJson(
+            ctx.port,
+            "/webhook",
+            { content: "x" },
+            { authorization: `Bearer ${RESUME_TOKEN}` },
+          )
+        ).status,
+      ).toBe(401);
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("normalizes webhook content without accepting authority metadata", async () => {
+    const ctx = setup({ webhook_token: WEBHOOK_TOKEN });
+    try {
+      await ctx.ch.start(async (req) => {
+        ctx.received.push(req);
+      });
+      const r = await postJson(
+        ctx.port,
+        "/webhook",
+        {
+          user: "ci-bot",
+          source: "github-actions",
+          reply_to: "ops",
+          content: "deploy finished",
+          metadata: {
+            actor: "admin",
+            trust: "full",
+            authority_context: "bypass",
+          },
+        },
+        { authorization: `Bearer ${WEBHOOK_TOKEN}` },
+      );
+      expect(r.status).toBe(202);
+      await new Promise((r) => setTimeout(r, 30));
+      expect(ctx.received).toHaveLength(1);
+      const got = ctx.received[0]!;
+      expect(got.channel).toBe("webchat");
+      expect(got.user).toBe("ci-bot");
+      expect(got.content).toBe("deploy finished");
+      expect(got.metadata).toEqual({
+        reply_to: "ops",
+        webhook_source: "github-actions",
+      });
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("can turn a JSON event into canonical inbound content", async () => {
+    const ctx = setup({ webhook_token: WEBHOOK_TOKEN });
+    try {
+      await ctx.ch.start(async (req) => {
+        ctx.received.push(req);
+      });
+      const r = await postJson(
+        ctx.port,
+        "/webhook",
+        { event: { kind: "build", status: "green" } },
+        { authorization: `Bearer ${WEBHOOK_TOKEN}` },
+      );
+      expect(r.status).toBe(202);
+      await new Promise((r) => setTimeout(r, 30));
+      expect(ctx.received[0]?.user).toBe("webhook");
+      expect(ctx.received[0]?.content).toBe('{"kind":"build","status":"green"}');
+      expect(ctx.received[0]?.metadata).toEqual({
+        reply_to: "webhook",
+        webhook_source: "generic",
+      });
+    } finally {
+      await ctx.teardown();
+    }
   });
 });
 

@@ -104,6 +104,7 @@ export async function serve(): Promise<ServeShutdown> {
     "network:listen",
     "secrets:WEBCHAT_TOKEN",
     "secrets:WEBCHAT_RESUME_TOKEN",
+    ...(process.env.WEBHOOK_TOKEN ? ["secrets:WEBHOOK_TOKEN"] : []),
     ...(process.env.BLUE_TANUKI_SETTINGS_TOKEN
       ? ["secrets:BLUE_TANUKI_SETTINGS_TOKEN"]
       : []),
@@ -217,6 +218,7 @@ export async function serve(): Promise<ServeShutdown> {
       port,
       token,
       resume_token: resumeToken,
+      webhook_token: process.env.WEBHOOK_TOKEN,
       host: process.env.WEBCHAT_HOST ?? "127.0.0.1",
       settings: createWebChatSettingsSurface({
         env: process.env,
