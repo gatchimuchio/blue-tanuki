@@ -41,9 +41,9 @@ const REQUIRED_ARCHIVE_PATHS = [
   "packages/channel-telegram/dist/telegram.js",
   "apps/gateway/dist/approval_runtime.js",
   "packages/hds-brain/dist/approval_store.js",
-  "docs/phase7-s2-approval-gate-execution-bridge.md",
-  "docs/phase7-s3-full-access-default.md",
-  "docs/phase7-s4-transparent-full-access-authority.md",
+  "docs/history/phase7-s2-approval-gate-execution-bridge.md",
+  "docs/history/phase7-s3-full-access-default.md",
+  "docs/history/phase7-s4-transparent-full-access-authority.md",
 ] as const;
 
 const FORBIDDEN_SEGMENTS = new Set([

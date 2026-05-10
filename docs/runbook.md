@@ -605,4 +605,4 @@ development it is acceptable for every live check to report SKIP.
 - Architecture and the upstream-containment property — see `docs/architecture.md`.
 - HDS policy tuning — see the policy section of `docs/architecture.md`.
 - Phase-by-phase rollout history — see the per-phase notes
-  (`docs/phase4-s1.md` through `docs/phase4-s9.md`).
+  under `docs/history/`.
