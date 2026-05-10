@@ -1,5 +1,21 @@
 # CONFORMANCE
 
+## Active Test Coverage
+
+現行リポジトリで main release gate として扱う conformance 系テスト:
+
+- `apps/gateway/test/adapter_conformance.test.ts`
+  - Slack / Discord / Telegram の inbound normalization
+  - canonical `InboundRequest` / `ChannelSendPayload` の利用
+  - channel metadata が authority metadata を持ち込まないこと
+  - credential / transport 不在時に silent/fail-closed になること
+- `apps/gateway/test/compatibility_matrix.test.ts`
+  - `docs/compatibility-matrix.json` と first-party / preview channel manifest の整合
+  - WhatsApp が `reserved-third-party` のまま維持されること
+  - first-party channel manifest が wildcard permission を持たないこと
+- `apps/gateway/test/doctor.test.ts`
+  - doctor が manifest / compatibility matrix の release gate を表示すること
+
 本書は adapter / plugin / skill を main release に入れる前の conformance 条件を定義する。
 
 ## 1. Required Test Groups

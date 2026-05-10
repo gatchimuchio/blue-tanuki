@@ -89,6 +89,17 @@ const EXPECTED_MANIFEST_PACKAGES = [
   "packages/channel-telegram",
 ] as const;
 
+interface ChannelCompatibility {
+  status?: unknown;
+  target_release?: unknown;
+  core_supported?: unknown;
+  warranty?: unknown;
+}
+
+interface CompatibilityMatrix {
+  channels?: Record<string, ChannelCompatibility>;
+}
+
 /** Compare two semver-like strings. Returns -1/0/1. */
 export function compareSemver(a: string, b: string): number {
   const pa = a.split(".").map((n) => parseInt(n, 10) || 0);
@@ -568,6 +579,117 @@ async function checkBundledManifests(rootOverride?: string): Promise<CheckResult
   };
 }
 
+async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckResult> {
+  const root = rootOverride ? path.resolve(rootOverride) : await locateRepoRoot();
+  if (!root) {
+    return {
+      id: "compatibility_matrix",
+      level: "warn",
+      label: "compatibility matrix",
+      detail: "repo root not located; compatibility check skipped",
+    };
+  }
+
+  const failures: string[] = [];
+  let matrix: CompatibilityMatrix;
+  try {
+    matrix = JSON.parse(
+      await fs.readFile(
+        path.join(root, "docs", "compatibility-matrix.json"),
+        "utf8",
+      ),
+    ) as CompatibilityMatrix;
+  } catch (e) {
+    return {
+      id: "compatibility_matrix",
+      level: "error",
+      label: "compatibility matrix",
+      detail: `cannot read docs/compatibility-matrix.json: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  const channels = matrix.channels ?? {};
+  const whatsapp = channels.whatsapp;
+  if (
+    !whatsapp ||
+    whatsapp.status !== "reserved-third-party" ||
+    whatsapp.target_release !== null ||
+    whatsapp.core_supported !== false ||
+    whatsapp.warranty !== "none"
+  ) {
+    failures.push("whatsapp must remain reserved-third-party with core_supported=false");
+  }
+
+  const packageEntries = await fs
+    .readdir(path.join(root, "packages"))
+    .catch(() => [] as string[]);
+  if (packageEntries.some((name) => /whatsapp/i.test(name))) {
+    failures.push("packages/ must not contain a first-party WhatsApp adapter");
+  }
+
+  for (const channel of ["webchat", "telegram"]) {
+    const entry = channels[channel];
+    if (entry?.status !== "first-party" || entry?.target_release !== "v0.1") {
+      failures.push(`${channel} must be first-party target_release=v0.1`);
+      continue;
+    }
+    try {
+      const manifest = await readManifest(
+        manifestPathFor(path.join(root, "packages", `channel-${channel}`)),
+      );
+      if (manifest.kind !== "channel") {
+        failures.push(`${channel}: manifest kind must be channel`);
+      }
+      if (!manifest.exports.channel) {
+        failures.push(`${channel}: manifest must export channel`);
+      }
+    } catch (e) {
+      failures.push(`${channel}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  for (const channel of ["discord", "slack"]) {
+    const entry = channels[channel];
+    if (
+      entry?.status !== "first-party-preview" ||
+      entry?.target_release !== "v0.1-preview"
+    ) {
+      failures.push(`${channel} must remain first-party-preview target_release=v0.1-preview`);
+    }
+  }
+
+  for (const channel of ["webchat", "telegram", "discord", "slack"]) {
+    try {
+      const manifest = await readManifest(
+        manifestPathFor(path.join(root, "packages", `channel-${channel}`)),
+      );
+      for (const permission of manifest.permissions) {
+        if (permission === "*" || permission.includes(":*")) {
+          failures.push(`${channel}: wildcard permission is not allowed`);
+        }
+      }
+    } catch (e) {
+      failures.push(`${channel}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  if (failures.length > 0) {
+    return {
+      id: "compatibility_matrix",
+      level: "error",
+      label: "compatibility matrix",
+      detail: failures.join("; "),
+    };
+  }
+
+  return {
+    id: "compatibility_matrix",
+    level: "ok",
+    label: "compatibility matrix",
+    detail: "channel scope and preview quarantine verified",
+  };
+}
+
 /**
  * Run all checks and return a structured report.
  */
@@ -590,6 +712,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   checks.push(await checkSessionDir(env));
   checks.push(await checkAuditDir(env));
   checks.push(await checkBundledManifests(opts.manifest_root));
+  checks.push(await checkCompatibilityMatrix(opts.manifest_root));
 
   if (opts.probe_port !== false) {
     const port = parseInt(env.WEBCHAT_PORT ?? "8787", 10);

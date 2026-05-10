@@ -49,6 +49,7 @@ const manifestPackages = [
 async function writeManifestFixture(root: string): Promise<void> {
   for (const [rel, name] of manifestPackages) {
     const pkgDir = path.join(root, rel);
+    const isChannel = rel.includes("/channel-");
     await fs.mkdir(pkgDir, { recursive: true });
     await fs.writeFile(
       path.join(pkgDir, "package.json"),
@@ -64,12 +65,33 @@ async function writeManifestFixture(root: string): Promise<void> {
       JSON.stringify({
         name,
         version: "0.0.1",
-        kind: "core",
+        kind: isChannel ? "channel" : "core",
         entry: "./dist/index.js",
+        exports: isChannel ? { channel: "FakeChannel" } : {},
+        permissions: isChannel ? ["network:example.test"] : [],
       }),
       "utf8",
     );
   }
+  await fs.mkdir(path.join(root, "docs"), { recursive: true });
+  await fs.writeFile(
+    path.join(root, "docs", "compatibility-matrix.json"),
+    JSON.stringify({
+      channels: {
+        webchat: { status: "first-party", target_release: "v0.1" },
+        telegram: { status: "first-party", target_release: "v0.1" },
+        discord: { status: "first-party-preview", target_release: "v0.1-preview" },
+        slack: { status: "first-party-preview", target_release: "v0.1-preview" },
+        whatsapp: {
+          status: "reserved-third-party",
+          target_release: null,
+          core_supported: false,
+          warranty: "none",
+        },
+      },
+    }),
+    "utf8",
+  );
 }
 
 describe("compareSemver", () => {
@@ -525,6 +547,55 @@ describe("runDoctor — bundled manifests", () => {
       expect(detail).toContain("name mismatch");
       expect(detail).toContain("version mismatch");
       expect(detail).toContain("entry must be ./dist/index.js");
+      expect(r.exit_code).toBe(2);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("runDoctor — compatibility matrix gate", () => {
+  it("locates and reports the compatibility matrix as ok in this repo", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const c = r.checks.find((x) => x.id === "compatibility_matrix");
+    expect(c?.level).toBe("ok");
+    expect(c?.detail).toContain("preview quarantine verified");
+  });
+
+  it("errors when WhatsApp is promoted into first-party core scope", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-compat-doc-"));
+    try {
+      await writeManifestFixture(root);
+      await fs.writeFile(
+        path.join(root, "docs", "compatibility-matrix.json"),
+        JSON.stringify({
+          channels: {
+            webchat: { status: "first-party", target_release: "v0.1" },
+            telegram: { status: "first-party", target_release: "v0.1" },
+            discord: { status: "first-party-preview", target_release: "v0.1-preview" },
+            slack: { status: "first-party-preview", target_release: "v0.1-preview" },
+            whatsapp: {
+              status: "first-party",
+              target_release: "v0.1",
+              core_supported: true,
+              warranty: "none",
+            },
+          },
+        }),
+        "utf8",
+      );
+      const r = await runDoctor({
+        env: baseEnv(),
+        probe_port: false,
+        node_version: "22.14.0",
+        manifest_root: root,
+      });
+      const detail = r.checks.find((x) => x.id === "compatibility_matrix")?.detail ?? "";
+      expect(detail).toContain("whatsapp must remain reserved-third-party");
       expect(r.exit_code).toBe(2);
     } finally {
       await fs.rm(root, { recursive: true, force: true });
