@@ -48,7 +48,7 @@ WEBHOOK_TOKEN=...
 ```
 
 When set, `POST /webhook` accepts JSON with `content`, `text`, or `event`.
-The webhook token must differ from the WebChat inbound and resume tokens.
+The webhook token must differ from the WebChat inbound, resume, and settings tokens.
 Webhook metadata is normalized and cannot carry authority.
 
 ## File tools

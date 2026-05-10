@@ -27,6 +27,7 @@ import {
  *   - Node.js version >= 22.14 (engines.node in root package.json)
  *   - Required env: WEBCHAT_TOKEN / WEBCHAT_RESUME_TOKEN present
  *     (length-only; never log values)
+ *   - Optional env: WEBHOOK_TOKEN separation when /webhook is enabled
  *   - Optional env: SLACK_BOT_TOKEN, SLACK_APP_TOKEN, DISCORD_BOT_TOKEN,
  *                   ANTHROPIC_API_KEY (presence only)
  *   - WEBCHAT_PORT is bindable (probe by binding then closing)
@@ -212,7 +213,11 @@ function checkSettingsToken(env: NodeJS.ProcessEnv): CheckResult {
       detail: "BLUE_TANUKI_SETTINGS_TOKEN must be at least 16 characters",
     };
   }
-  if (token === env.WEBCHAT_TOKEN || token === env.WEBCHAT_RESUME_TOKEN) {
+  if (
+    token === env.WEBCHAT_TOKEN ||
+    token === env.WEBCHAT_RESUME_TOKEN ||
+    token === env.WEBHOOK_TOKEN
+  ) {
     return {
       id: "settings_token",
       level: "error",
@@ -224,6 +229,44 @@ function checkSettingsToken(env: NodeJS.ProcessEnv): CheckResult {
     id: "settings_token",
     level: "ok",
     label: "settings token",
+    detail: `present (length=${token.length})`,
+  };
+}
+
+function checkWebhookToken(env: NodeJS.ProcessEnv): CheckResult {
+  const token = env.WEBHOOK_TOKEN;
+  if (!token) {
+    return {
+      id: "webhook_token",
+      level: "ok",
+      label: "webhook token",
+      detail: "unset (/webhook disabled)",
+    };
+  }
+  if (token.length < 8) {
+    return {
+      id: "webhook_token",
+      level: "error",
+      label: "webhook token",
+      detail: "WEBHOOK_TOKEN must be at least 8 characters",
+    };
+  }
+  if (
+    token === env.WEBCHAT_TOKEN ||
+    token === env.WEBCHAT_RESUME_TOKEN ||
+    token === env.BLUE_TANUKI_SETTINGS_TOKEN
+  ) {
+    return {
+      id: "webhook_token",
+      level: "error",
+      label: "webhook token",
+      detail: "WEBHOOK_TOKEN must differ from WebChat and settings tokens",
+    };
+  }
+  return {
+    id: "webhook_token",
+    level: "ok",
+    label: "webhook token",
     detail: `present (length=${token.length})`,
   };
 }
@@ -743,6 +786,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   checks.push(checkRequiredEnv(env, "WEBCHAT_TOKEN"));
   checks.push(checkRequiredEnv(env, "WEBCHAT_RESUME_TOKEN"));
   checks.push(checkWebchatTokenSeparation(env));
+  checks.push(checkWebhookToken(env));
   checks.push(checkSettingsToken(env));
   checks.push(checkOptionalEnv(env, "SLACK_BOT_TOKEN"));
   checks.push(checkOptionalEnv(env, "SLACK_APP_TOKEN"));

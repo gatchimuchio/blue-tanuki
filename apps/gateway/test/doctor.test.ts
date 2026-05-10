@@ -255,6 +255,24 @@ describe("runDoctor — error paths", () => {
     expect(r.checks.find((c) => c.id === "settings_token")?.level).toBe("error");
   });
 
+  it("exit_code=2 when webhook token is short or reuses a privileged token", async () => {
+    const short = await runDoctor({
+      env: { ...baseEnv(), WEBHOOK_TOKEN: "short" },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(short.exit_code).toBe(2);
+    expect(short.checks.find((c) => c.id === "webhook_token")?.level).toBe("error");
+
+    const reused = await runDoctor({
+      env: { ...baseEnv(), WEBHOOK_TOKEN: baseEnv().WEBCHAT_TOKEN },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(reused.exit_code).toBe(2);
+    expect(reused.checks.find((c) => c.id === "webhook_token")?.level).toBe("error");
+  });
+
   it("exit_code=2 when Node.js is below MIN_NODE_VERSION", async () => {
     const r = await runDoctor({
       env: baseEnv(),
