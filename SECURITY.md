@@ -6,6 +6,28 @@
 2. User experience
 3. Channel breadth
 
+## Design stance
+
+BLUE-TANUKI is designed for a local owner-operated environment where
+full-root / full-access operation may be the practical default.
+
+That default does not weaken the safety path:
+
+- Full-root operation may give the local operator broad system reach, but the
+  BLUE-TANUKI authority path must still route privileged actions through the
+  Approval Gate.
+- The final-review boundary is a structural safety boundary. Full access,
+  reusable grants, automation, cron, webhook ingress, channel metadata, memory,
+  LLM output, and executor feedback must not bypass it.
+- "Use at your own risk" is a statement about operational responsibility, not
+  permission to relax robustness requirements.
+- Robustness requirements remain in force regardless of disclaimers, support
+  boundaries, or no-support OSS positioning.
+
+This stance is implemented by the Hard invariants below and by the
+Final-review operations section: broad local capability is permitted only while
+the final-review boundary remains non-bypassable.
+
 ## Authority Path
 
 The authority path is:
