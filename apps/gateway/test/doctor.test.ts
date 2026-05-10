@@ -422,6 +422,50 @@ describe("runDoctor — audit_dir probe", () => {
   });
 });
 
+describe("runDoctor — file_root probe", () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-file-root-"));
+  });
+  afterEach(async () => {
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it("ok when unset (file tools disabled until configured)", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const c = r.checks.find((x) => x.id === "file_root");
+    expect(c?.level).toBe("ok");
+    expect(c?.detail).toContain("unset");
+  });
+
+  it("ok when BLUE_TANUKI_FILE_ROOT is an existing writable directory", async () => {
+    const r = await runDoctor({
+      env: { ...baseEnv(), BLUE_TANUKI_FILE_ROOT: dir },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const c = r.checks.find((x) => x.id === "file_root");
+    expect(c?.level).toBe("ok");
+    expect(c?.detail).toContain("writable");
+  });
+
+  it("errors when BLUE_TANUKI_FILE_ROOT is not a directory", async () => {
+    const filepath = path.join(dir, "not-dir");
+    await fs.writeFile(filepath, "x", "utf8");
+    const r = await runDoctor({
+      env: { ...baseEnv(), BLUE_TANUKI_FILE_ROOT: filepath },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.checks.find((x) => x.id === "file_root")?.level).toBe("error");
+    expect(r.exit_code).toBe(2);
+  });
+});
+
 describe("runDoctor — port probe", () => {
   it("ok on a free port", async () => {
     const port = await freePort();

@@ -501,6 +501,47 @@ async function checkAuditDir(env: NodeJS.ProcessEnv): Promise<CheckResult> {
   };
 }
 
+async function checkFileRoot(env: NodeJS.ProcessEnv): Promise<CheckResult> {
+  const dir = env.BLUE_TANUKI_FILE_ROOT;
+  if (!dir) {
+    return {
+      id: "file_root",
+      level: "ok",
+      label: "BLUE_TANUKI_FILE_ROOT",
+      detail: "unset (file tools disabled until configured)",
+    };
+  }
+  const resolved = path.resolve(dir);
+  try {
+    const real = await fs.realpath(resolved);
+    const stat = await fs.stat(real);
+    if (!stat.isDirectory()) {
+      return {
+        id: "file_root",
+        level: "error",
+        label: "BLUE_TANUKI_FILE_ROOT",
+        detail: `${real} is not a directory`,
+      };
+    }
+    const probe = path.join(real, `.btnk-doctor-file-${process.pid}.tmp`);
+    await fs.writeFile(probe, "doctor-probe", { flag: "wx" });
+    await fs.unlink(probe);
+    return {
+      id: "file_root",
+      level: "ok",
+      label: "BLUE_TANUKI_FILE_ROOT",
+      detail: `${real} (directory, writable)`,
+    };
+  } catch (e) {
+    return {
+      id: "file_root",
+      level: "error",
+      label: "BLUE_TANUKI_FILE_ROOT",
+      detail: `invalid or not writable at '${resolved}': ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
 async function locateRepoRoot(): Promise<string | null> {
   // Locate the repo by walking up from this module to find pnpm-workspace.yaml.
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -711,6 +752,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   checks.push(checkLlmCommandRoute(env));
   checks.push(await checkSessionDir(env));
   checks.push(await checkAuditDir(env));
+  checks.push(await checkFileRoot(env));
   checks.push(await checkBundledManifests(opts.manifest_root));
   checks.push(await checkCompatibilityMatrix(opts.manifest_root));
 
