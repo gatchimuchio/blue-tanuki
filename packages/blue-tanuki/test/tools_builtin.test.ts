@@ -4,6 +4,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import {
   invokeFileSearch,
+  invokeFileWrite,
+  invokeFileEdit,
   invokeHttpFetch,
   registerBuiltinTools,
   type FileSearchOptions,
@@ -23,12 +25,17 @@ describe("built-in tools", () => {
 
     expect(registry.get("echo")).toBeDefined();
     expect(registry.get("file.search")).toBeDefined();
+    expect(registry.get("file.write")).toBeDefined();
+    expect(registry.get("file.edit")).toBeDefined();
     expect(registry.get("http.fetch")).toBeDefined();
     expect(registry.listCapabilities()).toEqual([
       "fs:read",
+      "fs:write",
       "network:http",
       "tool:echo",
+      "tool:file.edit",
       "tool:file.search",
+      "tool:file.write",
       "tool:http.fetch",
     ]);
   });
@@ -128,6 +135,127 @@ describe("built-in tools", () => {
       expect(result.matches).toEqual([
         expect.objectContaining({ path: "safe.txt", line: "needle safe" }),
       ]);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("file.write creates, appends, and overwrites only inside the sandbox", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-tool-"));
+    try {
+      await fs.mkdir(path.join(dir, "notes"));
+      const created = await invokeFileWrite(
+        { path: "notes/a.txt", content: "alpha\n" },
+        fileSearchEnv(dir),
+      );
+      expect(created).toMatchObject({
+        path: "notes/a.txt",
+        mode: "create",
+        bytes_written: 6,
+      });
+      await invokeFileWrite(
+        { path: "notes/a.txt", content: "beta\n", mode: "append" },
+        fileSearchEnv(dir),
+      );
+      expect(await fs.readFile(path.join(dir, "notes", "a.txt"), "utf8")).toBe(
+        "alpha\nbeta\n",
+      );
+      await invokeFileWrite(
+        { path: "notes/a.txt", content: "gamma\n", mode: "overwrite" },
+        fileSearchEnv(dir),
+      );
+      expect(await fs.readFile(path.join(dir, "notes", "a.txt"), "utf8")).toBe(
+        "gamma\n",
+      );
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("file.write fails closed for accidental overwrite, sandbox escape, and secret-like paths", async () => {
+    const parent = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-tool-"));
+    const sandbox = path.join(parent, "sandbox");
+    const outside = path.join(parent, "outside.txt");
+    try {
+      await fs.mkdir(sandbox);
+      await fs.writeFile(path.join(sandbox, "a.txt"), "old", "utf8");
+      await expect(
+        invokeFileWrite({ path: "a.txt", content: "new" }, fileSearchEnv(sandbox)),
+      ).rejects.toThrow(/exist|EEXIST/);
+      await expect(
+        invokeFileWrite({ path: outside, content: "x" }, fileSearchEnv(sandbox)),
+      ).rejects.toThrow(/BLUE_TANUKI_FILE_ROOT/);
+      await expect(
+        invokeFileWrite({ path: ".env", content: "TOKEN=x" }, fileSearchEnv(sandbox)),
+      ).rejects.toThrow(/secret-like path/);
+    } finally {
+      await fs.rm(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("file.write denies symlink targets", async () => {
+    const parent = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-tool-"));
+    const sandbox = path.join(parent, "sandbox");
+    const outside = path.join(parent, "outside");
+    const link = path.join(sandbox, "link-out");
+    try {
+      await fs.mkdir(sandbox);
+      await fs.mkdir(outside);
+      await fs.symlink(outside, link, "junction");
+      await expect(
+        invokeFileWrite(
+          { path: "link-out/a.txt", content: "new", mode: "overwrite" },
+          fileSearchEnv(sandbox),
+        ),
+      ).rejects.toThrow(/symlink/);
+    } finally {
+      await fs.rm(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("file.edit performs exact replacements with an expected count", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-tool-"));
+    try {
+      await fs.writeFile(path.join(dir, "a.txt"), "one fish\none bird\n", "utf8");
+      const edited = await invokeFileEdit(
+        {
+          path: "a.txt",
+          search: "one",
+          replace: "blue",
+          expected_replacements: 2,
+        },
+        fileSearchEnv(dir),
+      );
+      expect(edited).toMatchObject({
+        path: "a.txt",
+        replacements: 2,
+      });
+      expect(await fs.readFile(path.join(dir, "a.txt"), "utf8")).toBe(
+        "blue fish\nblue bird\n",
+      );
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("file.edit refuses replacement-count mismatch and binary-looking files", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-tool-"));
+    try {
+      await fs.writeFile(path.join(dir, "a.txt"), "one one\n", "utf8");
+      await expect(
+        invokeFileEdit(
+          { path: "a.txt", search: "one", replace: "two" },
+          fileSearchEnv(dir),
+        ),
+      ).rejects.toThrow(/expected 1 replacement/);
+
+      await fs.writeFile(path.join(dir, "b.bin"), Buffer.from([0, 1, 2]));
+      await expect(
+        invokeFileEdit(
+          { path: "b.bin", search: "x", replace: "y" },
+          fileSearchEnv(dir),
+        ),
+      ).rejects.toThrow(/binary/);
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }

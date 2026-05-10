@@ -21,6 +21,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Telegram Bot API channel
 - Slack / Discord adapters with silent fallback when credentials are absent
 - Daily Brief scheduled-message smoke via internal cron
+- Built-in `file.search`, `file.write`, `file.edit`, and `http.fetch` with sandbox / SSRF guards
 
 ## v0.1 explicit boundaries
 
@@ -93,6 +94,14 @@ pnpm gateway:serve
 
 v0.1 Daily Brief is a scheduled `channel_send` smoke. Real Gmail/GCal/Drive-backed brief is v0.2+.
 When enabled, the Control Center runtime snapshot shows the configured Daily Brief schedule and next fire time without exposing the brief content.
+
+## File tools
+
+```bash
+export BLUE_TANUKI_FILE_ROOT="$PWD"
+```
+
+`file.search`, `file.write`, and `file.edit` are confined to `BLUE_TANUKI_FILE_ROOT`. Secret-like paths and symlink escapes are denied; writes require explicit `fs:write` capability.
 
 ## Runtime snapshot
 

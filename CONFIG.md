@@ -41,6 +41,15 @@ For smoke testing:
 BLUE_TANUKI_DAILY_BRIEF_INTERVAL_MS=60000
 ```
 
+## File tools
+
+```bash
+BLUE_TANUKI_FILE_ROOT=/path/to/workspace
+```
+
+`file.search`, `file.write`, and `file.edit` only operate under this root.
+Secret-like paths and symlink escapes are denied.
+
 ## Persistence
 
 ```bash

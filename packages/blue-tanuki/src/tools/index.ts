@@ -7,6 +7,11 @@ export {
 } from "./registry.js";
 export {
   fileSearchTool,
+  fileWriteTool,
+  fileEditTool,
   httpFetchTool,
+  invokeFileWrite,
+  invokeFileEdit,
   registerBuiltinTools,
+  type FileWriteOptions,
 } from "./builtin.js";

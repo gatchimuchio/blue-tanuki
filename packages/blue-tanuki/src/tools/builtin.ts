@@ -43,6 +43,10 @@ export interface FileSearchOptions {
   env?: Env;
 }
 
+export interface FileWriteOptions {
+  env?: Env;
+}
+
 const HTTP_REDIRECT_LIMIT = 3;
 const HTTP_FETCH_TIMEOUT_MS = 15_000;
 const BLOCKED_IPS = new BlockList();
@@ -176,6 +180,49 @@ async function resolveFileSearchRoot(
   const realRel = path.relative(sandboxRoot, real);
   assertNotSecretLike(realRel, displayPath(realRel || "."));
   return real;
+}
+
+async function resolveSandboxFilePath(
+  pathArg: string,
+  sandboxRoot: string,
+): Promise<{ filepath: string; relative_path: string }> {
+  const lexical = path.isAbsolute(pathArg)
+    ? path.resolve(pathArg)
+    : path.resolve(sandboxRoot, pathArg);
+  if (!pathInside(sandboxRoot, lexical)) {
+    throw new Error("file path must stay within BLUE_TANUKI_FILE_ROOT");
+  }
+  const rel = path.relative(sandboxRoot, lexical);
+  assertNotSecretLike(rel, displayPath(rel || "."));
+
+  const parent = path.dirname(lexical);
+  const realParent = await fs.realpath(parent);
+  if (!pathInside(sandboxRoot, realParent)) {
+    throw new Error("file path escapes BLUE_TANUKI_FILE_ROOT via symlink");
+  }
+  const parentStat = await fs.stat(realParent);
+  if (!parentStat.isDirectory()) {
+    throw new Error("file parent must be a directory");
+  }
+
+  const existing = await fs.lstat(lexical).catch((e: NodeJS.ErrnoException) => {
+    if (e.code === "ENOENT") return null;
+    throw e;
+  });
+  if (existing?.isSymbolicLink()) {
+    throw new Error("file path must not be a symlink");
+  }
+  if (existing) {
+    const real = await fs.realpath(lexical);
+    if (!pathInside(sandboxRoot, real)) {
+      throw new Error("file path escapes BLUE_TANUKI_FILE_ROOT via symlink");
+    }
+  }
+
+  return {
+    filepath: lexical,
+    relative_path: displayPath(rel),
+  };
 }
 
 async function* walkFiles(
@@ -507,12 +554,119 @@ export async function invokeFileSearch(
   };
 }
 
+export async function invokeFileWrite(
+  args: Record<string, unknown>,
+  opts: FileWriteOptions = {},
+): Promise<unknown> {
+  const env = opts.env ?? process.env;
+  const sandboxRoot = await sandboxRootFromEnv(env);
+  const { filepath, relative_path } = await resolveSandboxFilePath(
+    stringArg(args, "path")!,
+    sandboxRoot,
+  );
+  const content = stringArg(args, "content")!;
+  const modeRaw = stringArg(args, "mode", false) ?? "create";
+  if (modeRaw !== "create" && modeRaw !== "overwrite" && modeRaw !== "append") {
+    throw new Error("mode must be create, overwrite, or append");
+  }
+  const maxBytes = positiveIntArg(args, "max_bytes", 256_000, 1_000_000);
+  const bytes = Buffer.byteLength(content, "utf8");
+  if (bytes > maxBytes) {
+    throw new Error(`file.write content exceeds max_bytes (${bytes} > ${maxBytes})`);
+  }
+
+  if (modeRaw === "create") {
+    await fs.writeFile(filepath, content, { encoding: "utf8", flag: "wx" });
+  } else if (modeRaw === "overwrite") {
+    await fs.writeFile(filepath, content, { encoding: "utf8", flag: "w" });
+  } else {
+    await fs.appendFile(filepath, content, { encoding: "utf8" });
+  }
+
+  return {
+    path: relative_path,
+    sandbox_root: sandboxRoot,
+    mode: modeRaw,
+    bytes_written: bytes,
+  };
+}
+
+export async function invokeFileEdit(
+  args: Record<string, unknown>,
+  opts: FileWriteOptions = {},
+): Promise<unknown> {
+  const env = opts.env ?? process.env;
+  const sandboxRoot = await sandboxRootFromEnv(env);
+  const { filepath, relative_path } = await resolveSandboxFilePath(
+    stringArg(args, "path")!,
+    sandboxRoot,
+  );
+  const search = stringArg(args, "search")!;
+  const replace = stringArg(args, "replace")!;
+  if (search === replace) {
+    throw new Error("search and replace must differ");
+  }
+  const expectedReplacements = positiveIntArg(
+    args,
+    "expected_replacements",
+    1,
+    100,
+  );
+  const maxBytes = positiveIntArg(args, "max_bytes", 512_000, 1_000_000);
+
+  const beforeBuffer = await fs.readFile(filepath);
+  if (beforeBuffer.includes(0)) {
+    throw new Error("file.edit refuses binary-looking files");
+  }
+  if (beforeBuffer.length > maxBytes) {
+    throw new Error(`file.edit input exceeds max_bytes (${beforeBuffer.length} > ${maxBytes})`);
+  }
+  const before = beforeBuffer.toString("utf8");
+  const parts = before.split(search);
+  const replacements = parts.length - 1;
+  if (replacements !== expectedReplacements) {
+    throw new Error(
+      `file.edit expected ${expectedReplacements} replacement(s), found ${replacements}`,
+    );
+  }
+  const after = parts.join(replace);
+  const afterBytes = Buffer.byteLength(after, "utf8");
+  if (afterBytes > maxBytes) {
+    throw new Error(`file.edit output exceeds max_bytes (${afterBytes} > ${maxBytes})`);
+  }
+  await fs.writeFile(filepath, after, { encoding: "utf8", flag: "w" });
+  return {
+    path: relative_path,
+    sandbox_root: sandboxRoot,
+    replacements,
+    bytes_written: afterBytes,
+  };
+}
+
 export const fileSearchTool: Tool = {
   name: "file.search",
   description: "Read-only text search under a requested root directory.",
   required_capabilities: ["tool:file.search", "fs:read"],
   async invoke(args: Record<string, unknown>): Promise<unknown> {
     return await invokeFileSearch(args);
+  },
+};
+
+export const fileWriteTool: Tool = {
+  name: "file.write",
+  description: "Create, overwrite, or append a UTF-8 file under BLUE_TANUKI_FILE_ROOT.",
+  required_capabilities: ["tool:file.write", "fs:write"],
+  async invoke(args: Record<string, unknown>): Promise<unknown> {
+    return await invokeFileWrite(args);
+  },
+};
+
+export const fileEditTool: Tool = {
+  name: "file.edit",
+  description: "Perform an exact UTF-8 text replacement under BLUE_TANUKI_FILE_ROOT.",
+  required_capabilities: ["tool:file.edit", "fs:read", "fs:write"],
+  async invoke(args: Record<string, unknown>): Promise<unknown> {
+    return await invokeFileEdit(args);
   },
 };
 
@@ -530,5 +684,7 @@ export function registerBuiltinTools(registry: {
 }): void {
   registry.register(echoTool);
   registry.register(fileSearchTool);
+  registry.register(fileWriteTool);
+  registry.register(fileEditTool);
   registry.register(httpFetchTool);
 }
