@@ -224,16 +224,16 @@ export class HDSUpperController {
     log: DecisionLog;
     command: ExecuteCommand | null;
   } {
-    const f = frame(req, {
-      default_policy: this.policy,
-      memory_reader: this.memory,
-    });
     const input = normalizeForDetection(req.content);
-    const detectorReq: InboundRequest = {
+    const authorityReq: InboundRequest = {
       ...req,
       content: input.normalized_content,
     };
-    const m = model(detectorReq, f, this.policy, this.detectors);
+    const f = frame(authorityReq, {
+      default_policy: this.policy,
+      memory_reader: this.memory,
+    });
+    const m = model(authorityReq, f, this.policy, this.detectors);
 
     const processViolation = processAuthorityViolation(f);
     let c = processViolation
@@ -255,7 +255,7 @@ export class HDSUpperController {
 
     let command: ExecuteCommand | null = null;
     if (c.decision === "ASSERT") {
-      const candidate = this.buildCommand(req, log);
+      const candidate = this.buildCommand(authorityReq, log);
       const commandViolation = commandExecutionPolicyViolation(candidate, f.process);
       if (commandViolation) {
         c = securityCommit("process_execution_policy_denied", commandViolation, {
@@ -292,7 +292,7 @@ export class HDSUpperController {
           suspended_at: Date.now(),
           reason: c.reason,
         });
-        this.suspendedRequests.set(req.id, req);
+        this.suspendedRequests.set(req.id, authorityReq);
         return { log, command: null };
       }
       case "OUT_OF_SCOPE":

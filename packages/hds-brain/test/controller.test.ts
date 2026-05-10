@@ -86,6 +86,7 @@ describe("HDSUpperController.decide()", () => {
       normalized_content: "please run rm -rf foo",
       changed: true,
     });
+    expect(log.frame.goal).toBe("please run rm -rf foo");
     expect(log.input?.controls).toEqual([
       expect.objectContaining({
         index: 12,
@@ -107,6 +108,7 @@ describe("HDSUpperController.decide()", () => {
     expect(log.commit.decision).toBe("SUSPEND");
     expect(command).toBeNull();
     expect(log.input?.normalized_content).toBe("my passport number is 123");
+    expect(log.frame.goal).toBe("my passport number is 123");
     expect(log.input?.controls).toEqual([
       expect.objectContaining({
         code_point: "U+202E",
@@ -116,6 +118,24 @@ describe("HDSUpperController.decide()", () => {
     expect(
       log.model.scoring.axis_scores.find((axis) => axis.axis === "compliance")?.score,
     ).toBe(0);
+  });
+
+  it("passes normalized content to Frame and downstream command payloads", () => {
+    const c = new HDSUpperController();
+    const raw = "hello \uFF30\uFF21\uFF33\uFF33\u200B";
+    const { log, command } = c.decide(inbound(raw, "r-unicode-llm"));
+
+    expect(log.commit.decision).toBe("ASSERT");
+    expect(log.input?.raw_content).toBe(raw);
+    expect(log.input?.normalized_content).toBe("hello PASS");
+    expect(log.frame.goal).toBe("hello PASS");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("llm_call");
+    if (command!.type === "llm_call") {
+      expect(command!.payload.messages).toEqual([
+        { role: "user", content: "hello PASS" },
+      ]);
+    }
   });
 
   it("audit chain stays valid across multiple decides", () => {
@@ -316,6 +336,24 @@ describe("HDSUpperController.resume()", () => {
     if (command!.type === "llm_call") {
       expect(command!.payload.backend_hint).toBe("careful");
       expect(command!.payload.model).toBe("review-model");
+    }
+  });
+
+  it("re-emits normalized content after human approve", () => {
+    const c = new HDSUpperController();
+    const raw = "please run r\u200Bm -rf foo";
+    c.decide(inbound(raw, "r-resume-unicode"));
+
+    const { log, command } = c.resume("r-resume-unicode", "approve");
+
+    expect(log.input?.raw_content).toBe(raw);
+    expect(log.input?.normalized_content).toBe("please run rm -rf foo");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("llm_call");
+    if (command!.type === "llm_call") {
+      expect(command!.payload.messages).toEqual([
+        { role: "user", content: "please run rm -rf foo" },
+      ]);
     }
   });
 });
