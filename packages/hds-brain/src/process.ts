@@ -147,8 +147,25 @@ function executionPolicy(process_kind: ProcessKind): HDSProcessDefinition["execu
   if (process_kind === "tool") {
     return {
       allowed_command_types: ["tool_call", "noop"],
-      allowed_tools: ["echo", "file.search", "http.fetch", "web.search"],
-      allowed_capabilities: ["tool:echo", "tool:file.search", "fs:read", "tool:http.fetch", "tool:web.search", "network:http"],
+      allowed_tools: [
+        "echo",
+        "file.search",
+        "file.write",
+        "file.edit",
+        "http.fetch",
+        "web.search",
+      ],
+      allowed_capabilities: [
+        "tool:echo",
+        "tool:file.search",
+        "tool:file.write",
+        "tool:file.edit",
+        "fs:read",
+        "fs:write",
+        "tool:http.fetch",
+        "tool:web.search",
+        "network:http",
+      ],
       timeout_ms: 15_000,
     };
   }
@@ -170,7 +187,14 @@ function executionPolicy(process_kind: ProcessKind): HDSProcessDefinition["execu
   }
   return {
     allowed_command_types: ["llm_call", "tool_call", "noop"],
-    allowed_tools: ["echo", "file.search", "http.fetch", "web.search"],
+    allowed_tools: [
+      "echo",
+      "file.search",
+      "file.write",
+      "file.edit",
+      "http.fetch",
+      "web.search",
+    ],
     allowed_capabilities: [],
     timeout_ms: 30_000,
   };

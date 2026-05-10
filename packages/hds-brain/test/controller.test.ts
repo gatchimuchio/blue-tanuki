@@ -198,6 +198,61 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit file.write requests with write capability", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound('tool:file.write path=notes/today.md content="hello world" mode=create max_bytes=4096'),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "file.write",
+        arguments: {
+          path: "notes/today.md",
+          content: "hello world",
+          mode: "create",
+          max_bytes: 4096,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["file.write"],
+      allowed_capabilities: ["tool:file.write", "fs:write"],
+      timeout_ms: 15_000,
+    });
+  });
+
+  it("routes explicit file.edit requests with read/write capability", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound('tool:file.edit path=notes/today.md search=hello replace=hi expected_replacements=1 max_bytes=4096'),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "file.edit",
+        arguments: {
+          path: "notes/today.md",
+          search: "hello",
+          replace: "hi",
+          expected_replacements: 1,
+          max_bytes: 4096,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["file.edit"],
+      allowed_capabilities: ["tool:file.edit", "fs:read", "fs:write"],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("routes structured metadata tool_call requests", () => {
     const c = new HDSUpperController();
     const { command } = c.decide(

@@ -29,6 +29,14 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     allowed_capabilities: ["tool:file.search", "fs:read"],
     timeout_ms: 10_000,
   },
+  "file.write": {
+    allowed_capabilities: ["tool:file.write", "fs:write"],
+    timeout_ms: 15_000,
+  },
+  "file.edit": {
+    allowed_capabilities: ["tool:file.edit", "fs:read", "fs:write"],
+    timeout_ms: 15_000,
+  },
   "http.fetch": {
     allowed_capabilities: ["tool:http.fetch", "network:http"],
     timeout_ms: 15_000,
@@ -44,6 +52,8 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  *
  * Supported content forms:
  *   - tool:file.search root=. query=needle max_results=5
+ *   - tool:file.write path=notes/today.md content="hello" mode=create
+ *   - tool:file.edit path=notes/today.md search=hello replace=hi expected_replacements=1
  *   - tool:http.fetch url=https://example.com method=HEAD
  *   - tool:web.search query="blue tanuki" max_results=5
  *   - /tool echo text="hello"
@@ -184,8 +194,16 @@ function coerceToolArgs(
   if (toolName === "file.search" || toolName === "web.search") {
     coercePositiveInt(next, "max_results");
   }
-  if (toolName === "http.fetch" || toolName === "web.search") {
+  if (
+    toolName === "http.fetch" ||
+    toolName === "web.search" ||
+    toolName === "file.write" ||
+    toolName === "file.edit"
+  ) {
     coercePositiveInt(next, "max_bytes");
+  }
+  if (toolName === "file.edit") {
+    coercePositiveInt(next, "expected_replacements");
   }
   if (toolName === "http.fetch") {
     if (typeof next.method === "string") {
