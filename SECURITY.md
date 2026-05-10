@@ -84,6 +84,49 @@ These always require review regardless of full-access default:
 - payment charge
 - schedule create
 
+## 3段階承認モデル (暫定)
+
+この節はご主人様確認待ちの暫定仕様である。L1/L2/L3 の対象範囲は
+運用で確定するまでは draft として扱う。現行コードに存在する
+Approval Gate / grant store / final-review boundary との対応を明示し、
+ズレは `FIXME: implementation gap` として残す。
+
+| Level | 名称 | 暫定対象 | 承認方式 | 現行実装との対応 |
+|---|---|---|---|---|
+| L1 | 観測ゲート | 読み取り系・閲覧系・`noop`・通常の `llm.call` | 自動許可(audit のみ) | `system-allow-llm-call` / `system-allow-noop` と、`full_access` default の non-final-review allow が近い。Approval evaluation と authority trace は audit に残る。 |
+| L2 | 操作ゲート | 状態変更を伴う通常操作。ただし final-review operations は除く | Approval grant の reuse 可 | `ask_every_time` / `remember_this_decision` / `full_access` と `ApprovalGrantStore` が対応する。`grantMatches()` は operation/scope/risk/actor/capability で照合する。 |
+| L3 | final-review ゲート | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create | reuse 不可・常に owner 確認 | `FINAL_REVIEW_OPERATIONS` と `finalReviewRequired()` が対応する。matching allow grant があっても `grant_matched_but_final_review_required` として `ask` に戻す。 |
+
+Operationally, HDS-BRAIN may ASSERT a command, but the executor must not run it
+until Approval Gate evaluation has completed. The Approval Gate result and
+authority trace are recorded into the same hash-chain audit log before executor
+feedback closes the loop.
+
+Implementation mapping:
+
+| 現行要素 | 対応する承認段階 |
+|---|---|
+| `ApprovalMode.ask_every_time` | L2 default policy / L3 ask |
+| `ApprovalMode.remember_this_decision` | L2 reusable grant |
+| `ApprovalMode.full_access` | L1/L2 broad local allowance, except L3 |
+| `ApprovalGrantStore` | L2 reusable grant storage |
+| `FINAL_REVIEW_OPERATIONS` | L3 boundary |
+| `AuthorityTransparencyTrace.final_review_boundary` | L3 boundary visibility |
+| `approval_gate` / `authority_event` audit entries | L1/L2/L3 trace closure |
+
+FIXME: implementation gap - L1/L2/L3 are not yet first-class TypeScript enum
+values. The current code derives equivalent behavior from operation, risk,
+grant mode, and final-review status.
+
+FIXME: implementation gap - The exact L1 read-only operation list is not yet
+codified as a named policy table. `llm.call` and `noop` have system grants;
+other read-like operations are currently governed by operation/risk/default
+mode.
+
+FIXME: implementation gap - Owner identity for L3 is represented by gateway
+actor/token handling and audit fields, but the final human/owner factor list is
+still draft until ご主人様 confirms the operational definition.
+
 ## Memory boundary
 
 There are four distinct stores:
