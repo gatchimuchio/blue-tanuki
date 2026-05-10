@@ -89,6 +89,7 @@ describe("plugin loader", () => {
         "tool:file.edit",
         "fs:write",
         "tool:http.fetch",
+        "tool:web.search",
         "network:http",
       ],
       module: `

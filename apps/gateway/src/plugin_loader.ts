@@ -49,6 +49,7 @@ const BUILTIN_TOOL_PERMISSIONS = [
   "tool:file.edit",
   "fs:write",
   "tool:http.fetch",
+  "tool:web.search",
   "network:http",
 ] as const;
 

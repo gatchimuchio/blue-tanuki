@@ -28,6 +28,7 @@
     "tool:file.write",
     "tool:file.edit",
     "tool:http.fetch",
+    "tool:web.search",
     "fs:read",
     "fs:write",
     "network:http"

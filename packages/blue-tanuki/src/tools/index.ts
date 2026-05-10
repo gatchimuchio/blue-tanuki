@@ -10,8 +10,12 @@ export {
   fileWriteTool,
   fileEditTool,
   httpFetchTool,
+  webSearchTool,
   invokeFileWrite,
   invokeFileEdit,
+  invokeWebSearch,
   registerBuiltinTools,
   type FileWriteOptions,
+  type WebSearchOptions,
+  type WebSearchResult,
 } from "./builtin.js";

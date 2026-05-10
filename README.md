@@ -22,7 +22,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Slack / Discord adapters with silent fallback when credentials are absent
 - Daily Brief scheduled-message smoke via internal cron
 - Optional token-gated HTTP webhook ingress at `/webhook`
-- Built-in `file.search`, `file.write`, `file.edit`, and `http.fetch` with sandbox / SSRF guards
+- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, and `web.search` with sandbox / SSRF guards
 
 ## v0.1 explicit boundaries
 
@@ -115,6 +115,15 @@ export BLUE_TANUKI_FILE_ROOT="$PWD"
 ```
 
 `file.search`, `file.write`, and `file.edit` are confined to `BLUE_TANUKI_FILE_ROOT`. Secret-like paths and symlink escapes are denied; writes require explicit `fs:write` capability.
+
+## Web search
+
+```bash
+export BLUE_TANUKI_WEB_SEARCH_ENDPOINT="https://search.example.com/search?q={query}&count={max_results}"
+```
+
+`web.search` is provider-neutral and disabled until an endpoint is configured.
+Requests go through the same public-address and allowlist checks as `http.fetch`.
 
 ## Runtime snapshot
 

@@ -33,6 +33,10 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     allowed_capabilities: ["tool:http.fetch", "network:http"],
     timeout_ms: 15_000,
   },
+  "web.search": {
+    allowed_capabilities: ["tool:web.search", "network:http"],
+    timeout_ms: 15_000,
+  },
 };
 
 /**
@@ -41,6 +45,7 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  * Supported content forms:
  *   - tool:file.search root=. query=needle max_results=5
  *   - tool:http.fetch url=https://example.com method=HEAD
+ *   - tool:web.search query="blue tanuki" max_results=5
  *   - /tool echo text="hello"
  *   - tool:http.fetch {"url":"https://example.com","method":"GET"}
  *
@@ -176,11 +181,13 @@ function coerceToolArgs(
   args: Record<string, unknown>,
 ): Record<string, unknown> {
   const next = { ...args };
-  if (toolName === "file.search") {
+  if (toolName === "file.search" || toolName === "web.search") {
     coercePositiveInt(next, "max_results");
   }
-  if (toolName === "http.fetch") {
+  if (toolName === "http.fetch" || toolName === "web.search") {
     coercePositiveInt(next, "max_bytes");
+  }
+  if (toolName === "http.fetch") {
     if (typeof next.method === "string") {
       next.method = next.method.toUpperCase();
     }

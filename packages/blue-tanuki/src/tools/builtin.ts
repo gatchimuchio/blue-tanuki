@@ -39,6 +39,14 @@ export interface HttpFetchOptions {
   ) => Promise<HttpFetchResponse>;
 }
 
+export interface WebSearchOptions extends HttpFetchOptions {}
+
+export interface WebSearchResult {
+  title: string;
+  url: string | null;
+  snippet: string;
+}
+
 export interface FileSearchOptions {
   env?: Env;
 }
@@ -364,6 +372,105 @@ function headerString(value: string | string[] | number | undefined): string | n
   return value ?? null;
 }
 
+function truncateText(value: string, max: number): string {
+  return value.length > max ? `${value.slice(0, max - 3)}...` : value;
+}
+
+function optionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
+}
+
+function webSearchEndpointUrl(
+  endpoint: string,
+  query: string,
+  maxResults: number,
+): string {
+  const trimmed = endpoint.trim();
+  if (trimmed.length === 0) {
+    throw new Error("BLUE_TANUKI_WEB_SEARCH_ENDPOINT must be a non-empty URL");
+  }
+  if (trimmed.includes("{query}") || trimmed.includes("{max_results}")) {
+    return trimmed
+      .replaceAll("{query}", encodeURIComponent(query))
+      .replaceAll("{max_results}", String(maxResults));
+  }
+  const url = new URL(trimmed);
+  url.searchParams.set("q", query);
+  url.searchParams.set("count", String(maxResults));
+  return url.href;
+}
+
+function arrayCandidate(value: unknown): unknown[] | null {
+  return Array.isArray(value) ? value : null;
+}
+
+function resultArrayFromJson(value: unknown): unknown[] | null {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  return (
+    arrayCandidate(record.results) ??
+    arrayCandidate(record.items) ??
+    arrayCandidate(record.organic_results) ??
+    arrayCandidate((record.web as Record<string, unknown> | undefined)?.results) ??
+    arrayCandidate((record.webPages as Record<string, unknown> | undefined)?.value) ??
+    null
+  );
+}
+
+function coerceWebSearchResult(value: unknown): WebSearchResult | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  const title =
+    optionalString(record.title) ??
+    optionalString(record.name) ??
+    optionalString(record.heading) ??
+    "Untitled result";
+  const url =
+    optionalString(record.url) ??
+    optionalString(record.link) ??
+    optionalString(record.href);
+  const snippet =
+    optionalString(record.snippet) ??
+    optionalString(record.description) ??
+    optionalString(record.summary) ??
+    optionalString(record.content) ??
+    optionalString(record.text) ??
+    "";
+  if (!url && !snippet && title === "Untitled result") return null;
+  return {
+    title: truncateText(title, 160),
+    url,
+    snippet: truncateText(snippet, 600),
+  };
+}
+
+function parseWebSearchResults(body: string, maxResults: number): WebSearchResult[] {
+  try {
+    const parsed = JSON.parse(body) as unknown;
+    const entries = resultArrayFromJson(parsed);
+    if (entries) {
+      return entries
+        .map(coerceWebSearchResult)
+        .filter((entry): entry is WebSearchResult => entry !== null)
+        .slice(0, maxResults);
+    }
+  } catch {
+    // Fall through to bounded text fallback below.
+  }
+  const text = body.trim();
+  if (!text) return [];
+  return [
+    {
+      title: "Raw search response",
+      url: null,
+      snippet: truncateText(text.replace(/\s+/g, " "), 600),
+    },
+  ];
+}
+
 async function defaultHttpRequest(
   target: HttpFetchTarget,
   method: "GET" | "HEAD",
@@ -507,6 +614,43 @@ export async function invokeHttpFetch(
       truncated: res.truncated,
     };
   }
+}
+
+export async function invokeWebSearch(
+  args: Record<string, unknown>,
+  opts: WebSearchOptions = {},
+): Promise<unknown> {
+  const query = stringArg(args, "query")!;
+  const maxResults = positiveIntArg(args, "max_results", 5, 20);
+  const maxBytes = positiveIntArg(args, "max_bytes", 64_000, 512_000);
+  const env = opts.env ?? process.env;
+  const endpoint = env.BLUE_TANUKI_WEB_SEARCH_ENDPOINT;
+  if (!endpoint) {
+    throw new Error("BLUE_TANUKI_WEB_SEARCH_ENDPOINT is required for web.search");
+  }
+  const url = webSearchEndpointUrl(endpoint, query, maxResults);
+  const fetched = (await invokeHttpFetch(
+    { url, method: "GET", max_bytes: maxBytes },
+    opts,
+  )) as {
+    url: string;
+    status: number;
+    ok: boolean;
+    content_type: string | null;
+    body: string;
+    truncated: boolean;
+  };
+  if (!fetched.ok) {
+    throw new Error(`web.search provider returned HTTP ${fetched.status}`);
+  }
+  return {
+    query,
+    endpoint: fetched.url,
+    status: fetched.status,
+    content_type: fetched.content_type,
+    truncated: fetched.truncated,
+    results: parseWebSearchResults(fetched.body, maxResults),
+  };
 }
 
 export async function invokeFileSearch(
@@ -679,6 +823,15 @@ export const httpFetchTool: Tool = {
   },
 };
 
+export const webSearchTool: Tool = {
+  name: "web.search",
+  description: "Provider-neutral web search via BLUE_TANUKI_WEB_SEARCH_ENDPOINT.",
+  required_capabilities: ["tool:web.search", "network:http"],
+  async invoke(args: Record<string, unknown>): Promise<unknown> {
+    return await invokeWebSearch(args);
+  },
+};
+
 export function registerBuiltinTools(registry: {
   register(tool: Tool): void;
 }): void {
@@ -687,4 +840,5 @@ export function registerBuiltinTools(registry: {
   registry.register(fileWriteTool);
   registry.register(fileEditTool);
   registry.register(httpFetchTool);
+  registry.register(webSearchTool);
 }

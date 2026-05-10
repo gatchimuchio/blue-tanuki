@@ -229,6 +229,31 @@ describe("HDSUpperController.decide()", () => {
     ]);
   });
 
+  it("routes explicit web.search requests to tool_call with network capability", () => {
+    const c = new HDSUpperController();
+    const { command } = c.decide(
+      inbound('tool:web.search query="blue tanuki" max_results=3 max_bytes=4096'),
+    );
+
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "web.search",
+        arguments: {
+          query: "blue tanuki",
+          max_results: 3,
+          max_bytes: 4096,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["web.search"],
+      allowed_capabilities: ["tool:web.search", "network:http"],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("does not send unsupported explicit tool requests to the LLM", () => {
     const c = new HDSUpperController();
     const { command } = c.decide(inbound("tool:shell.exec command=pwd"));

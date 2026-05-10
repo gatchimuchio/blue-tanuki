@@ -60,6 +60,17 @@ BLUE_TANUKI_FILE_ROOT=/path/to/workspace
 `file.search`, `file.write`, and `file.edit` only operate under this root.
 Secret-like paths and symlink escapes are denied.
 
+## Web search
+
+```bash
+BLUE_TANUKI_WEB_SEARCH_ENDPOINT=https://search.example.com/search?q={query}&count={max_results}
+BLUE_TANUKI_HTTP_ALLOWLIST=search.example.com
+```
+
+`web.search` is disabled unless the endpoint is configured. The endpoint can use
+`{query}` and `{max_results}` placeholders, or BLUE-TANUKI will append `q` and
+`count` query parameters. Requests inherit `http.fetch` SSRF protections.
+
 ## Persistence
 
 ```bash

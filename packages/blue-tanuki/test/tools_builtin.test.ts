@@ -7,6 +7,7 @@ import {
   invokeFileWrite,
   invokeFileEdit,
   invokeHttpFetch,
+  invokeWebSearch,
   registerBuiltinTools,
   type FileSearchOptions,
   type HttpFetchOptions,
@@ -28,6 +29,7 @@ describe("built-in tools", () => {
     expect(registry.get("file.write")).toBeDefined();
     expect(registry.get("file.edit")).toBeDefined();
     expect(registry.get("http.fetch")).toBeDefined();
+    expect(registry.get("web.search")).toBeDefined();
     expect(registry.listCapabilities()).toEqual([
       "fs:read",
       "fs:write",
@@ -37,6 +39,7 @@ describe("built-in tools", () => {
       "tool:file.search",
       "tool:file.write",
       "tool:http.fetch",
+      "tool:web.search",
     ]);
   });
 
@@ -395,6 +398,106 @@ describe("built-in tools", () => {
       invokeHttpFetch(
         { url: "https://outside.test/" },
         { ...opts, env: { BLUE_TANUKI_HTTP_ALLOWLIST: "example.com" } },
+      ),
+    ).rejects.toThrow(/BLUE_TANUKI_HTTP_ALLOWLIST/);
+  });
+
+  it("web.search uses a configured provider endpoint and parses JSON results", async () => {
+    const seen: string[] = [];
+    const opts = fakeHttp(
+      {
+        "search.example.com": { address: "93.184.216.34", family: 4 },
+      },
+      async (target) => {
+        seen.push(target.url.href);
+        return {
+          status: 200,
+          ok: true,
+          content_type: "application/json",
+          location: null,
+          body: JSON.stringify({
+            results: [
+              {
+                title: "Alpha",
+                url: "https://example.com/a",
+                snippet: "first",
+              },
+              {
+                name: "Beta",
+                link: "https://example.com/b",
+                description: "second",
+              },
+            ],
+          }),
+          truncated: false,
+        };
+      },
+    );
+
+    const result = (await invokeWebSearch(
+      { query: "blue tanuki", max_results: 2 },
+      {
+        ...opts,
+        env: {
+          BLUE_TANUKI_WEB_SEARCH_ENDPOINT:
+            "https://search.example.com/search?q={query}&count={max_results}",
+        },
+      },
+    )) as {
+      query: string;
+      endpoint: string;
+      results: Array<{ title: string; url: string; snippet: string }>;
+    };
+
+    expect(seen).toEqual([
+      "https://search.example.com/search?q=blue%20tanuki&count=2",
+    ]);
+    expect(result.query).toBe("blue tanuki");
+    expect(result.endpoint).toBe(seen[0]);
+    expect(result.results).toEqual([
+      { title: "Alpha", url: "https://example.com/a", snippet: "first" },
+      { title: "Beta", url: "https://example.com/b", snippet: "second" },
+    ]);
+  });
+
+  it("web.search fails closed when no provider endpoint is configured", async () => {
+    await expect(
+      invokeWebSearch(
+        { query: "blue tanuki" },
+        fakeHttp({ "search.example.com": { address: "93.184.216.34", family: 4 } }),
+      ),
+    ).rejects.toThrow(/BLUE_TANUKI_WEB_SEARCH_ENDPOINT/);
+  });
+
+  it("web.search inherits http.fetch SSRF and allowlist enforcement", async () => {
+    await expect(
+      invokeWebSearch(
+        { query: "metadata" },
+        {
+          ...fakeHttp({
+            "metadata.test": { address: "169.254.169.254", family: 4 },
+          }),
+          env: {
+            BLUE_TANUKI_WEB_SEARCH_ENDPOINT:
+              "http://metadata.test/search?q={query}",
+          },
+        },
+      ),
+    ).rejects.toThrow(/non-public address/);
+
+    await expect(
+      invokeWebSearch(
+        { query: "outside" },
+        {
+          ...fakeHttp({
+            "outside.test": { address: "93.184.216.34", family: 4 },
+          }),
+          env: {
+            BLUE_TANUKI_WEB_SEARCH_ENDPOINT:
+              "https://outside.test/search?q={query}",
+            BLUE_TANUKI_HTTP_ALLOWLIST: "example.com",
+          },
+        },
       ),
     ).rejects.toThrow(/BLUE_TANUKI_HTTP_ALLOWLIST/);
   });

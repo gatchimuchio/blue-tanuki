@@ -8,7 +8,7 @@
   "scripts": {
     "build": "node scripts/pnpm_exec.mjs -r build",
     "clean": "node scripts/clean.mjs",
-    "typecheck": "node scripts/pnpm_exec.mjs -r typecheck",
+    "typecheck": "node scripts/typecheck.mjs",
     "test": "node node_modules/vitest/vitest.mjs run --passWithNoTests",
     "gateway": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway start",
     "gateway:dev": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway dev",
