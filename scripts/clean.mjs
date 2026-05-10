@@ -17,6 +17,18 @@ function assertSafeDistPath(target) {
   return resolved;
 }
 
+function assertSafeBuildInfoPath(target) {
+  const resolved = resolve(target);
+  const rel = relative(root, resolved);
+  if (rel.startsWith("..") || rel === "" || rel.includes(`..${sep}`)) {
+    throw new Error(`refusing to clean outside repository: ${resolved}`);
+  }
+  if (basename(resolved) !== "tsconfig.tsbuildinfo") {
+    throw new Error(`refusing to clean non-tsbuildinfo path: ${resolved}`);
+  }
+  return resolved;
+}
+
 const removed = [];
 
 for (const container of containerDirs) {
@@ -25,9 +37,15 @@ for (const container of containerDirs) {
   for (const entry of readdirSync(containerPath, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     const dist = assertSafeDistPath(join(containerPath, entry.name, "dist"));
-    if (!existsSync(dist)) continue;
-    rmSync(dist, { recursive: true, force: true });
-    removed.push(relative(root, dist).replaceAll("\\", "/"));
+    if (existsSync(dist)) {
+      rmSync(dist, { recursive: true, force: true });
+      removed.push(relative(root, dist).replaceAll("\\", "/"));
+    }
+    const buildInfo = assertSafeBuildInfoPath(join(containerPath, entry.name, "tsconfig.tsbuildinfo"));
+    if (existsSync(buildInfo)) {
+      rmSync(buildInfo, { force: true });
+      removed.push(relative(root, buildInfo).replaceAll("\\", "/"));
+    }
   }
 }
 

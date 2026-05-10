@@ -21,3 +21,5 @@ release/
 .codex-tmp/
 .tmp/
 *.log
+*.tsbuildinfo
+**/*.tsbuildinfo

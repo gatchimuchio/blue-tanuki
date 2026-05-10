@@ -1,4 +1,15 @@
 {
   "extends": "./tsconfig.base.json",
-  "files": []
+  "files": [],
+  "references": [
+    { "path": "./packages/protocol" },
+    { "path": "./packages/channel-base" },
+    { "path": "./packages/hds-brain" },
+    { "path": "./packages/blue-tanuki" },
+    { "path": "./packages/channel-webchat" },
+    { "path": "./packages/channel-slack" },
+    { "path": "./packages/channel-discord" },
+    { "path": "./packages/channel-telegram" },
+    { "path": "./apps/gateway" }
+  ]
 }

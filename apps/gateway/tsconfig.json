@@ -5,5 +5,15 @@
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules"],
+  "references": [
+    { "path": "../../packages/protocol" },
+    { "path": "../../packages/hds-brain" },
+    { "path": "../../packages/blue-tanuki" },
+    { "path": "../../packages/channel-base" },
+    { "path": "../../packages/channel-webchat" },
+    { "path": "../../packages/channel-slack" },
+    { "path": "../../packages/channel-discord" },
+    { "path": "../../packages/channel-telegram" }
+  ]
 }
