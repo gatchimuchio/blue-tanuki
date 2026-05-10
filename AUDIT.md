@@ -36,6 +36,43 @@ pnpm --filter @blue-tanuki/gateway run doctor
 node apps/gateway/dist/main.js --audit-dump --json
 ```
 
+## Chain Integrity Verification
+
+`--audit-verify` is a read-only integrity check for the persisted JSONL
+hash-chain. It does not feed results back into HDS-BRAIN or the authority path.
+
+```bash
+export BLUE_TANUKI_AUDIT_DIR=.blue-tanuki/audit
+node apps/gateway/dist/main.js --audit-verify
+node apps/gateway/dist/main.js --audit-verify --json
+```
+
+Valid chains exit with code `0`:
+
+```text
+blue-tanuki audit-verify - OK (2026-05-11T00:00:00.000Z)
+  filepath:    .blue-tanuki/audit/audit.jsonl
+  entries:     3
+  chain_valid: true
+  detail:      verified 3 entries; chain integrity OK
+
+Exit code: 0
+```
+
+Tampering, order changes, or broken hashes exit with code `1` and report the
+first failing entry index:
+
+```text
+blue-tanuki audit-verify - BROKEN (2026-05-11T00:00:00.000Z)
+  filepath:    .blue-tanuki/audit/audit.jsonl
+  entries:     1
+  chain_valid: false
+  detail:      chain verification failed at entry index 1: entry_hash does not match SHA-256(index|prev_hash|JSON.stringify(log))
+  failure:     index=1 reason=entry_hash_mismatch
+
+Exit code: 1
+```
+
 ## What is recorded
 
 - HDS decision logs

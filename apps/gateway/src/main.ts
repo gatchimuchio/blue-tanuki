@@ -85,6 +85,7 @@ async function runCli(): Promise<void> {
         a !== "--setup" &&
         a !== "--doctor" &&
         a !== "--audit-dump" &&
+        a !== "--audit-verify" &&
         a !== "--json",
     )
     .join(" ")
@@ -239,6 +240,22 @@ async function runAuditDumpCli(): Promise<void> {
   process.exit(report.exit_code);
 }
 
+async function runAuditVerifyCli(): Promise<void> {
+  const {
+    runAuditVerify,
+    formatAuditVerifyTextReport,
+    formatAuditVerifyJsonReport,
+  } = await import("./audit_verify.js");
+  const json = process.argv.includes("--json");
+  const report = runAuditVerify();
+  if (json) {
+    writeStdout(formatAuditVerifyJsonReport(report));
+  } else {
+    writeStdout(formatAuditVerifyTextReport(report));
+  }
+  process.exit(report.exit_code);
+}
+
 async function runSetupCliMode(): Promise<void> {
   const { runSetupCli } = await import("./setup.js");
   await runSetupCli(process.argv.slice(2));
@@ -264,6 +281,10 @@ async function main(): Promise<void> {
   }
   if (process.argv.includes("--audit-dump")) {
     await runAuditDumpCli();
+    return;
+  }
+  if (process.argv.includes("--audit-verify")) {
+    await runAuditVerifyCli();
     return;
   }
   const serveMode =
