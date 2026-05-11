@@ -14,7 +14,7 @@ BLUE-TANUKI is designed for a local owner-operated environment where full-root /
 That default does not weaken the safety path:
 
 - Full-root operation may give the local operator broad system reach, but the BLUE-TANUKI authority path must still route privileged actions through the Approval Gate.
-- The final-review boundary must be treated as a non-bypassable architecture boundary. Full access, reusable grants, automation, cron, webhook ingress, channel metadata, memory, LLM output, and executor feedback must not bypass it.
+- The final-review boundary is non-bypassable. Full access, reusable grants, automation, cron, webhook ingress, channel metadata, memory, LLM output, and executor feedback must not bypass it.
 - "Use at your own risk" is a statement about operational responsibility, not permission to relax robustness requirements.
 - Robustness requirements remain in force regardless of disclaimers, support boundaries, or no-support OSS positioning.
 
@@ -40,6 +40,8 @@ InboundRequest
   -> hash-chain audit
 ```
 
+HDS-BRAIN owns authority. LLMs, tools, channels, plugins, skills, memory, cron, browser automation, UI, onboarding, update flows, companion apps, and external services are downstream devices.
+
 ## Hard invariants
 
 The Runtime Invariants endpoint exposes the current values for the core containment checks. Each invariant is also labeled by the kind of guarantee BLUE-TANUKI currently provides:
@@ -51,12 +53,29 @@ The Runtime Invariants endpoint exposes the current values for the core containm
 |---|---|---|---|
 | HDS-BRAIN never calls an LLM. | `hds_calls_llm=false` | Structural guarantee | `@blue-tanuki/hds-brain` emits `llm_call` commands but has no LLM client dependency. |
 | HDS-BRAIN never trusts session history. | covered by `hds_calls_llm=false` and authority-path tests | Structural guarantee | Session history belongs to the downstream executor/session store. HDS-BRAIN receives only the current `InboundRequest`. |
-| External metadata cannot upgrade actor/process authority. | `external_metadata_can_escalate_authority=false` | Runtime guarantee (structuralization pending) | Channel metadata is ignored for actor/process upgrades unless gateway normalization marks it as internal; spoofed external metadata is covered by tests. |
+| External metadata cannot upgrade actor/process authority. | `external_metadata_can_escalate_authority=false` | Runtime guarantee | Channel metadata is ignored for actor/process upgrades unless gateway normalization marks it as internal; spoofed external metadata is covered by tests. |
 | MemoryTrace is `used_for_authority=false` in v0.1. | `memory_used_for_authority=false` | Structural guarantee | `MemoryTrace.used_for_authority` is typed as the literal `false`; memory traces are context/audit inputs only. |
 | Process execution policy is enforced before command emission. | `process_policy_enforced=true` | Runtime guarantee | HDS-BRAIN evaluates actor/process policy and command execution policy before returning an executable command. |
 | final-review operations cannot be bypassed by full access. | `final_review_boundary_enforced_by_approval_gate=true` | Runtime guarantee | Approval Gate evaluation remains between HDS ASSERT and executor execution; full access and reusable grants cannot skip final-review operations. |
 | cron/webhook actors are not treated as humans. | covered by actor/process policy tests | Runtime guarantee | `cron` and `webhook` resolve to dedicated actor/process kinds with constrained execution policies. |
 | executor feedback is audit evidence, not an authority signal. | covered by audit/feedback tests | Structural guarantee | Feedback is appended as an audit entry and has no code path that resumes a suspended request or creates authority. |
+
+## ApprovalRisk and ApprovalLevel
+
+`ApprovalRisk` and `ApprovalLevel` are separate axes.
+
+- `ApprovalRisk`: severity, limited to `low | medium | high` in v0.1.
+- `ApprovalLevel`: workflow, expressed as `L1_observe | L2_operate | L3_final_review`.
+
+`critical` is intentionally absent from v0.1. If a future operation needs a severity above `high`, it must be added as a standalone security phase.
+
+| Level | Name | Target | Approval behavior | Current implementation |
+|---|---|---|---|---|
+| L1 | observe gate | read-only/no-op/ordinary `llm.call` operations | auto-allow when policy permits; audit still records evaluation | `approvalLevelFromContext()` maps low-risk non-final-review operations to `L1_observe`. |
+| L2 | operate gate | ordinary state-changing operations outside final-review | reusable grants may apply | medium-risk non-final-review operations map to `L2_operate`; `ApprovalGrantStore` can match operation/scope/risk/actor/capability. |
+| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
+
+Operationally, HDS-BRAIN may ASSERT a command, but the executor must not run it until Approval Gate evaluation has completed. The Approval Gate result, `approval_level`, authority trace, and downstream lifecycle events are recorded into the same hash-chain audit log before executor feedback closes the loop.
 
 ## Final-review operations
 
@@ -69,36 +88,48 @@ These always require review regardless of full-access default:
 - settings write
 - payment charge
 - schedule create
+- schedule update
+- schedule delete
 
-## 3段階承認モデル（暫定）
+`payment.charge` is a defensive placeholder. v0.1 has no payment feature, but any future payment-class operation is L3 from the moment it is introduced.
 
-この節は owner 運用の暫定仕様である。L1/L2/L3 の対象範囲は運用で確定するまで draft として扱う。現行コードに存在する Approval Gate / grant store / final-review boundary との対応を明示し、ズレは `FIXME: implementation gap` として残す。
+## Runtime schedule boundary
 
-| Level | 名称 | 暫定対象 | 承認方式 | 現行実装との対応 |
-|---|---|---|---|---|
-| L1 | 観測ゲート | 読み取り系・閲覧系・`noop`・通常の `llm.call` | 自動許可（audit のみ） | `system-allow-llm-call` / `system-allow-noop` と、`full_access` default の non-final-review allow が近い。Approval evaluation と authority trace は audit に残る。 |
-| L2 | 操作ゲート | 状態変更を伴う通常操作。ただし final-review operations は除く | Approval grant の reuse 可 | `ask_every_time` / `remember_this_decision` / `full_access` と `ApprovalGrantStore` が対応する。`grantMatches()` は operation/scope/risk/actor/capability で照合する。 |
-| L3 | final-review ゲート | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create | reuse 不可・常に owner 確認 | `FINAL_REVIEW_OPERATIONS` と `finalReviewRequired()` が対応する。matching allow grant があっても `grant_matched_but_final_review_required` として `ask` に戻す。 |
+Runtime schedules are downstream automation. Creation, update, and delete are L3 final-review operations.
 
-Operationally, HDS-BRAIN may ASSERT a command, but the executor must not run it until Approval Gate evaluation has completed. The Approval Gate result and authority trace are recorded into the same hash-chain audit log before executor feedback closes the loop.
+Rules:
 
-Implementation mapping:
+- `schedule.list` is L1 and exposes safe metadata only.
+- `schedule.create`, `schedule.update`, and `schedule.delete` are L3.
+- Pending schedules do not fire.
+- Rejected or expired schedule requests do not fire.
+- Update/delete requests keep the old active schedule running until owner approval.
+- Runtime snapshots expose counts, ids, timing metadata, and payload hashes, but never schedule content.
+- Schedule lifecycle events are audit records, not authority signals.
 
-| 現行要素 | 対応する承認段階 |
+Runtime schedule commands:
+
+```text
+tool:schedule.list
+tool:schedule.create channel=webchat target=local-user content="runtime smoke" interval_ms=120000
+tool:schedule.update id=<id> content="updated smoke"
+tool:schedule.delete id=<id>
+```
+
+## Implementation mapping
+
+| Element | Approval model role |
 |---|---|
-| `ApprovalMode.ask_every_time` | L2 default policy / L3 ask |
-| `ApprovalMode.remember_this_decision` | L2 reusable grant |
-| `ApprovalMode.full_access` | L1/L2 broad local allowance, except L3 |
-| `ApprovalGrantStore` | L2 reusable grant storage |
-| `FINAL_REVIEW_OPERATIONS` | L3 boundary |
-| `AuthorityTransparencyTrace.final_review_boundary` | L3 boundary visibility |
-| `approval_gate` / `authority_event` audit entries | L1/L2/L3 trace closure |
+| `ApprovalMode.ask_every_time` | L1/L2/L3 can be forced to ask by configuration |
+| `ApprovalMode.remember_this_decision` | L2 reusable grant mode |
+| `ApprovalMode.full_access` | broad local allowance for L1/L2, never L3 |
+| `ApprovalGrantStore` | reusable grant storage; grants still cannot bypass L3 |
+| `ApprovalLevel` | first-class workflow axis |
+| `FINAL_REVIEW_OPERATIONS` | explicit L3 boundary |
+| `AuthorityTransparencyTrace.resolved_factors.approval_level` | machine-readable L1/L2/L3 trace |
+| `approval_gate` / `authority_event` / `schedule_lifecycle` audit entries | trace closure |
 
-FIXME: implementation gap - L1/L2/L3 are not yet first-class TypeScript enum values. The current code derives equivalent behavior from operation, risk, grant mode, and final-review status.
-
-FIXME: implementation gap - The exact L1 read-only operation list is not yet codified as a named policy table. `llm.call` and `noop` have system grants; other read-like operations are currently governed by operation/risk/default mode.
-
-FIXME: implementation gap - Owner identity for L3 is represented by gateway actor/token handling and audit fields, but the final human/owner factor list is still draft until owner confirms the operational definition.
+Remaining draft point: owner identity for L3 is represented by gateway actor/token handling and audit fields, but the final human/owner factor list remains an operational definition to refine.
 
 ## Memory boundary
 
@@ -114,3 +145,7 @@ There are four distinct stores:
 ## Skill registry boundary
 
 v0.1 intentionally does not implement a public Skill registry. Third-party plugin marketplaces are a supply-chain risk and are out of scope.
+
+## WhatsApp boundary
+
+WhatsApp is intentionally excluded from first-party core. BLUE-TANUKI does not implement Baileys, WAHA, WhatsApp Web automation, first-party WhatsApp Business API, or Twilio WhatsApp as first-party core.

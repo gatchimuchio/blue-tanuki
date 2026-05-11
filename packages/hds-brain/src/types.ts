@@ -220,6 +220,31 @@ export interface AuthorityEventLog {
   timestamp: number;
 }
 
+export type ScheduleLifecycleEvent =
+  | "schedule.lifecycle.requested"
+  | "schedule.lifecycle.approved"
+  | "schedule.lifecycle.rejected"
+  | "schedule.lifecycle.activated"
+  | "schedule.lifecycle.updated"
+  | "schedule.lifecycle.deleted"
+  | "schedule.lifecycle.fired";
+
+export interface ScheduleLifecycleLog {
+  kind: "schedule_lifecycle";
+  event: ScheduleLifecycleEvent;
+  schedule_id: string;
+  origin: "boot" | "runtime";
+  operation: "list" | "create" | "update" | "delete" | "fire";
+  actor: string;
+  approval_level?: ApprovalEvaluation["approval_level"];
+  risk?: ApprovalEvaluation["risk"];
+  payload_hash?: string;
+  previous_payload_hash?: string;
+  command_id?: string;
+  request_id?: string | null;
+  timestamp: number;
+}
+
 export type CommandLifecyclePhase =
   | "approval_pending"
   | "approval_approved"
@@ -238,7 +263,13 @@ export interface CommandLifecycleLog {
   timestamp: number;
 }
 
-export type AuditRecord = DecisionLog | ExecutorFeedbackLog | ApprovalGateLog | AuthorityEventLog | CommandLifecycleLog;
+export type AuditRecord =
+  | DecisionLog
+  | ExecutorFeedbackLog
+  | ApprovalGateLog
+  | AuthorityEventLog
+  | CommandLifecycleLog
+  | ScheduleLifecycleLog;
 
 /**
  * Per-axis policy entry.

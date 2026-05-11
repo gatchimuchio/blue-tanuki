@@ -22,6 +22,7 @@ import { renderCommandOutput } from "./result_render.js";
 import { approvalDeniedFeedback, buildApprovalRuntime } from "./approval_runtime.js";
 import { loadPluginRuntime, type PluginRuntime } from "./plugin_loader.js";
 import { loadEnvFileFromArgv, stripEnvFileArgs } from "./env_file.js";
+import { RuntimeScheduleManager } from "./runtime_schedule.js";
 
 // Re-export so existing call sites can keep importing from "./main.js"
 // transparently. New code should prefer importing from "./audit_config.js".
@@ -103,6 +104,8 @@ async function runCli(): Promise<void> {
 
   const tools = new ToolRegistry();
   plugins.registerTools(tools);
+  const runtimeSchedules = await RuntimeScheduleManager.open({ env: process.env });
+  for (const tool of runtimeSchedules.tools()) tools.register(tool);
   const llm = buildLLMBackendFromEnv();
   const session_store = buildSessionStore(plugins);
 

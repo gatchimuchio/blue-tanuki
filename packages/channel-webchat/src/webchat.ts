@@ -90,6 +90,7 @@ export interface WebChatApprovalQueueItem {
   request_id: string;
   operation: string;
   risk: string;
+  approval_level?: string;
   final_review_required: boolean;
   reason: string;
   approval_token?: string;
@@ -113,13 +114,17 @@ export interface WebChatAuditSurface {
 export interface WebChatAuthorityTraceItem {
   index: number;
   entry_hash: string;
-  kind: "approval_gate" | "authority_event" | "command_lifecycle";
+  kind: "approval_gate" | "authority_event" | "command_lifecycle" | "schedule_lifecycle";
   event: string;
   request_id: string | null;
   command_id?: string;
   actor?: string;
   operation?: string;
   risk?: string;
+  approval_level?: string;
+  schedule_id?: string;
+  payload_hash?: string;
+  previous_payload_hash?: string;
   reason?: string;
   decision?: string;
   authority_trace?: unknown;

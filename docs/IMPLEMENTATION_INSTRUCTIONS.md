@@ -145,8 +145,6 @@ Goal:
 
 Remaining primary work:
 
-- ApprovalLevel first-class (Phase 8-S1)
-- runtime schedule CRUD (Phase 8-S1)
 - operator usability docs (Phase 8-S2a)
 - doctor actionable + Control Center first-run status (Phase 8-S2b)
 - OpenClaw rejection audit document (Phase 8-S3)
@@ -258,11 +256,11 @@ Completed or mostly completed:
 - `shell.exec`
 - local setup/settings/doctor/release bundle
 - HDS long-term memory addendum as non-authority memory component
+- ApprovalLevel first-class
+- runtime schedule CRUD
 
 Known gaps:
 
-- L1/L2/L3 are not yet first-class `ApprovalLevel`
-- runtime schedule CRUD is not implemented
 - operator usability closure is not complete
 - GitHub write is not implemented
 - Slack / Discord are preview-level
@@ -280,8 +278,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 
 | Phase | Band | Task | Priority | Dependency |
 |---|---|---|---:|---|
-| 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | current |
-| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | 8-S1 |
+| 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | completed |
+| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | current |
 | 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | 8-S2a |
 | 8-S3 | B | OpenClaw Rejection Audit document | P0 | 8-S2b |
 | 8-S4 | C | GitHub write tool | P1 | 8-S1 |
@@ -1653,7 +1651,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 8-S1 — ApprovalLevel first-class + runtime schedule CRUD
+Phase 8-S2a — Operator Usability Docs
 ```
 
-Do not begin Phase 8-S2a, 8-S2b, 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S1 is completed unless explicitly instructed.
+Do not begin Phase 8-S2b, 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S2a is completed unless explicitly instructed.

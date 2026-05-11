@@ -253,6 +253,33 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit schedule.create requests with runtime automation capability", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound('tool:schedule.create channel=webchat target=local-user content="runtime smoke" interval_ms=120000'),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "schedule.create",
+        arguments: {
+          channel: "webchat",
+          target: "local-user",
+          content: "runtime smoke",
+          interval_ms: 120000,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["schedule.create"],
+      allowed_capabilities: ["tool:schedule.create", "schedule:create"],
+      timeout_ms: 5_000,
+    });
+  });
+
   it("routes structured metadata tool_call requests", () => {
     const c = new HDSUpperController();
     const { command } = c.decide(

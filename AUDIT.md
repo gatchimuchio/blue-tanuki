@@ -78,9 +78,26 @@ Exit code: 1
 - HDS decision logs
 - approval evaluations
 - authority events
+- schedule lifecycle events
 - command lifecycle
 - executor feedback
 - unknown/stale feedback
+
+## Schedule lifecycle audit
+
+Runtime schedule create/update/delete requests are audited as lifecycle events in the hash-chain:
+
+```text
+schedule.lifecycle.requested
+schedule.lifecycle.approved
+schedule.lifecycle.rejected
+schedule.lifecycle.activated
+schedule.lifecycle.updated
+schedule.lifecycle.deleted
+schedule.lifecycle.fired
+```
+
+Schedule audit records include safe metadata such as `schedule_id`, `origin`, `operation`, `actor`, `approval_level`, `risk`, `payload_hash`, `previous_payload_hash`, `command_id`, and `request_id`. Schedule `content` is not exposed in runtime snapshots or schedule list output.
 
 ## What is not treated as authority
 

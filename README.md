@@ -98,7 +98,7 @@ When enabled, the Control Center runtime snapshot shows the configured Daily Bri
 
 ## Generic scheduled messages
 
-`BLUE_TANUKI_SCHEDULES_JSON` adds more internal cron tasks without creating a dynamic schedule authority path. Each task still enters HDS-BRAIN as `cron` actor / `cron.process` and can only become a `channel_send` through the gateway-internal metadata marker.
+`BLUE_TANUKI_SCHEDULES_JSON` adds boot-time internal cron tasks. Each task still enters HDS-BRAIN as `cron` actor / `cron.process` and can only become a `channel_send` through the gateway-internal metadata marker.
 
 ```bash
 export BLUE_TANUKI_SCHEDULES_JSON='[
@@ -125,6 +125,19 @@ export BLUE_TANUKI_SCHEDULES_JSON='[
   }
 ]'
 ```
+
+## Runtime schedules
+
+Runtime schedules are managed through `tool:schedule.*` commands. Listing is L1; create/update/delete are L3 final-review operations. Pending, rejected, or timed-out schedule requests do not run.
+
+```text
+tool:schedule.list
+tool:schedule.create channel=webchat target=local-user content="runtime smoke" interval_ms=120000
+tool:schedule.update id=<id> content="updated smoke"
+tool:schedule.delete id=<id>
+```
+
+Runtime schedules use `BLUE_TANUKI_SCHEDULES_DIR` (default `.blue-tanuki/schedules`) and share the same cron lane as boot-time schedules. Control Center snapshots show counts, ids, timing metadata, and payload hashes, but never schedule content.
 
 ## Webhook ingress
 

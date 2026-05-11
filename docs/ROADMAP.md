@@ -48,8 +48,6 @@ Goal:
 
 Remaining primary work:
 
-- ApprovalLevel first-class (Phase 8-S1)
-- runtime schedule CRUD (Phase 8-S1)
 - operator usability docs (Phase 8-S2a)
 - doctor actionable output + Control Center first-run status (Phase 8-S2b)
 - OpenClaw rejection audit document (Phase 8-S3)
@@ -105,8 +103,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 
 | Phase | Band | Task | Priority | Dependency |
 |---|---|---|---:|---|
-| 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | current |
-| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | 8-S1 |
+| 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | completed |
+| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | current |
 | 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | 8-S2a |
 | 8-S3 | B | OpenClaw Rejection Audit document | P0 | 8-S2b |
 | 8-S4 | C | GitHub write tool | P1 | 8-S1 |
@@ -125,10 +123,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 8-S1 - ApprovalLevel first-class + runtime schedule CRUD
+Phase 8-S2a - Operator Usability Docs
 ```
 
-Do not begin Phase 8-S2a, 8-S2b, 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S1 is completed unless explicitly instructed.
+Do not begin Phase 8-S2b, 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S2a is completed unless explicitly instructed.
 
 ## 4. Phase 8-S1 Summary
 

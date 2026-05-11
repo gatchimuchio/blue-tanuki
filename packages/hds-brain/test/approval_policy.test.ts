@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { ExecuteCommand } from "@blue-tanuki/protocol";
 import {
   approvalContextFromCommand,
+  approvalLevelFromContext,
   buildApprovalGrant,
   evaluateApproval,
   finalReviewRequired,
+  FINAL_REVIEW_OPERATIONS,
   approvalGrantFromEvaluation,
 } from "../src/approval_policy.js";
 
@@ -35,6 +37,7 @@ describe("approval policy", () => {
     const ctx = approvalContextFromCommand(cmd, { actor: "alice", now: 1 });
     expect(ctx.operation).toBe("tool.file.search");
     expect(ctx.risk).toBe("low");
+    expect(approvalLevelFromContext(ctx)).toBe("L1_observe");
     expect(finalReviewRequired(ctx)).toBe(false);
   });
 
@@ -45,6 +48,7 @@ describe("approval policy", () => {
     expect(r.mode).toBe("full_access");
     expect(r.context.operation).toBe("tool.file.write");
     expect(r.risk).toBe("medium");
+    expect(r.approval_level).toBe("L2_operate");
   });
 
   it("still supports strict ask-every-time mode by explicit configuration", () => {
@@ -124,6 +128,7 @@ describe("approval policy", () => {
       execution_feedback: "hash_chain",
     });
     expect(r.authority_trace.resolved_factors.operation).toBe("tool.file.write");
+    expect(r.authority_trace.resolved_factors.approval_level).toBe("L2_operate");
     expect(r.authority_trace.resolved_factors.final_review_required).toBe(false);
   });
 
@@ -142,6 +147,88 @@ describe("approval policy", () => {
     const r = evaluateApproval(cmd, [grant], { actor: "alice", now: 1, default_mode: "full_access" });
     expect(r.context.operation).toBe("tool.shell.exec");
     expect(r.final_review_required).toBe(true);
+    expect(r.approval_level).toBe("L3_final_review");
+    expect(r.decision).toBe("ask");
+  });
+
+  it("keeps ApprovalRisk three-tier while mapping privileged operations to L3", () => {
+    const create = toolCommand(
+      "schedule.create",
+      { channel: "webchat", target: "local-user", content: "smoke", interval_ms: 120000 },
+      ["tool:schedule.create", "schedule:create"],
+    );
+    const r = evaluateApproval(create, [], { actor: "alice", now: 1, default_mode: "full_access" });
+    expect(r.context.operation).toBe("schedule.create");
+    expect(r.risk).toBe("high");
+    expect(r.approval_level).toBe("L3_final_review");
+    expect(r.final_review_required).toBe(true);
+    expect(r.decision).toBe("ask");
+    expect(["low", "medium", "high"]).toContain(r.risk);
+  });
+
+  it("classifies schedule list as L1 and schedule update/delete as L3", () => {
+    const list = evaluateApproval(
+      toolCommand("schedule.list", {}, ["tool:schedule.list", "schedule:read"]),
+      [],
+      { actor: "alice", now: 1, default_mode: "full_access" },
+    );
+    expect(list.context.operation).toBe("schedule.list");
+    expect(list.risk).toBe("low");
+    expect(list.approval_level).toBe("L1_observe");
+    expect(list.decision).toBe("allow");
+
+    for (const [tool, cap, operation] of [
+      ["schedule.update", "schedule:update", "schedule.update"],
+      ["schedule.delete", "schedule:delete", "schedule.delete"],
+    ] as const) {
+      const result = evaluateApproval(
+        toolCommand(tool, { id: "runtime-smoke" }, [`tool:${tool}`, cap]),
+        [],
+        { actor: "alice", now: 1, default_mode: "full_access" },
+      );
+      expect(result.context.operation).toBe(operation);
+      expect(result.risk).toBe("high");
+      expect(result.approval_level).toBe("L3_final_review");
+      expect(result.decision).toBe("ask");
+    }
+  });
+
+  it("includes defensive final-review placeholders", () => {
+    for (const operation of [
+      "tool.file.delete",
+      "tool.shell.exec",
+      "external.send",
+      "credential.access",
+      "settings.write",
+      "schedule.create",
+      "schedule.update",
+      "schedule.delete",
+      "payment.charge",
+    ] as const) {
+      expect(FINAL_REVIEW_OPERATIONS.has(operation)).toBe(true);
+    }
+  });
+
+  it("does not let reusable grants bypass schedule final review", () => {
+    const cmd = toolCommand(
+      "schedule.delete",
+      { id: "runtime-smoke" },
+      ["tool:schedule.delete", "schedule:delete"],
+    );
+    const grant = buildApprovalGrant({
+      mode: "remember_this_decision",
+      decision: "allow",
+      operation: "schedule.delete",
+      target_scope: "task_type",
+      target: "schedule.delete",
+      risk: "high",
+      actor: "alice",
+      created_by: "alice",
+      expires_at: null,
+    });
+    const r = evaluateApproval(cmd, [grant], { actor: "alice", now: 1 });
+    expect(r.final_review_required).toBe(true);
+    expect(r.approval_level).toBe("L3_final_review");
     expect(r.decision).toBe("ask");
   });
 

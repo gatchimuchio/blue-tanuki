@@ -49,6 +49,7 @@ export function approvalRequiredMessage(evaluation: ApprovalEvaluation, command_
     `scope=${ctx.target_scope}`,
     ctx.target ? `target=${ctx.target}` : null,
     `risk=${evaluation.risk}`,
+    `approval_level=${evaluation.approval_level}`,
     `mode=${evaluation.mode}`,
     evaluation.final_review_required ? "final_review_required=true" : null,
     `reason=${evaluation.reason}`,

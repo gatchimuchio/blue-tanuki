@@ -7,6 +7,8 @@
 - Replaced repository-wide Codex agent rules in `AGENTS.md` with the Phase 8/v1.0 completion posture.
 - Added `docs/IMPLEMENTATION_INSTRUCTIONS.md` as the active execution plan, with Phase 8-S1 (`ApprovalLevel` first-class + runtime schedule CRUD) as the next implementation lane.
 - Replaced `docs/ROADMAP.md` with a v9 roadmap aligned to the active implementation instructions.
+- Added Phase 8-S1: first-class `ApprovalLevel`, three-tier `ApprovalRisk`, L3 runtime schedule create/update/delete, safe schedule snapshots, and schedule lifecycle audit.
+- Advanced active implementation docs to Phase 8-S2a after Phase 8-S1 completion.
 
 ## 0.1.0 - 2026-05-06
 

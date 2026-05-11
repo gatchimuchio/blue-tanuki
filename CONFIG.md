@@ -65,8 +65,32 @@ Fields:
 - `interval_ms`: optional positive integer for smoke tests.
 - `enabled`: optional boolean; `false` keeps the task visible but not running.
 
-Generic schedules are boot-time config only. Runtime schedule creation remains
-outside v0.1 and must go through the final-review boundary when added.
+Generic schedules are boot-time config. They share the same cron lane as approved runtime schedules.
+
+## Runtime schedules
+
+Runtime schedules are created, updated, and deleted through `tool:schedule.*` commands. Mutating operations are L3 final-review operations, so full access and reusable grants do not bypass owner confirmation.
+
+```bash
+BLUE_TANUKI_SCHEDULES_DIR=.blue-tanuki/schedules
+BLUE_TANUKI_SCHEDULE_APPROVAL_TIMEOUT_MS=86400000
+```
+
+Commands:
+
+```text
+tool:schedule.list
+tool:schedule.create channel=webchat target=local-user content="runtime smoke" interval_ms=120000
+tool:schedule.update id=<id> content="updated smoke"
+tool:schedule.delete id=<id>
+```
+
+Notes:
+
+- `schedule.list` is L1 and exposes safe metadata only.
+- `schedule.create`, `schedule.update`, and `schedule.delete` are L3.
+- Pending, rejected, or timed-out schedule requests do not fire.
+- Runtime snapshots expose schedule ids, counts, timing metadata, and payload hashes, but never schedule `content`.
 
 ## Webhook ingress
 

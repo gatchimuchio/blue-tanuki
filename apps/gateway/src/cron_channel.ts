@@ -1,10 +1,11 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { InboundRequest } from "@blue-tanuki/protocol";
 import type { InboundChannel, InboundHandler } from "@blue-tanuki/channel-base";
 
 export interface CronTaskOptions {
   id: string;
   name?: "daily_brief" | "scheduled_message";
+  origin?: "boot" | "runtime";
   enabled?: boolean;
   channel: string;
   target: string;
@@ -13,12 +14,14 @@ export interface CronTaskOptions {
   time?: string;
   /** For tests or smoke. If set, triggers every N ms instead of daily. */
   interval_ms?: number;
+  payload_hash?: string;
 }
 
 export interface CronSchedulerOptions {
   tasks: CronTaskOptions[];
   log?: (line: string) => void;
   now?: () => Date;
+  onFire?: (task: CronTaskSnapshot) => void;
 }
 
 export interface DailyBriefCronOptions {
@@ -37,12 +40,14 @@ export interface DailyBriefCronOptions {
 export interface CronTaskSnapshot {
   id: string;
   name: "daily_brief" | "scheduled_message";
+  origin: "boot" | "runtime";
   enabled: boolean;
   running: boolean;
   channel: string;
   target: string;
   time: string;
   interval_ms?: number;
+  payload_hash: string;
   next_fire_at_ms: number | null;
   last_fire_at_ms: number | null;
 }
@@ -52,12 +57,14 @@ export type DailyBriefCronSnapshot = CronTaskSnapshot;
 interface NormalizedCronTask {
   id: string;
   name: "daily_brief" | "scheduled_message";
+  origin: "boot" | "runtime";
   enabled: boolean;
   channel: string;
   target: string;
   content: string;
   time: string;
   interval_ms?: number;
+  payload_hash: string;
 }
 
 interface CronTaskRuntime {
@@ -78,28 +85,28 @@ interface CronTaskRuntime {
 export class CronSchedulerChannel implements InboundChannel {
   readonly name = "cron";
   private started = false;
-  private readonly runtimes: CronTaskRuntime[];
+  private readonly runtimes = new Map<string, CronTaskRuntime>();
   private readonly logLine?: (line: string) => void;
   private readonly nowFn?: () => Date;
+  private handler: InboundHandler | null = null;
+  private readonly onFire?: (task: CronTaskSnapshot) => void;
 
   constructor(opts: CronSchedulerOptions) {
     this.logLine = opts.log;
     this.nowFn = opts.now;
-    this.runtimes = normalizeCronTasks(opts.tasks).map((task) => ({
-      task,
-      timer: null,
-      running: false,
-      nextFireAtMs: null,
-      lastFireAtMs: null,
-    }));
+    this.onFire = opts.onFire;
+    for (const task of normalizeCronTasks(opts.tasks)) {
+      this.runtimes.set(task.id, createRuntime(task));
+    }
   }
 
   async start(handler: InboundHandler): Promise<void> {
     if (this.started) return;
     this.started = true;
+    this.handler = handler;
 
     let active = 0;
-    for (const runtime of this.runtimes) {
+    for (const runtime of this.runtimes.values()) {
       if (!runtime.task.enabled) {
         this.log(`[cron] task disabled id=${runtime.task.id}`);
         continue;
@@ -111,28 +118,47 @@ export class CronSchedulerChannel implements InboundChannel {
   }
 
   async stop(): Promise<void> {
-    for (const runtime of this.runtimes) {
-      if (runtime.timer) clearTimeout(runtime.timer);
-      runtime.timer = null;
-      runtime.running = false;
-      runtime.nextFireAtMs = null;
-    }
+    for (const runtime of this.runtimes.values()) this.stopRuntime(runtime);
     this.started = false;
+    this.handler = null;
   }
 
   snapshot(): CronTaskSnapshot[] {
-    return this.runtimes.map((runtime) => ({
+    return Array.from(this.runtimes.values()).map((runtime) => ({
       id: runtime.task.id,
       name: runtime.task.name,
+      origin: runtime.task.origin,
       enabled: runtime.task.enabled,
       running: runtime.running,
       channel: runtime.task.channel,
       target: runtime.task.target,
       time: runtime.task.time,
       interval_ms: runtime.task.interval_ms,
+      payload_hash: runtime.task.payload_hash,
       next_fire_at_ms: runtime.nextFireAtMs,
       last_fire_at_ms: runtime.lastFireAtMs,
     }));
+  }
+
+  upsertTask(task: CronTaskOptions): CronTaskSnapshot {
+    const [normalized] = normalizeCronTasks([task]);
+    if (!normalized) throw new Error("cron upsertTask received no task");
+    const existing = this.runtimes.get(normalized.id);
+    if (existing) this.stopRuntime(existing);
+    const runtime = createRuntime(normalized);
+    this.runtimes.set(normalized.id, runtime);
+    if (this.started && normalized.enabled && this.handler) {
+      this.scheduleTask(runtime, this.handler);
+    }
+    return this.snapshotForRuntime(runtime);
+  }
+
+  removeTask(id: string): boolean {
+    const runtime = this.runtimes.get(id);
+    if (!runtime) return false;
+    this.stopRuntime(runtime);
+    this.runtimes.delete(id);
+    return true;
   }
 
   private scheduleTask(runtime: CronTaskRuntime, handler: InboundHandler): void {
@@ -168,6 +194,7 @@ export class CronSchedulerChannel implements InboundChannel {
   private async fire(runtime: CronTaskRuntime, handler: InboundHandler): Promise<void> {
     const task = runtime.task;
     runtime.lastFireAtMs = this.nowMs();
+    this.onFire?.(this.snapshotForRuntime(runtime));
     const inbound: InboundRequest = {
       id: randomUUID(),
       channel: "cron",
@@ -180,6 +207,8 @@ export class CronSchedulerChannel implements InboundChannel {
         "blue_tanuki.trust_level": "trusted",
         "blue_tanuki.process_kind": "cron",
         "blue_tanuki.cron.task_id": task.id,
+        "blue_tanuki.cron.origin": task.origin,
+        "blue_tanuki.cron.payload_hash": task.payload_hash,
         "blue_tanuki.channel_send.channel": task.channel,
         "blue_tanuki.channel_send.target": task.target,
         "blue_tanuki.channel_send.content": task.content,
@@ -199,6 +228,30 @@ export class CronSchedulerChannel implements InboundChannel {
 
   private nowMs(): number {
     return this.now().getTime();
+  }
+
+  private stopRuntime(runtime: CronTaskRuntime): void {
+    if (runtime.timer) clearTimeout(runtime.timer);
+    runtime.timer = null;
+    runtime.running = false;
+    runtime.nextFireAtMs = null;
+  }
+
+  private snapshotForRuntime(runtime: CronTaskRuntime): CronTaskSnapshot {
+    return {
+      id: runtime.task.id,
+      name: runtime.task.name,
+      origin: runtime.task.origin,
+      enabled: runtime.task.enabled,
+      running: runtime.running,
+      channel: runtime.task.channel,
+      target: runtime.task.target,
+      time: runtime.task.time,
+      interval_ms: runtime.task.interval_ms,
+      payload_hash: runtime.task.payload_hash,
+      next_fire_at_ms: runtime.nextFireAtMs,
+      last_fire_at_ms: runtime.lastFireAtMs,
+    };
   }
 }
 
@@ -315,14 +368,38 @@ function normalizeCronTasks(tasks: CronTaskOptions[]): NormalizedCronTask[] {
     return {
       id,
       name: task.name ?? "scheduled_message",
+      origin: task.origin ?? "boot",
       enabled: task.enabled !== false,
       channel: requireTrimmed(task.channel, `cron task ${id} channel`),
       target: requireTrimmed(task.target, `cron task ${id} target`),
       content: requireTrimmed(task.content, `cron task ${id} content`),
       time,
       interval_ms: task.interval_ms,
+      payload_hash: task.payload_hash ?? cronPayloadHash(task),
     };
   });
+}
+
+function createRuntime(task: NormalizedCronTask): CronTaskRuntime {
+  return {
+    task,
+    timer: null,
+    running: false,
+    nextFireAtMs: null,
+    lastFireAtMs: null,
+  };
+}
+
+export function cronPayloadHash(task: Pick<CronTaskOptions, "channel" | "target" | "content" | "time" | "interval_ms">): string {
+  return createHash("sha256")
+    .update(JSON.stringify({
+      channel: task.channel,
+      target: task.target,
+      content: task.content,
+      time: task.time ?? "07:00",
+      interval_ms: task.interval_ms,
+    }))
+    .digest("hex");
 }
 
 function requiredString(value: unknown, label: string): string {

@@ -16,6 +16,8 @@ import type {
   PolicyConfig,
   ResumeAuditTrace,
   ResumeVerdict,
+  ScheduleLifecycleEvent,
+  ScheduleLifecycleLog,
   SuspendedRequest,
 } from "./types.js";
 import { frame } from "./frame.js";
@@ -464,6 +466,20 @@ export class HDSUpperController {
     };
     this.audit.append(lifecycleLog);
     if (phase === "approval_rejected" || phase === "approval_cancelled") this.inflight.delete(command_id);
+  }
+
+  /** Record runtime schedule lifecycle without feeding it back into authority. */
+  onScheduleLifecycle(
+    event: ScheduleLifecycleEvent,
+    opts: Omit<ScheduleLifecycleLog, "kind" | "event" | "timestamp">,
+  ): void {
+    const log: ScheduleLifecycleLog = {
+      kind: "schedule_lifecycle",
+      event,
+      ...opts,
+      timestamp: Date.now(),
+    };
+    this.audit.append(log);
   }
 
   /**

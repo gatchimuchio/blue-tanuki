@@ -57,6 +57,22 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     allowed_capabilities: ["tool:shell.exec", "shell:exec"],
     timeout_ms: 15_000,
   },
+  "schedule.list": {
+    allowed_capabilities: ["tool:schedule.list", "schedule:read"],
+    timeout_ms: 5_000,
+  },
+  "schedule.create": {
+    allowed_capabilities: ["tool:schedule.create", "schedule:create"],
+    timeout_ms: 5_000,
+  },
+  "schedule.update": {
+    allowed_capabilities: ["tool:schedule.update", "schedule:update"],
+    timeout_ms: 5_000,
+  },
+  "schedule.delete": {
+    allowed_capabilities: ["tool:schedule.delete", "schedule:delete"],
+    timeout_ms: 5_000,
+  },
 };
 
 /**
@@ -71,6 +87,10 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  *   - tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
  *   - tool:browser.read url=https://example.com max_chars=4000
  *   - tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
+ *   - tool:schedule.list
+ *   - tool:schedule.create channel=webchat target=local-user content="runtime smoke" interval_ms=120000
+ *   - tool:schedule.update id=<id> content="updated smoke"
+ *   - tool:schedule.delete id=<id>
  *   - /tool echo text="hello"
  *   - tool:http.fetch {"url":"https://example.com","method":"GET"}
  *
@@ -220,7 +240,9 @@ function coerceToolArgs(
     toolName === "browser.read" ||
     toolName === "file.write" ||
     toolName === "file.edit" ||
-    toolName === "shell.exec"
+    toolName === "shell.exec" ||
+    toolName === "schedule.create" ||
+    toolName === "schedule.update"
   ) {
     coercePositiveInt(next, "max_bytes");
   }
@@ -235,6 +257,9 @@ function coerceToolArgs(
   }
   if (toolName === "file.edit") {
     coercePositiveInt(next, "expected_replacements");
+  }
+  if (toolName === "schedule.create" || toolName === "schedule.update") {
+    coercePositiveInt(next, "interval_ms");
   }
   if (toolName === "http.fetch") {
     if (typeof next.method === "string") {

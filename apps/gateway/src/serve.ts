@@ -35,6 +35,10 @@ import { loadPluginRuntime } from "./plugin_loader.js";
 import { createWebChatSettingsSurface } from "./settings_surface.js";
 import { CronSchedulerChannel, cronSchedulesFromEnv } from "./cron_channel.js";
 import {
+  RuntimeScheduleManager,
+  runtimeScheduleMutationCommand,
+} from "./runtime_schedule.js";
+import {
   auditDumpReportFromLog,
   formatAuditJsonReport,
   formatAuditTextReport,
@@ -94,6 +98,13 @@ export async function serve(): Promise<ServeShutdown> {
     memory: buildHDSMemoryStore(process.env),
     llm_route: buildLLMCommandRouteFromEnv(),
   });
+  const runtimeSchedules = await RuntimeScheduleManager.open({
+    env: process.env,
+    onLifecycle: (event, lifecycle) => {
+      hds.onScheduleLifecycle(event, lifecycle);
+    },
+  });
+  for (const tool of runtimeSchedules.tools()) tools.register(tool);
   const approval = buildApprovalRuntime(process.env);
   const pendingApprovals = new Map<string, PendingApproval>();
   const router = new InboundRouter();
@@ -126,12 +137,21 @@ export async function serve(): Promise<ServeShutdown> {
     throw new Error("WEBCHAT_RESUME_TOKEN must differ from WEBCHAT_TOKEN");
   }
   const cronTasks = cronSchedulesFromEnv(process.env);
-  const cron = cronTasks.length > 0
-    ? new CronSchedulerChannel({
-        tasks: cronTasks,
-        log: (line: string) => cronLog.info(line),
-      })
-    : null;
+  const cron = new CronSchedulerChannel({
+    tasks: [...cronTasks, ...runtimeSchedules.activeCronTasks()],
+    log: (line: string) => cronLog.info(line),
+    onFire: (task) => {
+      hds.onScheduleLifecycle("schedule.lifecycle.fired", {
+        schedule_id: task.id,
+        origin: task.origin,
+        operation: "fire",
+        actor: "blue-tanuki-cron",
+        payload_hash: task.payload_hash,
+        request_id: null,
+      });
+    },
+  });
+  runtimeSchedules.attachScheduler(cron);
 
   // Forward declarations: resume/approval closures resolve at call time.
   // eslint-disable-next-line prefer-const
@@ -152,6 +172,23 @@ export async function serve(): Promise<ServeShutdown> {
       const evaluation = approval.evaluate(cmd, opts.actor ?? origin.user);
       hds.onApprovalEvaluation(evaluation, { request_id: log.request_id });
       if (evaluation.decision === "ask") {
+        if (runtimeScheduleMutationCommand(cmd)) {
+          const prepared = runtimeSchedules.preparePending(cmd, evaluation, {
+            request_id: log.request_id,
+            actor: opts.actor ?? origin.user,
+          });
+          if (!prepared.ok) {
+            hds.onCommandLifecycle(cmd.id, "approval_rejected", {
+              actor: opts.actor ?? origin.user,
+              reason: prepared.message,
+            });
+            await dispatcher.dispatch(
+              { channel: origin.channel, target: replyTarget(origin), content: prepared.message },
+              { command_id: `schedule-rejected-${cmd.id}`, upstream_commit_hash: log.commit.hash },
+            );
+            return { status: "schedule_rejected" };
+          }
+        }
         hds.onCommandLifecycle(cmd.id, "approval_pending", { actor: opts.actor ?? origin.user, reason: evaluation.reason });
         const issued = await webchat.issueResumeApprovalToken(cmd.id);
         pendingApprovals.set(cmd.id, {
@@ -190,9 +227,16 @@ export async function serve(): Promise<ServeShutdown> {
     if (!pending) return null;
     pendingApprovals.delete(command_id);
     if (verdict !== "approve") {
+      runtimeSchedules.rejectPending(command_id, ctx.actor, `human_approval:${verdict}`);
       hds.onCommandLifecycle(command_id, "approval_rejected", { actor: ctx.actor, reason: `human_approval:${verdict}` });
       await dispatcher.dispatch({ channel: pending.origin.channel, target: replyTarget(pending.origin), content: `[approval-${verdict}] command_id=${command_id}` }, { command_id: `approval-${verdict}-${command_id}`, upstream_commit_hash: pending.log.commit.hash });
       return { approval: verdict, executed: false };
+    }
+    if (runtimeScheduleMutationCommand(pending.command) && !runtimeSchedules.hasPending(command_id)) {
+      const content = "[schedule-expired] approval expired before activation. activated=false can_fire=false next_action=Submit the schedule request again and approve the new command_id.";
+      hds.onCommandLifecycle(command_id, "approval_rejected", { actor: ctx.actor, reason: "schedule_approval_expired" });
+      await dispatcher.dispatch({ channel: pending.origin.channel, target: replyTarget(pending.origin), content }, { command_id: `schedule-expired-${command_id}`, upstream_commit_hash: pending.log.commit.hash });
+      return { approval: "approve", executed: false, status: "schedule_approval_expired" };
     }
     if (ctx.approval?.remember || ctx.approval?.mode) {
       const grant = approval.remember(pending.evaluation, { actor: ctx.actor, mode: ctx.approval.mode, duration_ms: ctx.approval.duration_ms, note: `remembered from approval of command_id=${command_id}` });
@@ -228,7 +272,10 @@ export async function serve(): Promise<ServeShutdown> {
         getSnapshot: async () => ({
           hds: hds.getRuntimeSnapshot(),
           pending_approvals: pendingApprovalSnapshot(),
-          scheduled_tasks: cron ? cron.snapshot() : [],
+          scheduled_tasks: cron.snapshot(),
+          runtime_schedules_count: runtimeSchedules.activeCount(),
+          pending_schedule_approvals_count: runtimeSchedules.pendingCount(),
+          runtime_schedules: runtimeSchedules.snapshot(),
         }),
       },
       approval: {
@@ -274,6 +321,7 @@ export async function serve(): Promise<ServeShutdown> {
       request_id: p.log.request_id,
       operation: p.evaluation.context.operation,
       risk: p.evaluation.risk,
+      approval_level: p.evaluation.approval_level,
       final_review_required: p.evaluation.final_review_required,
       reason: p.evaluation.reason,
       approval_token: p.approval_token,
@@ -290,7 +338,7 @@ export async function serve(): Promise<ServeShutdown> {
       const base = {
         index: entry.index,
         entry_hash: entry.entry_hash,
-        request_id: log.request_id,
+        request_id: "request_id" in log ? log.request_id ?? null : null,
         timestamp: log.timestamp,
       };
 
@@ -333,6 +381,24 @@ export async function serve(): Promise<ServeShutdown> {
           command_id: log.command_id,
           actor: log.actor,
           reason: log.reason,
+        });
+        continue;
+      }
+
+      if (log.kind === "schedule_lifecycle") {
+        items.push({
+          ...base,
+          kind: "schedule_lifecycle",
+          event: log.event,
+          request_id: log.request_id ?? null,
+          command_id: log.command_id,
+          actor: log.actor,
+          operation: log.operation,
+          risk: log.risk,
+          approval_level: log.approval_level,
+          schedule_id: log.schedule_id,
+          payload_hash: log.payload_hash,
+          previous_payload_hash: log.previous_payload_hash,
         });
       }
     }
@@ -403,7 +469,7 @@ export async function serve(): Promise<ServeShutdown> {
   router.register(telegram);
   router.register(slack);
   router.register(discord);
-  if (cron) router.register(cron);
+  router.register(cron);
 
   dispatcher.register(webchat);
   dispatcher.register(telegram);

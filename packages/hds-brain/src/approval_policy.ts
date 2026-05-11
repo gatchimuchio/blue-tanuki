@@ -4,7 +4,11 @@ import type { ExecuteCommand, ToolCapability } from "@blue-tanuki/protocol";
 /** Approval policy is the human-authority layer above HDS ASSERT. */
 export type ApprovalMode = "ask_every_time" | "remember_this_decision" | "full_access";
 export type ApprovalDecision = "allow" | "ask" | "deny";
-export type ApprovalRisk = "low" | "medium" | "high" | "critical";
+export type ApprovalRisk = "low" | "medium" | "high";
+export type ApprovalLevel =
+  | "L1_observe"
+  | "L2_operate"
+  | "L3_final_review";
 export type ApprovalOperation =
   | "noop"
   | "llm.call"
@@ -19,7 +23,10 @@ export type ApprovalOperation =
   | "external.send"
   | "settings.write"
   | "credential.access"
+  | "schedule.list"
   | "schedule.create"
+  | "schedule.update"
+  | "schedule.delete"
   | "payment.charge"
   | "unknown";
 export type ApprovalScopeKind = "command" | "file" | "folder" | "repo" | "channel" | "task_type" | "global";
@@ -42,6 +49,7 @@ export interface AuthorityTransparencyTrace {
     operation: ApprovalOperation;
     target_scope: ApprovalScopeKind;
     risk: ApprovalRisk;
+    approval_level: ApprovalLevel;
     actor: string;
     final_review_required: boolean;
     matched_grant_id?: string;
@@ -92,6 +100,7 @@ export interface ApprovalEvaluation {
   decision: ApprovalDecision;
   mode: ApprovalMode;
   risk: ApprovalRisk;
+  approval_level: ApprovalLevel;
   reason: string;
   matched_grant_id?: string;
   final_review_required: boolean;
@@ -99,9 +108,17 @@ export interface ApprovalEvaluation {
   authority_trace: AuthorityTransparencyTrace;
 }
 
-const RISK_ORDER: Record<ApprovalRisk, number> = { low: 1, medium: 2, high: 3, critical: 4 };
+const RISK_ORDER: Record<ApprovalRisk, number> = { low: 1, medium: 2, high: 3 };
 export const FINAL_REVIEW_OPERATIONS = new Set<ApprovalOperation>([
-  "tool.file.delete", "tool.shell.exec", "external.send", "credential.access", "settings.write", "schedule.create", "payment.charge",
+  "tool.file.delete",
+  "tool.shell.exec",
+  "external.send",
+  "credential.access",
+  "settings.write",
+  "schedule.create",
+  "schedule.update",
+  "schedule.delete",
+  "payment.charge",
 ]);
 
 export function approvalContextFromCommand(command: ExecuteCommand, opts: { actor?: string; now?: number } = {}): ApprovalContext {
@@ -131,7 +148,10 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
   if (command.type === "noop") return "noop";
   if (hasAny(caps, ["credential:read", "credential.access", "secrets:read"])) return "credential.access";
   if (hasAny(caps, ["payment:charge", "billing:write"])) return "payment.charge";
+  if (hasAny(caps, ["schedule:read"])) return "schedule.list";
   if (hasAny(caps, ["schedule:create", "automation:create"])) return "schedule.create";
+  if (hasAny(caps, ["schedule:update", "automation:update"])) return "schedule.update";
+  if (hasAny(caps, ["schedule:delete", "automation:delete"])) return "schedule.delete";
   if (hasAny(caps, ["settings:write"])) return "settings.write";
   if (hasAny(caps, ["shell:exec", "process:exec"])) return "tool.shell.exec";
   if (hasAny(caps, ["fs:delete", "file:delete"])) return "tool.file.delete";
@@ -145,6 +165,10 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
   if (command.type === "llm_call") return "llm.call";
   if (command.type === "channel_send") return "channel.send";
   if (command.type === "tool_call") {
+    if (command.payload.tool_name === "schedule.list") return "schedule.list";
+    if (command.payload.tool_name === "schedule.create") return "schedule.create";
+    if (command.payload.tool_name === "schedule.update") return "schedule.update";
+    if (command.payload.tool_name === "schedule.delete") return "schedule.delete";
     if (command.payload.tool_name === "file.search") return "tool.file.search";
     if (command.payload.tool_name === "http.fetch") return "tool.network.http";
     return "tool.call";
@@ -153,8 +177,8 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
 }
 
 export function riskForOperation(op: ApprovalOperation, caps: readonly ToolCapability[] = []): ApprovalRisk {
-  if (op === "credential.access" || op === "payment.charge") return "critical";
-  if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create"].includes(op)) return "high";
+  if (["credential.access", "payment.charge"].includes(op)) return "high";
+  if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create", "schedule.update", "schedule.delete"].includes(op)) return "high";
   if (
     ["tool.file.write", "tool.network.http", "channel.send"].includes(op) ||
     hasPrefix(caps, "network:")
@@ -163,7 +187,13 @@ export function riskForOperation(op: ApprovalOperation, caps: readonly ToolCapab
 }
 
 export function finalReviewRequired(ctx: ApprovalContext): boolean {
-  return FINAL_REVIEW_OPERATIONS.has(ctx.operation) || ctx.risk === "critical";
+  return FINAL_REVIEW_OPERATIONS.has(ctx.operation) || ctx.risk === "high";
+}
+
+export function approvalLevelFromContext(ctx: ApprovalContext): ApprovalLevel {
+  if (finalReviewRequired(ctx)) return "L3_final_review";
+  if (ctx.risk === "low") return "L1_observe";
+  return "L2_operate";
 }
 
 export function evaluateApproval(command: ExecuteCommand, grants: readonly ApprovalGrant[], opts: { actor?: string; now?: number; default_mode?: ApprovalMode } = {}): ApprovalEvaluation {
@@ -171,6 +201,7 @@ export function evaluateApproval(command: ExecuteCommand, grants: readonly Appro
   const ctx = approvalContextFromCommand(command, { actor: opts.actor, now });
   const defaultMode = opts.default_mode ?? "full_access";
   const needsFinalReview = finalReviewRequired(ctx);
+  const approvalLevel = approvalLevelFromContext(ctx);
   const matched = grants.filter((g) => grantMatches(g, ctx, now)).sort((a, b) => specificity(b) - specificity(a))[0];
 
   const withTrace = (base: Omit<ApprovalEvaluation, "authority_trace">): ApprovalEvaluation => ({
@@ -185,17 +216,17 @@ export function evaluateApproval(command: ExecuteCommand, grants: readonly Appro
 
   if (matched) {
     if (matched.decision === "deny") {
-      return withTrace({ decision: "deny", mode: matched.mode, risk: ctx.risk, reason: `deny_grant_matched:${matched.id}`, matched_grant_id: matched.id, final_review_required: needsFinalReview, context: ctx });
+      return withTrace({ decision: "deny", mode: matched.mode, risk: ctx.risk, approval_level: approvalLevel, reason: `deny_grant_matched:${matched.id}`, matched_grant_id: matched.id, final_review_required: needsFinalReview, context: ctx });
     }
     if (needsFinalReview) {
-      return withTrace({ decision: "ask", mode: matched.mode, risk: ctx.risk, reason: `grant_matched_but_final_review_required:${matched.id}`, matched_grant_id: matched.id, final_review_required: true, context: ctx });
+      return withTrace({ decision: "ask", mode: matched.mode, risk: ctx.risk, approval_level: approvalLevel, reason: `grant_matched_but_final_review_required:${matched.id}`, matched_grant_id: matched.id, final_review_required: true, context: ctx });
     }
-    return withTrace({ decision: matched.decision, mode: matched.mode, risk: ctx.risk, reason: `grant_matched:${matched.id}`, matched_grant_id: matched.id, final_review_required: false, context: ctx });
+    return withTrace({ decision: matched.decision, mode: matched.mode, risk: ctx.risk, approval_level: approvalLevel, reason: `grant_matched:${matched.id}`, matched_grant_id: matched.id, final_review_required: false, context: ctx });
   }
   if (defaultMode === "full_access" && !needsFinalReview) {
-    return withTrace({ decision: "allow", mode: "full_access", risk: ctx.risk, reason: "default_full_access_without_final_review_exception", final_review_required: false, context: ctx });
+    return withTrace({ decision: "allow", mode: "full_access", risk: ctx.risk, approval_level: approvalLevel, reason: "default_full_access_without_final_review_exception", final_review_required: false, context: ctx });
   }
-  return withTrace({ decision: "ask", mode: defaultMode, risk: ctx.risk, reason: "no_matching_approval_grant", final_review_required: needsFinalReview, context: ctx });
+  return withTrace({ decision: "ask", mode: defaultMode, risk: ctx.risk, approval_level: approvalLevel, reason: "no_matching_approval_grant", final_review_required: needsFinalReview, context: ctx });
 }
 
 export function buildAuthorityTransparencyTrace(
@@ -218,6 +249,7 @@ export function buildAuthorityTransparencyTrace(
       operation: ctx.operation,
       target_scope: ctx.target_scope,
       risk: ctx.risk,
+      approval_level: approvalLevelFromContext(ctx),
       actor: ctx.actor,
       final_review_required: opts.final_review_required,
       matched_grant_id: opts.matched_grant_id,

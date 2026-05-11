@@ -728,7 +728,7 @@ describe("WebChatChannel — approval API", () => {
             command_id: "cmd-1",
             request_id: "req-1",
             operation: "tool.shell.exec",
-            risk: "critical",
+            risk: "high",
             final_review_required: true,
             reason: "final_review_required",
             approval_token: "one-time-token",
@@ -757,7 +757,7 @@ describe("WebChatChannel — approval API", () => {
         command_id: "cmd-1",
         request_id: "req-1",
         operation: "tool.shell.exec",
-        risk: "critical",
+        risk: "high",
       });
     } finally {
       await ctx.teardown();
