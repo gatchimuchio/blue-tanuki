@@ -45,6 +45,10 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     allowed_capabilities: ["tool:web.search", "network:http"],
     timeout_ms: 15_000,
   },
+  "github.read": {
+    allowed_capabilities: ["tool:github.read", "network:github.com"],
+    timeout_ms: 15_000,
+  },
 };
 
 /**
@@ -56,6 +60,7 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  *   - tool:file.edit path=notes/today.md search=hello replace=hi expected_replacements=1
  *   - tool:http.fetch url=https://example.com method=HEAD
  *   - tool:web.search query="blue tanuki" max_results=5
+ *   - tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
  *   - /tool echo text="hello"
  *   - tool:http.fetch {"url":"https://example.com","method":"GET"}
  *
@@ -191,16 +196,24 @@ function coerceToolArgs(
   args: Record<string, unknown>,
 ): Record<string, unknown> {
   const next = { ...args };
-  if (toolName === "file.search" || toolName === "web.search") {
+  if (
+    toolName === "file.search" ||
+    toolName === "web.search" ||
+    toolName === "github.read"
+  ) {
     coercePositiveInt(next, "max_results");
   }
   if (
     toolName === "http.fetch" ||
     toolName === "web.search" ||
+    toolName === "github.read" ||
     toolName === "file.write" ||
     toolName === "file.edit"
   ) {
     coercePositiveInt(next, "max_bytes");
+  }
+  if (toolName === "github.read") {
+    coercePositiveInt(next, "number");
   }
   if (toolName === "file.edit") {
     coercePositiveInt(next, "expected_replacements");

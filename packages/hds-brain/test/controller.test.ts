@@ -309,6 +309,34 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit github.read requests to tool_call with GitHub network capability", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound("tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki state=open max_results=3"),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "github.read",
+        arguments: {
+          resource: "issues",
+          owner: "gatchimuchio",
+          repo: "blue-tanuki",
+          state: "open",
+          max_results: 3,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["github.read"],
+      allowed_capabilities: ["tool:github.read", "network:github.com"],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("does not send unsupported explicit tool requests to the LLM", () => {
     const c = new HDSUpperController();
     const { command } = c.decide(inbound("tool:shell.exec command=pwd"));

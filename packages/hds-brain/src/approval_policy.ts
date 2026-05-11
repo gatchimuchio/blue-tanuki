@@ -140,7 +140,7 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
     if (command.type === "tool_call" && command.payload.tool_name === "file.search") return "tool.file.search";
     return "tool.file.read";
   }
-  if (hasAny(caps, ["network:http", "http.fetch"])) return "tool.network.http";
+  if (hasAny(caps, ["network:http", "http.fetch"]) || hasPrefix(caps, "network:")) return "tool.network.http";
   if (hasAny(caps, ["external:send", "email:send", "slack:send", "discord:send"])) return "external.send";
   if (command.type === "llm_call") return "llm.call";
   if (command.type === "channel_send") return "channel.send";
@@ -155,7 +155,10 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
 export function riskForOperation(op: ApprovalOperation, caps: readonly ToolCapability[] = []): ApprovalRisk {
   if (op === "credential.access" || op === "payment.charge") return "critical";
   if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create"].includes(op)) return "high";
-  if (["tool.file.write", "tool.network.http", "channel.send"].includes(op) || hasAny(caps, ["network:*", "fs:*"])) return "medium";
+  if (
+    ["tool.file.write", "tool.network.http", "channel.send"].includes(op) ||
+    hasPrefix(caps, "network:")
+  ) return "medium";
   return "low";
 }
 
@@ -290,5 +293,6 @@ function scopeFromCommand(command: ExecuteCommand, op: ApprovalOperation): Pick<
   throw new Error(`scopeFromCommand: unhandled command type: ${String((command as ExecuteCommand).type)}`);
 }
 function hasAny(caps: readonly string[], needles: readonly string[]): boolean { const s = new Set(caps); return needles.some((n) => s.has(n)); }
+function hasPrefix(caps: readonly string[], prefix: string): boolean { return caps.some((cap) => cap.startsWith(prefix)); }
 function specificity(grant: ApprovalGrant): number { let n = 0; if (grant.operation !== "*") n += 8; if (grant.target_scope !== "*") n += 4; if (grant.target) n += 3; if (grant.path_pattern) n += 3; if (grant.channel) n += 2; if (grant.actor !== "*") n += 2; if (grant.risk !== "*") n += 1; if (grant.capabilities?.length) n += grant.capabilities.length; return n; }
 function stableJson(value: unknown): string { const seen = new WeakSet<object>(); const normalize = (v: unknown): unknown => { if (v === undefined) return "[undefined]"; if (typeof v === "bigint") return v.toString(); if (typeof v !== "object" || v === null) return v; if (seen.has(v)) return "[circular]"; seen.add(v); if (Array.isArray(v)) return v.map((item) => normalize(item)); const out: Record<string, unknown> = {}; for (const key of Object.keys(v as Record<string, unknown>).sort()) out[key] = normalize((v as Record<string, unknown>)[key]); return out; }; return JSON.stringify(normalize(value)); }

@@ -86,6 +86,7 @@ export type ChannelSendPayload = z.infer<typeof ChannelSendPayloadSchema>;
  *   - fs:read
  *   - fs:write
  *   - network:http
+ *   - network:<host>
  *   - shell:probe
  *   - channel:send
  */

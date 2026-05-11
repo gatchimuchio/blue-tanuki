@@ -47,6 +47,24 @@ export interface WebSearchResult {
   snippet: string;
 }
 
+export interface GitHubReadTarget {
+  path: string;
+  maxBytes: number;
+}
+
+export interface GitHubReadResponse {
+  status: number;
+  ok: boolean;
+  content_type: string | null;
+  body: string;
+  truncated: boolean;
+  rate_limit_remaining: string | null;
+}
+
+export interface GitHubReadOptions {
+  request?: (target: GitHubReadTarget) => Promise<GitHubReadResponse>;
+}
+
 export interface FileSearchOptions {
   env?: Env;
 }
@@ -126,6 +144,17 @@ function positiveIntArg(
     throw new Error(`${name} must be a positive integer`);
   }
   return Math.min(value, max);
+}
+
+function requiredPositiveIntArg(
+  args: Record<string, unknown>,
+  name: string,
+  max: number,
+): number {
+  if (args[name] === undefined) {
+    throw new Error(`${name} must be a positive integer`);
+  }
+  return positiveIntArg(args, name, 1, max);
 }
 
 function pathInside(parent: string, child: string): boolean {
@@ -471,6 +500,68 @@ function parseWebSearchResults(body: string, maxResults: number): WebSearchResul
   ];
 }
 
+function githubNameArg(args: Record<string, unknown>, name: string): string {
+  const value = stringArg(args, name)!;
+  if (!/^[A-Za-z0-9_.-]+$/.test(value)) {
+    throw new Error(`${name} must contain only letters, numbers, dot, underscore, or dash`);
+  }
+  return value;
+}
+
+function githubResource(args: Record<string, unknown>): string {
+  return (stringArg(args, "resource", false) ?? "repo").toLowerCase();
+}
+
+function githubState(args: Record<string, unknown>): "open" | "closed" | "all" {
+  const state = (stringArg(args, "state", false) ?? "open").toLowerCase();
+  if (state !== "open" && state !== "closed" && state !== "all") {
+    throw new Error("state must be open, closed, or all");
+  }
+  return state;
+}
+
+function githubPath(args: Record<string, unknown>): { resource: string; path: string } {
+  const owner = encodeURIComponent(githubNameArg(args, "owner"));
+  const repo = encodeURIComponent(githubNameArg(args, "repo"));
+  const resource = githubResource(args);
+  if (resource === "repo") {
+    return { resource, path: `/repos/${owner}/${repo}` };
+  }
+  if (resource === "issue") {
+    const number = requiredPositiveIntArg(args, "number", 1_000_000);
+    return { resource, path: `/repos/${owner}/${repo}/issues/${number}` };
+  }
+  if (resource === "issues") {
+    const state = githubState(args);
+    const perPage = positiveIntArg(args, "max_results", 10, 100);
+    return {
+      resource,
+      path: `/repos/${owner}/${repo}/issues?state=${state}&per_page=${perPage}`,
+    };
+  }
+  if (resource === "pr" || resource === "pull" || resource === "pull_request") {
+    const number = requiredPositiveIntArg(args, "number", 1_000_000);
+    return { resource: "pr", path: `/repos/${owner}/${repo}/pulls/${number}` };
+  }
+  if (resource === "prs" || resource === "pulls" || resource === "pull_requests") {
+    const state = githubState(args);
+    const perPage = positiveIntArg(args, "max_results", 10, 100);
+    return {
+      resource: "prs",
+      path: `/repos/${owner}/${repo}/pulls?state=${state}&per_page=${perPage}`,
+    };
+  }
+  throw new Error("resource must be repo, issue, issues, pr, or prs");
+}
+
+function parseJsonOrText(body: string): unknown {
+  try {
+    return JSON.parse(body) as unknown;
+  } catch {
+    return body;
+  }
+}
+
 async function defaultHttpRequest(
   target: HttpFetchTarget,
   method: "GET" | "HEAD",
@@ -575,6 +666,89 @@ async function defaultHttpRequest(
   });
 }
 
+async function defaultGitHubReadRequest(
+  target: GitHubReadTarget,
+): Promise<GitHubReadResponse> {
+  return await new Promise((resolve, reject) => {
+    let finished = false;
+    const finish = (result: GitHubReadResponse): void => {
+      if (finished) return;
+      finished = true;
+      resolve(result);
+    };
+    const fail = (error: Error): void => {
+      if (finished) return;
+      finished = true;
+      reject(error);
+    };
+    const req = https.request(
+      {
+        protocol: "https:",
+        hostname: "api.github.com",
+        path: target.path,
+        method: "GET",
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "BLUE-TANUKI/0.1 github.read",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        timeout: HTTP_FETCH_TIMEOUT_MS,
+      },
+      (res) => {
+        const status = res.statusCode ?? 0;
+        const contentType = headerString(res.headers["content-type"]);
+        const rateLimitRemaining = headerString(res.headers["x-ratelimit-remaining"]);
+        const chunks: Buffer[] = [];
+        let seenBytes = 0;
+        let keptBytes = 0;
+        let truncated = false;
+        res.on("data", (chunk: Buffer | string) => {
+          if (finished) return;
+          const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          seenBytes += buf.length;
+          if (keptBytes < target.maxBytes) {
+            const keep = buf.subarray(0, target.maxBytes - keptBytes);
+            chunks.push(keep);
+            keptBytes += keep.length;
+          }
+          if (seenBytes >= target.maxBytes) {
+            truncated = true;
+            res.destroy();
+            finish({
+              status,
+              ok: status >= 200 && status < 300,
+              content_type: contentType,
+              body: Buffer.concat(chunks).toString("utf8"),
+              truncated,
+              rate_limit_remaining: rateLimitRemaining,
+            });
+          }
+        });
+        res.on("end", () => {
+          finish({
+            status,
+            ok: status >= 200 && status < 300,
+            content_type: contentType,
+            body: Buffer.concat(chunks).toString("utf8"),
+            truncated,
+            rate_limit_remaining: rateLimitRemaining,
+          });
+        });
+        res.on("error", (error) => {
+          if (!finished) fail(error);
+        });
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy(new Error(`github.read timed out after ${HTTP_FETCH_TIMEOUT_MS}ms`));
+    });
+    req.on("error", (error) => {
+      if (!finished) fail(error);
+    });
+    req.end();
+  });
+}
+
 function isRedirect(status: number): boolean {
   return status === 301 || status === 302 || status === 303 ||
     status === 307 || status === 308;
@@ -650,6 +824,32 @@ export async function invokeWebSearch(
     content_type: fetched.content_type,
     truncated: fetched.truncated,
     results: parseWebSearchResults(fetched.body, maxResults),
+  };
+}
+
+export async function invokeGitHubRead(
+  args: Record<string, unknown>,
+  opts: GitHubReadOptions = {},
+): Promise<unknown> {
+  const maxBytes = positiveIntArg(args, "max_bytes", 128_000, 512_000);
+  const route = githubPath(args);
+  const request = opts.request ?? defaultGitHubReadRequest;
+  const response = await request({
+    path: route.path,
+    maxBytes,
+  });
+  if (!response.ok) {
+    throw new Error(`github.read returned HTTP ${response.status}`);
+  }
+  return {
+    resource: route.resource,
+    api_host: "api.github.com",
+    path: route.path,
+    status: response.status,
+    content_type: response.content_type,
+    truncated: response.truncated,
+    rate_limit_remaining: response.rate_limit_remaining,
+    data: parseJsonOrText(response.body),
   };
 }
 
@@ -832,6 +1032,15 @@ export const webSearchTool: Tool = {
   },
 };
 
+export const githubReadTool: Tool = {
+  name: "github.read",
+  description: "Read public GitHub repo, issue, and pull request metadata from api.github.com.",
+  required_capabilities: ["tool:github.read", "network:github.com"],
+  async invoke(args: Record<string, unknown>): Promise<unknown> {
+    return await invokeGitHubRead(args);
+  },
+};
+
 export function registerBuiltinTools(registry: {
   register(tool: Tool): void;
 }): void {
@@ -841,4 +1050,5 @@ export function registerBuiltinTools(registry: {
   registry.register(fileEditTool);
   registry.register(httpFetchTool);
   registry.register(webSearchTool);
+  registry.register(githubReadTool);
 }

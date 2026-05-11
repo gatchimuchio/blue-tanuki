@@ -8,8 +8,10 @@ import {
   invokeFileEdit,
   invokeHttpFetch,
   invokeWebSearch,
+  invokeGitHubRead,
   registerBuiltinTools,
   type FileSearchOptions,
+  type GitHubReadOptions,
   type HttpFetchOptions,
 } from "../src/tools/builtin.js";
 import { ToolRegistry } from "../src/tools/registry.js";
@@ -30,14 +32,17 @@ describe("built-in tools", () => {
     expect(registry.get("file.edit")).toBeDefined();
     expect(registry.get("http.fetch")).toBeDefined();
     expect(registry.get("web.search")).toBeDefined();
+    expect(registry.get("github.read")).toBeDefined();
     expect(registry.listCapabilities()).toEqual([
       "fs:read",
       "fs:write",
+      "network:github.com",
       "network:http",
       "tool:echo",
       "tool:file.edit",
       "tool:file.search",
       "tool:file.write",
+      "tool:github.read",
       "tool:http.fetch",
       "tool:web.search",
     ]);
@@ -501,6 +506,76 @@ describe("built-in tools", () => {
       ),
     ).rejects.toThrow(/BLUE_TANUKI_HTTP_ALLOWLIST/);
   });
+
+  it("github.read reads public repo metadata from fixed GitHub API paths", async () => {
+    const seen: Array<{ path: string; maxBytes: number }> = [];
+    const result = (await invokeGitHubRead(
+      {
+        resource: "issues",
+        owner: "gatchimuchio",
+        repo: "blue-tanuki",
+        state: "closed",
+        max_results: 2,
+        max_bytes: 4096,
+      },
+      fakeGitHub(async (target) => {
+        seen.push(target);
+        return {
+          status: 200,
+          ok: true,
+          content_type: "application/json",
+          body: JSON.stringify([{ number: 1, title: "done" }]),
+          truncated: false,
+          rate_limit_remaining: "59",
+        };
+      }),
+    )) as {
+      resource: string;
+      api_host: string;
+      path: string;
+      status: number;
+      rate_limit_remaining: string;
+      data: Array<{ number: number; title: string }>;
+    };
+
+    expect(seen).toEqual([
+      {
+        path: "/repos/gatchimuchio/blue-tanuki/issues?state=closed&per_page=2",
+        maxBytes: 4096,
+      },
+    ]);
+    expect(result).toMatchObject({
+      resource: "issues",
+      api_host: "api.github.com",
+      path: "/repos/gatchimuchio/blue-tanuki/issues?state=closed&per_page=2",
+      status: 200,
+      rate_limit_remaining: "59",
+      data: [{ number: 1, title: "done" }],
+    });
+  });
+
+  it("github.read fails closed for invalid resources and path components", async () => {
+    await expect(
+      invokeGitHubRead(
+        { resource: "release", owner: "gatchimuchio", repo: "blue-tanuki" },
+        fakeGitHub(),
+      ),
+    ).rejects.toThrow(/resource/);
+
+    await expect(
+      invokeGitHubRead(
+        { resource: "repo", owner: "gatchimuchio/escape", repo: "blue-tanuki" },
+        fakeGitHub(),
+      ),
+    ).rejects.toThrow(/owner/);
+
+    await expect(
+      invokeGitHubRead(
+        { resource: "pr", owner: "gatchimuchio", repo: "blue-tanuki" },
+        fakeGitHub(),
+      ),
+    ).rejects.toThrow(/number/);
+  });
 });
 
 function fakeHttp(
@@ -531,6 +606,19 @@ function fileSearchEnv(root: string): FileSearchOptions {
       BLUE_TANUKI_FILE_ROOT: root,
     },
   };
+}
+
+function fakeGitHub(
+  request: NonNullable<GitHubReadOptions["request"]> = async () => ({
+    status: 200,
+    ok: true,
+    content_type: "application/json",
+    body: "{}",
+    truncated: false,
+    rate_limit_remaining: "60",
+  }),
+): GitHubReadOptions {
+  return { request };
 }
 
 function nextRedirectHost(hostname: string): string {

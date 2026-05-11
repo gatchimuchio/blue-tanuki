@@ -10,7 +10,8 @@ The runbook assumes:
 - Phase 6-S1 build (audit persistence, structured logger, provider-neutral LLM
   routing, tool capability envelope, action output rendering, workspace plugin
   loader, permission enforcement, `http.fetch` SSRF hardening,
-  `file.search` sandboxing, Unicode detector normalization with raw audit
+  `file.search`/`file.write`/`file.edit` sandboxing,
+  unauthenticated `github.read`, Unicode detector normalization with raw audit
   retention, WebChat resume token separation, Docker packaging, GitHub Actions
   CI, systemd packaging, one-time resume approval tokens, packaging
   validation, setup wizard/env-file loading, and `--audit-dump`).
@@ -144,7 +145,7 @@ it needs before the gateway registers or configures it:
 
 | Surface | Required manifest permissions |
 | ------- | ----------------------------- |
-| Built-in tools | `tool:*`, `fs:read`, `network:http` as required by each tool |
+| Built-in tools | `tool:*`, `fs:read`, `fs:write`, `network:http`, `network:github.com` as required by each tool |
 | WebChat | `network:listen`, `secrets:WEBCHAT_TOKEN`, `secrets:WEBCHAT_RESUME_TOKEN` |
 | Slack | `network:slack.com`, `secrets:SLACK_BOT_TOKEN`, `secrets:SLACK_APP_TOKEN` |
 | Discord | `network:discord.com`, `secrets:DISCORD_BOT_TOKEN` |
@@ -230,7 +231,11 @@ Built-in tool capabilities:
 | ------------- | ------------------------------------- |
 | `echo`        | `tool:echo`                           |
 | `file.search` | `tool:file.search`, `fs:read`         |
+| `file.write` | `tool:file.write`, `fs:write`         |
+| `file.edit`  | `tool:file.edit`, `fs:read`, `fs:write` |
 | `http.fetch`  | `tool:http.fetch`, `network:http`     |
+| `web.search` | `tool:web.search`, `network:http`     |
+| `github.read` | `tool:github.read`, `network:github.com` |
 
 If a capability is missing, the executor returns failed feedback before the
 tool is invoked. This is separate from `allowed_tools`: `allowed_tools` says
@@ -243,10 +248,16 @@ connection to the validated IP, and validates every redirect target. Redirects
 are capped at 3 hops. If `BLUE_TANUKI_HTTP_ALLOWLIST` is set, the hostname must
 match one of the comma/space-separated domains or its subdomains.
 
-`file.search` additionally requires `BLUE_TANUKI_FILE_ROOT`. Requested roots
-resolve inside that sandbox and are re-checked with `fs.realpath`; roots outside
-the sandbox and symlink escapes are rejected. Secret-like paths such as `.env`,
-`.git`, `.ssh`, private key filenames, and key/certificate files are not read.
+`file.search`, `file.write`, and `file.edit` additionally require
+`BLUE_TANUKI_FILE_ROOT`. Requested paths resolve inside that sandbox and are
+re-checked with `fs.realpath`; paths outside the sandbox and symlink escapes are
+rejected. Secret-like paths such as `.env`, `.git`, `.ssh`, private key
+filenames, and key/certificate files are not read or written.
+
+`github.read` is read-only and unauthenticated in v0.1. It is fixed to
+`api.github.com` and supports public repo, issue, and pull request metadata.
+Authenticated private-repo access and write operations are separate future
+tools because they require credential and final-review policy work.
 
 Detector input is normalized immediately before scoring. HDS-BRAIN keeps raw
 request content in the audit trace while scoring against NFKC-normalized content
@@ -256,12 +267,16 @@ character metadata for post-incident analysis.
 
 ### 3.4 Explicit action routing
 
-HDS-BRAIN can route explicit read-only tool requests to `tool_call` commands.
+HDS-BRAIN can route explicit bounded tool requests to `tool_call` commands.
 The supported text forms are:
 
 ```text
 tool:file.search root=. query=needle max_results=5
+tool:file.write path=notes/today.md content="hello" mode=create
+tool:file.edit path=notes/today.md search=hello replace=hi expected_replacements=1
 tool:http.fetch url=https://example.com method=HEAD
+tool:web.search query="blue tanuki" max_results=5
+tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
 /tool echo text="hello"
 tool:http.fetch {"url":"https://example.com","method":"GET"}
 ```

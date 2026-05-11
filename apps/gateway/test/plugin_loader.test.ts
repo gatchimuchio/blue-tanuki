@@ -90,7 +90,9 @@ describe("plugin loader", () => {
         "fs:write",
         "tool:http.fetch",
         "tool:web.search",
+        "tool:github.read",
         "network:http",
+        "network:github.com",
       ],
       module: `
         export function registerBuiltinTools(registry) {

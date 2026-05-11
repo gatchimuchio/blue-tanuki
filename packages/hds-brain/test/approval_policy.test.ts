@@ -144,6 +144,23 @@ describe("approval policy", () => {
     expect(r.final_review_required).toBe(true);
     expect(r.decision).toBe("ask");
   });
+
+  it("maps host-scoped network capability into network tool operation", () => {
+    const cmd = toolCommand(
+      "github.read",
+      { owner: "gatchimuchio", repo: "blue-tanuki" },
+      ["tool:github.read", "network:github.com"],
+    );
+    const r = evaluateApproval(cmd, [], {
+      actor: "alice",
+      now: 1,
+      default_mode: "full_access",
+    });
+
+    expect(r.context.operation).toBe("tool.network.http");
+    expect(r.context.risk).toBe("medium");
+    expect(r.final_review_required).toBe(false);
+  });
 });
 
 

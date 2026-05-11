@@ -29,9 +29,11 @@
     "tool:file.edit",
     "tool:http.fetch",
     "tool:web.search",
+    "tool:github.read",
     "fs:read",
     "fs:write",
-    "network:http"
+    "network:http",
+    "network:github.com"
   ],
   "description": "BLUE-TANUKI executor: provider-neutral LLM backend registry, permission-gated tool registry, OutboundDispatcher integration, SessionStore (memory + json file). Network/secrets permissions apply only when a non-stub LLM or network tool is configured; fs permissions apply only when sessions or fs tools are allowed."
 }

@@ -79,6 +79,18 @@ BLUE_TANUKI_HTTP_ALLOWLIST=search.example.com
 `{query}` and `{max_results}` placeholders, or BLUE-TANUKI will append `q` and
 `count` query parameters. Requests inherit `http.fetch` SSRF protections.
 
+## GitHub read tool
+
+`github.read` is read-only, unauthenticated, and fixed to `api.github.com` in
+v0.1. It supports public repo metadata, issue metadata, issue lists, pull
+request metadata, and pull request lists.
+
+```text
+tool:github.read resource=repo owner=gatchimuchio repo=blue-tanuki
+tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki state=open max_results=5
+tool:github.read resource=pr owner=gatchimuchio repo=blue-tanuki number=1
+```
+
 ## Persistence
 
 ```bash
