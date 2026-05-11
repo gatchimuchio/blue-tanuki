@@ -22,7 +22,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Slack / Discord adapters with silent fallback when credentials are absent
 - Daily Brief scheduled-message smoke via internal cron
 - Optional token-gated HTTP webhook ingress at `/webhook`
-- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, and `browser.read` with sandbox / network guards
+- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `browser.read`, and `shell.exec` with sandbox / network / approval guards
 
 ## v0.1 explicit boundaries
 
@@ -152,6 +152,20 @@ text, and links.
 
 ```text
 tool:browser.read url=https://example.com max_chars=4000
+```
+
+## Shell exec tool
+
+`shell.exec` runs a non-shell command (`cmd` + `args[]`) under
+`BLUE_TANUKI_SHELL_ROOT`. It is a final-review operation; full access and
+remembered grants do not bypass owner confirmation.
+
+```bash
+export BLUE_TANUKI_SHELL_ROOT="$PWD"
+```
+
+```text
+tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
 ```
 
 ## Runtime snapshot

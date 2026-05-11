@@ -52,8 +52,10 @@ const BUILTIN_TOOL_PERMISSIONS = [
   "tool:web.search",
   "tool:github.read",
   "tool:browser.read",
+  "tool:shell.exec",
   "network:http",
   "network:github.com",
+  "shell:exec",
 ] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {

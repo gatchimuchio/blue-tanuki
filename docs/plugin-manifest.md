@@ -87,6 +87,7 @@ Declaration of expected runtime side effects. The format is `<scope>:<target>`. 
 | `tool:<name>`            | Executor tool capability used by `allowed_capabilities`.    |
 | `network:http`           | Generic HTTP client capability for gated tools.             |
 | `network:github.com`     | GitHub API read capability fixed to `api.github.com`.       |
+| `shell:exec`             | Runs a bounded non-shell child process after Approval Gate. |
 | `channel:send`           | Sends through an outbound channel.                          |
 
 `<rel_path>` is allowed to be a logical name (e.g. `audit_dir`, `session_dir`) rather than a literal path; the host configuration resolves it.

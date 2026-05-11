@@ -10,6 +10,7 @@ import {
   invokeWebSearch,
   invokeGitHubRead,
   invokeBrowserRead,
+  invokeShellExec,
   registerBuiltinTools,
   type FileSearchOptions,
   type GitHubReadOptions,
@@ -35,11 +36,13 @@ describe("built-in tools", () => {
     expect(registry.get("web.search")).toBeDefined();
     expect(registry.get("github.read")).toBeDefined();
     expect(registry.get("browser.read")).toBeDefined();
+    expect(registry.get("shell.exec")).toBeDefined();
     expect(registry.listCapabilities()).toEqual([
       "fs:read",
       "fs:write",
       "network:github.com",
       "network:http",
+      "shell:exec",
       "tool:browser.read",
       "tool:echo",
       "tool:file.edit",
@@ -47,6 +50,7 @@ describe("built-in tools", () => {
       "tool:file.write",
       "tool:github.read",
       "tool:http.fetch",
+      "tool:shell.exec",
       "tool:web.search",
     ]);
   });
@@ -626,6 +630,57 @@ describe("built-in tools", () => {
         }),
       ),
     ).rejects.toThrow(/non-public address/);
+  });
+
+  it("shell.exec runs a bounded non-shell command under BLUE_TANUKI_SHELL_ROOT", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-shell-"));
+    try {
+      const result = (await invokeShellExec(
+        {
+          cmd: process.execPath,
+          args: ["-e", "console.log(process.cwd()); console.error('warn')"],
+          cwd: ".",
+          timeout_ms: 10_000,
+          max_bytes: 4096,
+        },
+        { env: { BLUE_TANUKI_SHELL_ROOT: dir } },
+      )) as {
+        cwd: string;
+        exit_code: number;
+        stdout: string;
+        stderr: string;
+        timed_out: boolean;
+      };
+
+      expect(result.cwd).toBe(".");
+      expect(result.exit_code).toBe(0);
+      expect(result.stdout.replace(/\\/g, "/")).toContain(dir.replace(/\\/g, "/"));
+      expect(result.stderr).toContain("warn");
+      expect(result.timed_out).toBe(false);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("shell.exec fails closed without a shell root or when cwd escapes", async () => {
+    const parent = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-shell-"));
+    const root = path.join(parent, "root");
+    const outside = path.join(parent, "outside");
+    try {
+      await fs.mkdir(root);
+      await fs.mkdir(outside);
+      await expect(
+        invokeShellExec({ cmd: process.execPath, args: ["-v"] }, { env: {} }),
+      ).rejects.toThrow(/BLUE_TANUKI_SHELL_ROOT/);
+      await expect(
+        invokeShellExec(
+          { cmd: process.execPath, args: ["-v"], cwd: outside },
+          { env: { BLUE_TANUKI_SHELL_ROOT: root } },
+        ),
+      ).rejects.toThrow(/cwd/);
+    } finally {
+      await fs.rm(parent, { recursive: true, force: true });
+    }
   });
 });
 

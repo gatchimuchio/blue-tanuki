@@ -88,6 +88,7 @@ export type ChannelSendPayload = z.infer<typeof ChannelSendPayloadSchema>;
  *   - network:http
  *   - network:<host>
  *   - shell:probe
+ *   - shell:exec
  *   - channel:send
  */
 export const ToolCapabilitySchema = z.string().min(1);

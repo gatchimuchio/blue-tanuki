@@ -101,6 +101,19 @@ automation backend. It fetches public pages through the same SSRF guard as
 tool:browser.read url=https://example.com max_chars=4000
 ```
 
+## Shell exec tool
+
+```bash
+BLUE_TANUKI_SHELL_ROOT=/path/to/workspace
+```
+
+`shell.exec` runs a non-shell command (`cmd` + `args[]`) with its working
+directory fixed under this root. It is always a final-review operation.
+
+```text
+tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
+```
+
 ## Persistence
 
 ```bash

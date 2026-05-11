@@ -92,8 +92,10 @@ describe("plugin loader", () => {
         "tool:web.search",
         "tool:github.read",
         "tool:browser.read",
+        "tool:shell.exec",
         "network:http",
         "network:github.com",
+        "shell:exec",
       ],
       module: `
         export function registerBuiltinTools(registry) {

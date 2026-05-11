@@ -31,8 +31,10 @@
     "tool:web.search",
     "tool:github.read",
     "tool:browser.read",
+    "tool:shell.exec",
     "fs:read",
     "fs:write",
+    "shell:exec",
     "network:http",
     "network:github.com"
   ],

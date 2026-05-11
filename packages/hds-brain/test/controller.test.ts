@@ -363,15 +363,42 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit shell.exec requests to final-review shell capability", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound('tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":".","timeout_ms":5000}'),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "shell.exec",
+        arguments: {
+          cmd: "git",
+          args: ["status", "-sb"],
+          cwd: ".",
+          timeout_ms: 5000,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["shell.exec"],
+      allowed_capabilities: ["tool:shell.exec", "shell:exec"],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("does not send unsupported explicit tool requests to the LLM", () => {
     const c = new HDSUpperController();
-    const { command } = c.decide(inbound("tool:shell.exec command=pwd"));
+    const { command } = c.decide(inbound("tool:payment.charge amount=100"));
 
     expect(command).not.toBeNull();
     expect(command!.type).toBe("noop");
     if (command!.type === "noop") {
       expect(command!.payload).toMatchObject({
-        reason: "unsupported tool: shell.exec",
+        reason: "unsupported tool: payment.charge",
       });
     }
   });

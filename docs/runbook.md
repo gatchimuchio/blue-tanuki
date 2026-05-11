@@ -11,8 +11,8 @@ The runbook assumes:
   routing, tool capability envelope, action output rendering, workspace plugin
   loader, permission enforcement, `http.fetch` SSRF hardening,
   `file.search`/`file.write`/`file.edit` sandboxing,
-  unauthenticated `github.read`, lightweight `browser.read`,
-  Unicode detector normalization with raw audit
+  unauthenticated `github.read`, lightweight `browser.read`, final-review
+  `shell.exec`, Unicode detector normalization with raw audit
   retention, WebChat resume token separation, Docker packaging, GitHub Actions
   CI, systemd packaging, one-time resume approval tokens, packaging
   validation, setup wizard/env-file loading, and `--audit-dump`).
@@ -117,7 +117,8 @@ a stop-ship event and inspect the workspace before distributing an archive.
 | `BLUE_TANUKI_LOG_LEVEL`     | optional     | `debug` / `info` / `warn` / `error`                   | `info`             |
 | `BLUE_TANUKI_LOG_FORMAT`    | optional     | `text` (default) or `json` (one-object-per-line)      | `text`             |
 | `BLUE_TANUKI_HTTP_ALLOWLIST` | optional    | Comma/space-separated domains allowed for `http.fetch` | unset              |
-| `BLUE_TANUKI_FILE_ROOT`     | `file.search` | Sandbox root for read-only file search              | none (hard error)  |
+| `BLUE_TANUKI_FILE_ROOT`     | file tools   | Sandbox root for file search/write/edit              | none (hard error)  |
+| `BLUE_TANUKI_SHELL_ROOT`    | `shell.exec` | Working-directory root for shell command execution   | none (hard error)  |
 | `BLUE_TANUKI_LLM_BACKEND_HINT` | optional  | Backend hint attached by HDS-BRAIN to approved LLM commands | registry default |
 | `BLUE_TANUKI_LLM_MODEL`     | optional     | Per-command model override attached by HDS-BRAIN      | provider default   |
 | `BLUE_TANUKI_LLM_TEMPERATURE` | optional   | Per-command temperature override (`0..2`)             | provider default   |
@@ -238,6 +239,7 @@ Built-in tool capabilities:
 | `web.search` | `tool:web.search`, `network:http`     |
 | `github.read` | `tool:github.read`, `network:github.com` |
 | `browser.read` | `tool:browser.read`, `network:http` |
+| `shell.exec` | `tool:shell.exec`, `shell:exec` |
 
 If a capability is missing, the executor returns failed feedback before the
 tool is invoked. This is separate from `allowed_tools`: `allowed_tools` says
@@ -265,6 +267,12 @@ tools because they require credential and final-review policy work.
 headless Chromium automation backend; it fetches public pages through
 `http.fetch` guards and returns bounded title/text/link extraction.
 
+`shell.exec` runs a bounded non-shell command (`cmd` plus `args[]`) under
+`BLUE_TANUKI_SHELL_ROOT`. It is a final-review operation because it carries
+`shell:exec`; full access and reusable grants cannot bypass owner confirmation.
+The root constrains cwd resolution, not the operating system's full process
+authority.
+
 Detector input is normalized immediately before scoring. HDS-BRAIN keeps raw
 request content in the audit trace while scoring against NFKC-normalized content
 with zero-width and bidi control characters removed. `DecisionLog.input`
@@ -284,6 +292,7 @@ tool:http.fetch url=https://example.com method=HEAD
 tool:web.search query="blue tanuki" max_results=5
 tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
 tool:browser.read url=https://example.com max_chars=4000
+tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
 /tool echo text="hello"
 tool:http.fetch {"url":"https://example.com","method":"GET"}
 ```

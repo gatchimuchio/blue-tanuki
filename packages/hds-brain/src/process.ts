@@ -156,6 +156,7 @@ function executionPolicy(process_kind: ProcessKind): HDSProcessDefinition["execu
         "web.search",
         "github.read",
         "browser.read",
+        "shell.exec",
       ],
       allowed_capabilities: [
         "tool:echo",
@@ -168,8 +169,10 @@ function executionPolicy(process_kind: ProcessKind): HDSProcessDefinition["execu
         "tool:web.search",
         "tool:github.read",
         "tool:browser.read",
+        "tool:shell.exec",
         "network:http",
         "network:github.com",
+        "shell:exec",
       ],
       timeout_ms: 15_000,
     };
@@ -201,6 +204,7 @@ function executionPolicy(process_kind: ProcessKind): HDSProcessDefinition["execu
       "web.search",
       "github.read",
       "browser.read",
+      "shell.exec",
     ],
     allowed_capabilities: [],
     timeout_ms: 30_000,
