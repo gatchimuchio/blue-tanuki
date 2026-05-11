@@ -1,5 +1,7 @@
 # CONFORMANCE
 
+本書は adapter / plugin / skill を main release に入れる前の conformance 条件を定義する。
+
 ## Active Test Coverage
 
 現行リポジトリで main release gate として扱う conformance 系テスト:
@@ -14,9 +16,7 @@
   - WhatsApp が `reserved-third-party` のまま維持されること
   - first-party channel manifest が wildcard permission を持たないこと
 - `apps/gateway/test/doctor.test.ts`
-  - doctor が manifest / compatibility matrix の release gate を表示すること
-
-本書は adapter / plugin / skill を main release に入れる前の conformance 条件を定義する。
+  - doctor が manifest / compatibility matrix / schedule config の release gate を表示すること
 
 ## 1. Required Test Groups
 
@@ -33,7 +33,7 @@ adapter は以下を test で示す。
 
 - inbound event が canonical inbound message type に正規化される
 - outbound operation が canonical outbound request type を経由する
-- recoverable / non-recoverable error が typed result に写像される
+- recoverable / non-recoverable error が typed result に分類される
 - channel metadata が authority escalation に使われない
 
 ## 3. Permission Enforcement Tests
@@ -59,8 +59,8 @@ adapter は以下を test で示す。
 
 ## 6. Preview Quarantine Rule
 
-未完成、experimental、third-party-like、または support level が曖昧な実装は preview quarantine に置く。preview は README / docs / compatibility matrix に status を明記する。
+未完成、experimental、third-party-like、または support level が曖昧な実装は preview quarantine に置く。Preview は README / docs / compatibility matrix に status を明記する。
 
 ## 7. Main Release Gate Rule
 
-main release へ昇格するには、conformance tests、permission enforcement tests、audit trace compatibility tests、runtime invariant preservation tests が pass し、support level と運用責任が docs に残っていること。
+main release へ昇格するには、conformance tests、permission enforcement tests、audit trace compatibility tests、Runtime invariant preservation tests が pass し、support level と運用責任が docs に残っていること。

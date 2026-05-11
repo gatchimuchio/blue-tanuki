@@ -1,7 +1,6 @@
 # BLUE-TANUKI v0.1 Quickstart
 
-v0.1 の最短経路は **WebChat Control Center + Telegram + HDS Approval/Audit** です。
-Slack / Discord は既存 adapter を silent fallback 付きで同時登録しますが、live 接続は credentials がある場合のみ有効です。
+v0.1 の最短経路は **WebChat Control Center + Telegram + HDS Approval/Audit** である。Slack / Discord は既存 adapter と silent fallback 付きで同時登録されるが、live 接続は credentials がある場合のみ有効になる。
 
 ## 1. Install
 
@@ -38,7 +37,7 @@ Telegram inbound uses Bot API long polling. Outbound target is `chat_id`.
 
 ## 4. Daily Brief smoke
 
-v0.1 の Daily Brief は Gmail/GCal/Drive を読まない **scheduled channel_send smoke** です。
+v0.1 の Daily Brief は Gmail/GCal/Drive を読まない **scheduled channel_send smoke** である。
 
 ```bash
 export BLUE_TANUKI_DAILY_BRIEF_ENABLED=1
@@ -70,8 +69,7 @@ export BLUE_TANUKI_SCHEDULES_JSON='[
 pnpm gateway:serve
 ```
 
-Generic schedules are boot-time config. They still pass through HDS-BRAIN as
-`cron.process`; runtime schedule creation is not enabled in v0.1.
+Generic schedules are boot-time config. They still pass through HDS-BRAIN as `cron.process`; runtime schedule creation is not enabled in v0.1.
 
 ## 6. Runtime snapshot
 
@@ -80,4 +78,4 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
   http://127.0.0.1:8787/runtime/snapshot
 ```
 
-The snapshot exposes HDS state, audit chain validity, memory count, pending approvals, and authority-path invariants.
+The snapshot exposes HDS state, audit chain validity, memory count, pending approvals, scheduled task snapshots, and authority-path invariants.

@@ -4,7 +4,8 @@
 
 BLUE-TANUKI v0.1 is a local, owner-operated resident control plane built around **HDS-BRAIN**.
 
-The core claim is not “more channels than OpenClaw.”
+The core claim is not "more channels than OpenClaw."
+
 The core claim is:
 
 ```text
@@ -44,7 +45,7 @@ The transparency claim is limited to BLUE-TANUKI's own authority path.
 - runtime snapshot
 - Telegram channel
 - Slack / Discord existing adapters with silent fallback
-- Daily Brief scheduled-message smoke
+- Daily Brief and generic scheduled-message smoke
 
 ## v0.1 Explicit Preview / Deferred
 

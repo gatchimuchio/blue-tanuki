@@ -98,10 +98,7 @@ When enabled, the Control Center runtime snapshot shows the configured Daily Bri
 
 ## Generic scheduled messages
 
-`BLUE_TANUKI_SCHEDULES_JSON` adds more internal cron tasks without creating a
-dynamic schedule authority path. Each task still enters HDS-BRAIN as `cron`
-actor / `cron.process` and can only become a `channel_send` through the
-gateway-internal metadata marker.
+`BLUE_TANUKI_SCHEDULES_JSON` adds more internal cron tasks without creating a dynamic schedule authority path. Each task still enters HDS-BRAIN as `cron` actor / `cron.process` and can only become a `channel_send` through the gateway-internal metadata marker.
 
 ```bash
 export BLUE_TANUKI_SCHEDULES_JSON='[
@@ -163,13 +160,11 @@ tool:file.edit path=notes/today.md search=hello replace=hi expected_replacements
 export BLUE_TANUKI_WEB_SEARCH_ENDPOINT="https://search.example.com/search?q={query}&count={max_results}"
 ```
 
-`web.search` is provider-neutral and disabled until an endpoint is configured.
-Requests go through the same public-address and allowlist checks as `http.fetch`.
+`web.search` is provider-neutral and disabled until an endpoint is configured. Requests go through the same public-address and allowlist checks as `http.fetch`.
 
 ## GitHub read tool
 
-`github.read` is read-only and unauthenticated in v0.1. It talks only to
-`api.github.com`; private repository access and write operations are deferred.
+`github.read` is read-only and unauthenticated in v0.1. It talks only to `api.github.com`; private repository access and write operations are deferred.
 
 ```text
 tool:github.read resource=repo owner=gatchimuchio repo=blue-tanuki
@@ -179,9 +174,7 @@ tool:github.read resource=pr owner=gatchimuchio repo=blue-tanuki number=1
 
 ## Browser read tool
 
-`browser.read` is a lightweight, no-JavaScript page reader. It fetches a public
-URL through the same SSRF guard as `http.fetch`, then extracts bounded title,
-text, and links.
+`browser.read` is a lightweight, no-JavaScript page reader. It fetches a public URL through the same SSRF guard as `http.fetch`, then extracts bounded title, text, and links.
 
 ```text
 tool:browser.read url=https://example.com max_chars=4000
@@ -189,9 +182,7 @@ tool:browser.read url=https://example.com max_chars=4000
 
 ## Shell exec tool
 
-`shell.exec` runs a non-shell command (`cmd` + `args[]`) under
-`BLUE_TANUKI_SHELL_ROOT`. It is a final-review operation; full access and
-remembered grants do not bypass owner confirmation.
+`shell.exec` runs a non-shell command (`cmd` + `args[]`) under `BLUE_TANUKI_SHELL_ROOT`. It is a final-review operation; full access and remembered grants do not bypass owner confirmation.
 
 ```bash
 export BLUE_TANUKI_SHELL_ROOT="$PWD"
@@ -244,8 +235,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
   "http://127.0.0.1:8787/audit/dump?format=text"
 ```
 
-The HTTP dump is read-only and does not accept a filesystem path. It reports the live HDS audit chain with the same report shape as `--audit-dump`.
-Control Center uses the JSON form to display `chain_valid` and `entry_count` as the resident hash-chain validator.
+The HTTP dump is read-only and does not accept a filesystem path. It reports the live HDS audit chain with the same report shape as `--audit-dump`. Control Center uses the JSON form to display `chain_valid` and `entry_count` as the resident hash-chain validator.
 
 ## Authority trace HTTP
 
@@ -258,16 +248,16 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 
 ## Documents
 
-- [docs/ROADMAP.md](./docs/ROADMAP.md) — internal roadmap v6 and Sacred Constraints
-- [docs/ADAPTER_CONTRACT.md](./docs/ADAPTER_CONTRACT.md) — downstream adapter boundary
-- [docs/CAPABILITY_ENVELOPE.md](./docs/CAPABILITY_ENVELOPE.md) — manifest-driven capability rules
-- [docs/CONFORMANCE.md](./docs/CONFORMANCE.md) — preview quarantine and release gates
-- [docs/LLM_DEVELOPMENT_GUIDE.md](./docs/LLM_DEVELOPMENT_GUIDE.md) — Codex/LLM implementation rules
-- [CLAIM.md](./CLAIM.md) — product claim and non-claim boundary
-- [SECURITY.md](./SECURITY.md) — authority and memory security model
-- [AUDIT.md](./AUDIT.md) — hash-chain audit and runtime snapshot
-- [CONFIG.md](./CONFIG.md) — environment variables
-- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) — operational fixes
+- [docs/ROADMAP.md](./docs/ROADMAP.md) - internal roadmap v6 and Sacred Constraints
+- [docs/ADAPTER_CONTRACT.md](./docs/ADAPTER_CONTRACT.md) - downstream adapter boundary
+- [docs/CAPABILITY_ENVELOPE.md](./docs/CAPABILITY_ENVELOPE.md) - manifest-driven capability rules
+- [docs/CONFORMANCE.md](./docs/CONFORMANCE.md) - preview quarantine and release gates
+- [docs/LLM_DEVELOPMENT_GUIDE.md](./docs/LLM_DEVELOPMENT_GUIDE.md) - Codex/LLM implementation rules
+- [CLAIM.md](./CLAIM.md) - product claim and non-claim boundary
+- [SECURITY.md](./SECURITY.md) - authority and memory security model
+- [AUDIT.md](./AUDIT.md) - hash-chain audit and runtime snapshot
+- [CONFIG.md](./CONFIG.md) - environment variables
+- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - operational fixes
 
 ## License
 
@@ -275,12 +265,11 @@ MIT. See [LICENSE](./LICENSE).
 
 ## Package map
 
-Source packages live under `packages/`; runtime apps live under `apps/`.
-Root files are limited to workspace config, docs, install/deploy scripts, and release tooling.
+Source packages live under `packages/`; runtime apps live under `apps/`. Root files are limited to workspace config, docs, install/deploy scripts, and release tooling.
 
 | Path | Package | Role |
 |---|---|---|
-| `packages/protocol` | `@blue-tanuki/protocol` | HDS-BRAIN ↔ Executor protocol |
+| `packages/protocol` | `@blue-tanuki/protocol` | HDS-BRAIN -> Executor protocol |
 | `packages/hds-brain` | `@blue-tanuki/hds-brain` | upstream authority core |
 | `packages/blue-tanuki` | `@blue-tanuki/core` | executor, LLM backend, tools, sessions |
 | `packages/channel-base` | `@blue-tanuki/channel-base` | channel interfaces/router/dispatcher |

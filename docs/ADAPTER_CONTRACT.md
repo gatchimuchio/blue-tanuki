@@ -6,7 +6,7 @@
 
 Channel adapters are downstream only.
 
-Adapter は HDS-BRAIN、authority path、Approval Gate、Runtime Invariants、hash-chain audit format を変更してはならない。adapter が扱う外部 metadata は context であり、authority ではない。
+Adapter は HDS-BRAIN、authority path、Approval Gate、Runtime Invariants、hash-chain audit format を変更してはならない。Adapter が扱う外部 metadata は context であり、authority ではない。
 
 ## 2. Inbound Contract
 
@@ -35,8 +35,8 @@ All outbound operations pass through a common outbound request type.
 
 Errors must be typed as recoverable / non-recoverable.
 
-- recoverable: rate limit、temporary network failure、remote service unavailable、transient auth refresh
-- non-recoverable: missing capability、invalid credentials、unsupported operation、contract violation、authority escalation attempt
+- recoverable: rate limit, temporary network failure, remote service unavailable, transient auth refresh
+- non-recoverable: missing capability, invalid credentials, unsupported operation, contract violation, authority escalation attempt
 
 non-recoverable error は黙って再試行せず、audit-compatible trace として記録する。
 
@@ -57,4 +57,4 @@ Channel metadata must never escalate authority.
 
 ## 7. Audit Compatibility
 
-Adapter は audit hash-chain を壊さない。adapter trace は request_id、channel、operation、capability、recoverability、approval state を追跡できる形にする。
+Adapter は audit hash-chain を壊さない。Adapter trace は request_id、channel、operation、capability、recoverability、approval state を追跡できる形にする。
