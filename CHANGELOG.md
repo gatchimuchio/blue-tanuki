@@ -9,6 +9,7 @@
 - Replaced `docs/ROADMAP.md` with a v9 roadmap aligned to the active implementation instructions.
 - Added Phase 8-S1: first-class `ApprovalLevel`, three-tier `ApprovalRisk`, L3 runtime schedule create/update/delete, safe schedule snapshots, and schedule lifecycle audit.
 - Advanced active implementation docs to Phase 8-S2a after Phase 8-S1 completion.
+- Added Phase 8-S2a operator-usability docs: first-run checklist, permanent-use checklist, channel readiness matrix, credential readiness matrix, update/rollback runbook, and docs static checker.
 
 ## 0.1.0 - 2026-05-06
 

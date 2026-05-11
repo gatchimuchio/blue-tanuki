@@ -55,6 +55,8 @@ HDS-BRAIN never calls an LLM and never consumes downstream session history for a
 
 ## Quickstart
 
+v0.1 provides a guided first-run path, not a verified 5-minute beginner guarantee. Use [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) for the full first-run path and [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) before leaving BLUE-TANUKI running permanently.
+
 ```bash
 pnpm install
 pnpm typecheck
@@ -262,6 +264,11 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 ## Documents
 
 - [docs/ROADMAP.md](./docs/ROADMAP.md) - internal roadmap v6 and Sacred Constraints
+- [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
+- [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
+- [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status
+- [docs/CREDENTIAL_READINESS_MATRIX.md](./docs/CREDENTIAL_READINESS_MATRIX.md) - credential and env readiness
+- [docs/UPDATE_ROLLBACK_RUNBOOK.md](./docs/UPDATE_ROLLBACK_RUNBOOK.md) - update, rollback, and recovery steps
 - [docs/ADAPTER_CONTRACT.md](./docs/ADAPTER_CONTRACT.md) - downstream adapter boundary
 - [docs/CAPABILITY_ENVELOPE.md](./docs/CAPABILITY_ENVELOPE.md) - manifest-driven capability rules
 - [docs/CONFORMANCE.md](./docs/CONFORMANCE.md) - preview quarantine and release gates

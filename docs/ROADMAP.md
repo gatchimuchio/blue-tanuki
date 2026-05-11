@@ -1,8 +1,7 @@
 # BLUE-TANUKI Roadmap v9
 
-この文書は `docs/IMPLEMENTATION_INSTRUCTIONS.md` と同じ実行順序を示す短縮ロードマップである。
-
-実装時の source of truth は常に `docs/IMPLEMENTATION_INSTRUCTIONS.md` と `AGENTS.md`。この文書は人間が全体像を素早く確認するための案内であり、詳細な phase 要件・検証コマンド・acceptance criteria は active instruction file を参照する。
+この文書は `docs/IMPLEMENTATION_INSTRUCTIONS.md` と同じ実行順序を示す圧縮ロードマップである。
+実装時の source of truth は常に `docs/IMPLEMENTATION_INSTRUCTIONS.md` と `AGENTS.md`。この文書は人間が全体像を素早く確認するための案内であり、詳細な phase 要件、検証コマンド、acceptance criteria は active instruction file を参照する。
 
 ## 0. 不変原則
 
@@ -48,7 +47,6 @@ Goal:
 
 Remaining primary work:
 
-- operator usability docs (Phase 8-S2a)
 - doctor actionable output + Control Center first-run status (Phase 8-S2b)
 - OpenClaw rejection audit document (Phase 8-S3)
 - v0.1 live smoke cleanup
@@ -104,8 +102,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | Phase | Band | Task | Priority | Dependency |
 |---|---|---|---:|---|
 | 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | completed |
-| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | current |
-| 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | 8-S2a |
+| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | completed |
+| 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | current |
 | 8-S3 | B | OpenClaw Rejection Audit document | P0 | 8-S2b |
 | 8-S4 | C | GitHub write tool | P1 | 8-S1 |
 | 8-S5 | C | Slack / Discord release polish + live smoke | P1 | 8-S2b |
@@ -123,35 +121,31 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 8-S2a - Operator Usability Docs
+Phase 8-S2b - Doctor Actionable Output + Control Center First-Run Status
 ```
 
-Do not begin Phase 8-S2b, 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S2a is completed unless explicitly instructed.
+Do not begin Phase 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S2b is completed unless explicitly instructed.
 
-## 4. Phase 8-S1 Summary
+## 4. Completed Phase Summaries
 
-Objective:
+### Phase 8-S1
 
-- Convert L1/L2/L3 approval model into first-class TypeScript workflow layer.
-- Implement runtime `schedule.*` CRUD on top of that layer.
+- First-class `ApprovalLevel`
+- Three-tier `ApprovalRisk`
+- L3 runtime schedule create/update/delete
+- L1 runtime schedule list
+- Schedule lifecycle audit
+- Safe runtime schedule snapshot metadata
 
-Key requirements:
+### Phase 8-S2a
 
-- Keep `ApprovalRisk` as `"low" | "medium" | "high"`.
-- Add `ApprovalLevel` as `"L1_observe" | "L2_operate" | "L3_final_review"`.
-- `schedule.list` maps to L1.
-- `schedule.create`, `schedule.update`, and `schedule.delete` map to L3.
-- Pending or rejected schedules must not execute.
-- Boot-time schedules and Daily Brief smoke must not regress.
-- Runtime snapshot must not expose schedule payload content.
-- Audit lifecycle must record schedule request, approval/rejection, activation/update/delete, and fire events.
-- Runtime Invariants must remain unchanged.
-
-Full requirements live in:
-
-```txt
-docs/IMPLEMENTATION_INSTRUCTIONS.md
-```
+- First-run checklist
+- Permanent-use checklist
+- Channel readiness matrix
+- Credential readiness matrix
+- Update / rollback / recovery runbook
+- Quickstart and troubleshooting alignment
+- Static docs checker
 
 ## 5. Non-Goals
 
@@ -172,6 +166,11 @@ Do not add:
 ## 6. Reference Docs
 
 - [Active Implementation Instructions](IMPLEMENTATION_INSTRUCTIONS.md)
+- [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
+- [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)
+- [Channel Readiness Matrix](CHANNEL_READINESS_MATRIX.md)
+- [Credential Readiness Matrix](CREDENTIAL_READINESS_MATRIX.md)
+- [Update / Rollback Runbook](UPDATE_ROLLBACK_RUNBOOK.md)
 - [Adapter Contract](ADAPTER_CONTRACT.md)
 - [Capability Envelope](CAPABILITY_ENVELOPE.md)
 - [Conformance](CONFORMANCE.md)

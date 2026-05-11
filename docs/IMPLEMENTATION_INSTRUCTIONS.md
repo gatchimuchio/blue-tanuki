@@ -145,7 +145,6 @@ Goal:
 
 Remaining primary work:
 
-- operator usability docs (Phase 8-S2a)
 - doctor actionable + Control Center first-run status (Phase 8-S2b)
 - OpenClaw rejection audit document (Phase 8-S3)
 - v0.1 live smoke cleanup
@@ -279,8 +278,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | Phase | Band | Task | Priority | Dependency |
 |---|---|---|---:|---|
 | 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | completed |
-| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | current |
-| 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | 8-S2a |
+| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | completed |
+| 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | current |
 | 8-S3 | B | OpenClaw Rejection Audit document | P0 | 8-S2b |
 | 8-S4 | C | GitHub write tool | P1 | 8-S1 |
 | 8-S5 | C | Slack / Discord release polish + live smoke | P1 | 8-S2b |
@@ -896,7 +895,7 @@ Must include:
 - QUICKSTART.md must reference the first-run checklist as the long-form companion.
 - CONFIG.md must be consistent with the credential readiness matrix.
 - TROUBLESHOOTING.md must be consistent with documented failure modes.
-- Any stale text such as "Runtime schedule creation remains outside v0.1" must be removed (Phase 8-S1 supersedes it).
+- Any stale wording that describes runtime schedule creation as outside v0.1 must be removed (Phase 8-S1 supersedes it).
 
 ## OpenClaw Rejection Constraint
 
@@ -927,7 +926,7 @@ Static checks only (no runtime code change):
 - every doc path referenced by README.md / QUICKSTART.md exists,
 - readiness matrices parse if structured,
 - no doc contradicts CONFIG.md ENV definitions,
-- no stale "Runtime schedule creation remains outside v0.1" text remains after Phase 8-S1,
+- no stale runtime-schedule-disabled text remains after Phase 8-S1,
 - compatibility matrix status is consistent across docs.
 
 If the repo lacks a docs-link checker, add a minimal one under `scripts/` and wire it into `pnpm test` or a dedicated `pnpm docs:check` script.
@@ -1651,7 +1650,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 8-S2a — Operator Usability Docs
+Phase 8-S2b — Doctor Actionable Output + Control Center First-Run Status
 ```
 
-Do not begin Phase 8-S2b, 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S2a is completed unless explicitly instructed.
+Do not begin Phase 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S2b is completed unless explicitly instructed.

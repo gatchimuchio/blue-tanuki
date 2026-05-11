@@ -1,5 +1,15 @@
 # BLUE-TANUKI v0.1 Configuration
 
+このファイルは env reference である。初回手順は [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md)、credential の readiness は [docs/CREDENTIAL_READINESS_MATRIX.md](./docs/CREDENTIAL_READINESS_MATRIX.md)、常駐運用の確認は [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) を参照する。
+
+## Setup command
+
+```bash
+pnpm setup -- --yes
+```
+
+`pnpm setup` は local env file を生成し、既存 file を上書きする場合は `.bak` backup を残す。secret 値は公開しない。
+
 ## Required for serve
 
 ```bash

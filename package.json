@@ -10,6 +10,7 @@
     "clean": "node scripts/clean.mjs",
     "typecheck": "node scripts/typecheck.mjs",
     "test": "node node_modules/vitest/vitest.mjs run --passWithNoTests",
+    "docs:check": "node scripts/check_docs.mjs",
     "gateway": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway start",
     "gateway:dev": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway dev",
     "gateway:serve": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway serve",
