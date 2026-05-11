@@ -33,6 +33,7 @@ import {
  *   - WEBCHAT_PORT is bindable (probe by binding then closing)
  *   - BLUE_TANUKI_SESSION_DIR (if set) is writable / can be created
  *   - BLUE_TANUKI_AUDIT_DIR   (if set) is writable / can be created
+ *   - BLUE_TANUKI_FILE_ROOT and BLUE_TANUKI_SHELL_ROOT (if set) are directories
  *   - LLM_BACKEND consistency (stub / anthropic / openai-compatible)
  *
  * What we do NOT check:
@@ -585,6 +586,44 @@ async function checkFileRoot(env: NodeJS.ProcessEnv): Promise<CheckResult> {
   }
 }
 
+async function checkShellRoot(env: NodeJS.ProcessEnv): Promise<CheckResult> {
+  const dir = env.BLUE_TANUKI_SHELL_ROOT;
+  if (!dir) {
+    return {
+      id: "shell_root",
+      level: "ok",
+      label: "BLUE_TANUKI_SHELL_ROOT",
+      detail: "unset (shell.exec disabled until configured)",
+    };
+  }
+  const resolved = path.resolve(dir);
+  try {
+    const real = await fs.realpath(resolved);
+    const stat = await fs.stat(real);
+    if (!stat.isDirectory()) {
+      return {
+        id: "shell_root",
+        level: "error",
+        label: "BLUE_TANUKI_SHELL_ROOT",
+        detail: `${real} is not a directory`,
+      };
+    }
+    return {
+      id: "shell_root",
+      level: "ok",
+      label: "BLUE_TANUKI_SHELL_ROOT",
+      detail: `${real} (directory)`,
+    };
+  } catch (e) {
+    return {
+      id: "shell_root",
+      level: "error",
+      label: "BLUE_TANUKI_SHELL_ROOT",
+      detail: `invalid at '${resolved}': ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
 async function locateRepoRoot(): Promise<string | null> {
   // Locate the repo by walking up from this module to find pnpm-workspace.yaml.
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -797,6 +836,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   checks.push(await checkSessionDir(env));
   checks.push(await checkAuditDir(env));
   checks.push(await checkFileRoot(env));
+  checks.push(await checkShellRoot(env));
   checks.push(await checkBundledManifests(opts.manifest_root));
   checks.push(await checkCompatibilityMatrix(opts.manifest_root));
 
