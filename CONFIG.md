@@ -41,6 +41,33 @@ For smoke testing:
 BLUE_TANUKI_DAILY_BRIEF_INTERVAL_MS=60000
 ```
 
+## Generic scheduled messages
+
+```bash
+BLUE_TANUKI_SCHEDULES_JSON='[
+  {
+    "id": "ops-smoke",
+    "channel": "webchat",
+    "target": "local-user",
+    "content": "scheduled smoke",
+    "time": "07:00"
+  }
+]'
+```
+
+Fields:
+
+- `id`: stable task id. Must match `[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}`.
+- `channel`: outbound channel name, such as `webchat` or `telegram`.
+- `target`: outbound target for that channel.
+- `content`: message body. It is never included in runtime snapshots.
+- `time`: optional local `HH:MM`; defaults to `07:00`.
+- `interval_ms`: optional positive integer for smoke tests.
+- `enabled`: optional boolean; `false` keeps the task visible but not running.
+
+Generic schedules are boot-time config only. Runtime schedule creation remains
+outside v0.1 and must go through the final-review boundary when added.
+
 ## Webhook ingress
 
 ```bash

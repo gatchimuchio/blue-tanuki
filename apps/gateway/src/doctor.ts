@@ -11,6 +11,7 @@ import {
   buildLLMCommandRouteFromEnv,
   listConfiguredLLMProviders,
 } from "./llm_config.js";
+import { cronSchedulesFromEnv } from "./cron_channel.js";
 
 /**
  * doctor — environment diagnostic for blue-tanuki gateway.
@@ -34,6 +35,7 @@ import {
  *   - BLUE_TANUKI_SESSION_DIR (if set) is writable / can be created
  *   - BLUE_TANUKI_AUDIT_DIR   (if set) is writable / can be created
  *   - BLUE_TANUKI_FILE_ROOT and BLUE_TANUKI_SHELL_ROOT (if set) are directories
+ *   - BLUE_TANUKI_SCHEDULES_JSON parses as scheduled-message config
  *   - LLM_BACKEND consistency (stub / anthropic / openai-compatible)
  *
  * What we do NOT check:
@@ -545,6 +547,28 @@ async function checkAuditDir(env: NodeJS.ProcessEnv): Promise<CheckResult> {
   };
 }
 
+function checkCronSchedules(env: NodeJS.ProcessEnv): CheckResult {
+  try {
+    const tasks = cronSchedulesFromEnv(env);
+    const enabled = tasks.filter((task) => task.enabled !== false).length;
+    return {
+      id: "cron_schedules",
+      level: "ok",
+      label: "cron schedules",
+      detail: tasks.length === 0
+        ? "none configured"
+        : `${tasks.length} configured (${enabled} enabled)`,
+    };
+  } catch (e) {
+    return {
+      id: "cron_schedules",
+      level: "error",
+      label: "cron schedules",
+      detail: e instanceof Error ? e.message : String(e),
+    };
+  }
+}
+
 async function checkFileRoot(env: NodeJS.ProcessEnv): Promise<CheckResult> {
   const dir = env.BLUE_TANUKI_FILE_ROOT;
   if (!dir) {
@@ -833,6 +857,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   checks.push(checkOptionalEnv(env, "ANTHROPIC_API_KEY"));
   checks.push(checkLlmBackend(env));
   checks.push(checkLlmCommandRoute(env));
+  checks.push(checkCronSchedules(env));
   checks.push(await checkSessionDir(env));
   checks.push(await checkAuditDir(env));
   checks.push(await checkFileRoot(env));

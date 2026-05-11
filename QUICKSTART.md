@@ -55,7 +55,25 @@ Test interval:
 export BLUE_TANUKI_DAILY_BRIEF_INTERVAL_MS=60000
 ```
 
-## 5. Runtime snapshot
+## 5. Generic scheduled-message smoke
+
+```bash
+export BLUE_TANUKI_SCHEDULES_JSON='[
+  {
+    "id": "minute-smoke",
+    "channel": "webchat",
+    "target": "local-user",
+    "content": "scheduled smoke from BLUE-TANUKI",
+    "interval_ms": 60000
+  }
+]'
+pnpm gateway:serve
+```
+
+Generic schedules are boot-time config. They still pass through HDS-BRAIN as
+`cron.process`; runtime schedule creation is not enabled in v0.1.
+
+## 6. Runtime snapshot
 
 ```bash
 curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \

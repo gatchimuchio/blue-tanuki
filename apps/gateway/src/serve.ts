@@ -33,7 +33,7 @@ import { renderCommandOutput } from "./result_render.js";
 import { approvalDeniedFeedback, approvalRequiredMessage, buildApprovalRuntime } from "./approval_runtime.js";
 import { loadPluginRuntime } from "./plugin_loader.js";
 import { createWebChatSettingsSurface } from "./settings_surface.js";
-import { DailyBriefCronChannel, dailyBriefCronFromEnv } from "./cron_channel.js";
+import { CronSchedulerChannel, cronSchedulesFromEnv } from "./cron_channel.js";
 import {
   auditDumpReportFromLog,
   formatAuditJsonReport,
@@ -125,10 +125,10 @@ export async function serve(): Promise<ServeShutdown> {
   if (resumeToken === token) {
     throw new Error("WEBCHAT_RESUME_TOKEN must differ from WEBCHAT_TOKEN");
   }
-  const cronConfig = dailyBriefCronFromEnv(process.env);
-  const cron = cronConfig
-    ? new DailyBriefCronChannel({
-        ...cronConfig,
+  const cronTasks = cronSchedulesFromEnv(process.env);
+  const cron = cronTasks.length > 0
+    ? new CronSchedulerChannel({
+        tasks: cronTasks,
         log: (line: string) => cronLog.info(line),
       })
     : null;
@@ -228,7 +228,7 @@ export async function serve(): Promise<ServeShutdown> {
         getSnapshot: async () => ({
           hds: hds.getRuntimeSnapshot(),
           pending_approvals: pendingApprovalSnapshot(),
-          scheduled_tasks: cron ? [cron.snapshot()] : [],
+          scheduled_tasks: cron ? cron.snapshot() : [],
         }),
       },
       approval: {

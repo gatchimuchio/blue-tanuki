@@ -20,7 +20,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - hash-chain audit logs
 - Telegram Bot API channel
 - Slack / Discord adapters with silent fallback when credentials are absent
-- Daily Brief scheduled-message smoke via internal cron
+- Daily Brief and generic scheduled-message smoke via internal cron
 - Optional token-gated HTTP webhook ingress at `/webhook`
 - Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `browser.read`, and `shell.exec` with sandbox / network / approval guards
 
@@ -95,6 +95,39 @@ pnpm gateway:serve
 
 v0.1 Daily Brief is a scheduled `channel_send` smoke. Real Gmail/GCal/Drive-backed brief is v0.2+.
 When enabled, the Control Center runtime snapshot shows the configured Daily Brief schedule and next fire time without exposing the brief content.
+
+## Generic scheduled messages
+
+`BLUE_TANUKI_SCHEDULES_JSON` adds more internal cron tasks without creating a
+dynamic schedule authority path. Each task still enters HDS-BRAIN as `cron`
+actor / `cron.process` and can only become a `channel_send` through the
+gateway-internal metadata marker.
+
+```bash
+export BLUE_TANUKI_SCHEDULES_JSON='[
+  {
+    "id": "ops-smoke",
+    "channel": "webchat",
+    "target": "local-user",
+    "content": "scheduled smoke from BLUE-TANUKI",
+    "time": "07:00"
+  }
+]'
+```
+
+For interval smoke tests, use `interval_ms` instead of relying on wall clock:
+
+```bash
+export BLUE_TANUKI_SCHEDULES_JSON='[
+  {
+    "id": "minute-smoke",
+    "channel": "webchat",
+    "target": "local-user",
+    "content": "minute smoke",
+    "interval_ms": 60000
+  }
+]'
+```
 
 ## Webhook ingress
 

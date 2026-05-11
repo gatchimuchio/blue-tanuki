@@ -273,6 +273,19 @@ describe("runDoctor — error paths", () => {
     expect(reused.checks.find((c) => c.id === "webhook_token")?.level).toBe("error");
   });
 
+  it("exit_code=2 when generic schedule JSON is malformed", async () => {
+    const r = await runDoctor({
+      env: {
+        ...baseEnv(),
+        BLUE_TANUKI_SCHEDULES_JSON: "{not-json",
+      },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.checks.find((c) => c.id === "cron_schedules")?.level).toBe("error");
+  });
+
   it("exit_code=2 when Node.js is below MIN_NODE_VERSION", async () => {
     const r = await runDoctor({
       env: baseEnv(),

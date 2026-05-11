@@ -2,6 +2,25 @@ import { randomUUID } from "node:crypto";
 import type { InboundRequest } from "@blue-tanuki/protocol";
 import type { InboundChannel, InboundHandler } from "@blue-tanuki/channel-base";
 
+export interface CronTaskOptions {
+  id: string;
+  name?: "daily_brief" | "scheduled_message";
+  enabled?: boolean;
+  channel: string;
+  target: string;
+  content: string;
+  /** HH:MM local time. Default 07:00. */
+  time?: string;
+  /** For tests or smoke. If set, triggers every N ms instead of daily. */
+  interval_ms?: number;
+}
+
+export interface CronSchedulerOptions {
+  tasks: CronTaskOptions[];
+  log?: (line: string) => void;
+  now?: () => Date;
+}
+
 export interface DailyBriefCronOptions {
   enabled?: boolean;
   channel: string;
@@ -15,8 +34,9 @@ export interface DailyBriefCronOptions {
   now?: () => Date;
 }
 
-export interface DailyBriefCronSnapshot {
-  name: "daily_brief";
+export interface CronTaskSnapshot {
+  id: string;
+  name: "daily_brief" | "scheduled_message";
   enabled: boolean;
   running: boolean;
   channel: string;
@@ -27,104 +47,185 @@ export interface DailyBriefCronSnapshot {
   last_fire_at_ms: number | null;
 }
 
+export type DailyBriefCronSnapshot = CronTaskSnapshot;
+
+interface NormalizedCronTask {
+  id: string;
+  name: "daily_brief" | "scheduled_message";
+  enabled: boolean;
+  channel: string;
+  target: string;
+  content: string;
+  time: string;
+  interval_ms?: number;
+}
+
+interface CronTaskRuntime {
+  task: NormalizedCronTask;
+  timer: NodeJS.Timeout | null;
+  running: boolean;
+  nextFireAtMs: number | null;
+  lastFireAtMs: number | null;
+}
+
 /**
- * Minimal v0.1 cron source.
+ * v0.1 cron source.
  *
- * It emits an internal cron InboundRequest. HDS-BRAIN still owns authority:
- * the cron request must pass cron.process and becomes a channel_send only via
+ * It emits internal cron InboundRequests. HDS-BRAIN still owns authority:
+ * a cron request must pass cron.process and becomes a channel_send only via
  * the trusted gateway-internal metadata marker.
  */
-export class DailyBriefCronChannel implements InboundChannel {
+export class CronSchedulerChannel implements InboundChannel {
   readonly name = "cron";
-  private timer: NodeJS.Timeout | null = null;
   private started = false;
-  private nextFireAtMs: number | null = null;
-  private lastFireAtMs: number | null = null;
+  private readonly runtimes: CronTaskRuntime[];
+  private readonly logLine?: (line: string) => void;
+  private readonly nowFn?: () => Date;
 
-  constructor(private readonly opts: DailyBriefCronOptions) {}
+  constructor(opts: CronSchedulerOptions) {
+    this.logLine = opts.log;
+    this.nowFn = opts.now;
+    this.runtimes = normalizeCronTasks(opts.tasks).map((task) => ({
+      task,
+      timer: null,
+      running: false,
+      nextFireAtMs: null,
+      lastFireAtMs: null,
+    }));
+  }
 
   async start(handler: InboundHandler): Promise<void> {
     if (this.started) return;
     this.started = true;
-    if (!this.opts.enabled) {
-      this.log("[cron] disabled");
-      return;
+
+    let active = 0;
+    for (const runtime of this.runtimes) {
+      if (!runtime.task.enabled) {
+        this.log(`[cron] task disabled id=${runtime.task.id}`);
+        continue;
+      }
+      active += 1;
+      this.scheduleTask(runtime, handler);
     }
-    if (this.opts.interval_ms && this.opts.interval_ms > 0) {
-      this.nextFireAtMs = this.nowMs() + this.opts.interval_ms;
-      this.timer = setInterval(() => {
-        this.nextFireAtMs = this.nowMs() + this.opts.interval_ms!;
-        void this.fire(handler);
-      }, this.opts.interval_ms);
-      this.timer.unref?.();
-      this.log(`[cron] daily brief interval enabled interval_ms=${this.opts.interval_ms}`);
-      return;
-    }
-    this.scheduleNext(handler);
+    if (active === 0) this.log("[cron] no enabled scheduled tasks");
   }
 
   async stop(): Promise<void> {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = null;
-    this.nextFireAtMs = null;
+    for (const runtime of this.runtimes) {
+      if (runtime.timer) clearTimeout(runtime.timer);
+      runtime.timer = null;
+      runtime.running = false;
+      runtime.nextFireAtMs = null;
+    }
     this.started = false;
   }
 
-  snapshot(): DailyBriefCronSnapshot {
-    return {
-      name: "daily_brief",
-      enabled: this.opts.enabled === true,
-      running: this.started && this.opts.enabled === true,
-      channel: this.opts.channel,
-      target: this.opts.target,
-      time: this.opts.time ?? "07:00",
-      interval_ms: this.opts.interval_ms,
-      next_fire_at_ms: this.nextFireAtMs,
-      last_fire_at_ms: this.lastFireAtMs,
-    };
+  snapshot(): CronTaskSnapshot[] {
+    return this.runtimes.map((runtime) => ({
+      id: runtime.task.id,
+      name: runtime.task.name,
+      enabled: runtime.task.enabled,
+      running: runtime.running,
+      channel: runtime.task.channel,
+      target: runtime.task.target,
+      time: runtime.task.time,
+      interval_ms: runtime.task.interval_ms,
+      next_fire_at_ms: runtime.nextFireAtMs,
+      last_fire_at_ms: runtime.lastFireAtMs,
+    }));
   }
 
-  private scheduleNext(handler: InboundHandler): void {
-    const now = this.opts.now?.() ?? new Date();
-    const delay = delayUntilLocalTime(this.opts.time ?? "07:00", now);
-    this.nextFireAtMs = now.getTime() + delay;
-    this.timer = setTimeout(() => {
-      void this.fire(handler).finally(() => {
-        if (this.started) this.scheduleNext(handler);
+  private scheduleTask(runtime: CronTaskRuntime, handler: InboundHandler): void {
+    const task = runtime.task;
+    runtime.running = true;
+    if (task.interval_ms && task.interval_ms > 0) {
+      runtime.nextFireAtMs = this.nowMs() + task.interval_ms;
+      runtime.timer = setInterval(() => {
+        runtime.nextFireAtMs = this.nowMs() + task.interval_ms!;
+        void this.fire(runtime, handler);
+      }, task.interval_ms);
+      runtime.timer.unref?.();
+      this.log(`[cron] task interval enabled id=${task.id} interval_ms=${task.interval_ms}`);
+      return;
+    }
+    this.scheduleNextDaily(runtime, handler);
+  }
+
+  private scheduleNextDaily(runtime: CronTaskRuntime, handler: InboundHandler): void {
+    const task = runtime.task;
+    const now = this.now();
+    const delay = delayUntilLocalTime(task.time, now);
+    runtime.nextFireAtMs = now.getTime() + delay;
+    runtime.timer = setTimeout(() => {
+      void this.fire(runtime, handler).finally(() => {
+        if (this.started && task.enabled) this.scheduleNextDaily(runtime, handler);
       });
     }, delay);
-    this.timer.unref?.();
-    this.log(`[cron] daily brief scheduled time=${this.opts.time ?? "07:00"} delay_ms=${delay}`);
+    runtime.timer.unref?.();
+    this.log(`[cron] task scheduled id=${task.id} time=${task.time} delay_ms=${delay}`);
   }
 
-  private async fire(handler: InboundHandler): Promise<void> {
-    this.lastFireAtMs = this.nowMs();
+  private async fire(runtime: CronTaskRuntime, handler: InboundHandler): Promise<void> {
+    const task = runtime.task;
+    runtime.lastFireAtMs = this.nowMs();
     const inbound: InboundRequest = {
       id: randomUUID(),
       channel: "cron",
       user: "blue-tanuki-cron",
-      content: this.opts.content,
-      timestamp: Date.now(),
+      content: task.content,
+      timestamp: runtime.lastFireAtMs,
       metadata: {
         "blue_tanuki.authority_context": "gateway_internal_v1",
         "blue_tanuki.actor_kind": "cron",
         "blue_tanuki.trust_level": "trusted",
         "blue_tanuki.process_kind": "cron",
-        "blue_tanuki.channel_send.channel": this.opts.channel,
-        "blue_tanuki.channel_send.target": this.opts.target,
-        "blue_tanuki.channel_send.content": this.opts.content,
+        "blue_tanuki.cron.task_id": task.id,
+        "blue_tanuki.channel_send.channel": task.channel,
+        "blue_tanuki.channel_send.target": task.target,
+        "blue_tanuki.channel_send.content": task.content,
       },
     };
-    this.log(`[cron] firing daily brief channel=${this.opts.channel} target=${this.opts.target}`);
+    this.log(`[cron] firing task id=${task.id} channel=${task.channel} target=${task.target}`);
     await handler(inbound);
   }
 
   private log(line: string): void {
-    (this.opts.log ?? console.log)(line);
+    (this.logLine ?? console.log)(line);
+  }
+
+  private now(): Date {
+    return this.nowFn?.() ?? new Date();
   }
 
   private nowMs(): number {
-    return this.opts.now?.().getTime() ?? Date.now();
+    return this.now().getTime();
+  }
+}
+
+export class DailyBriefCronChannel implements InboundChannel {
+  readonly name = "cron";
+  private readonly scheduler: CronSchedulerChannel;
+
+  constructor(private readonly opts: DailyBriefCronOptions) {
+    this.scheduler = new CronSchedulerChannel({
+      tasks: [dailyBriefTaskFromOptions(opts)],
+      log: opts.log,
+      now: opts.now,
+    });
+  }
+
+  async start(handler: InboundHandler): Promise<void> {
+    await this.scheduler.start(handler);
+  }
+
+  async stop(): Promise<void> {
+    await this.scheduler.stop();
+  }
+
+  snapshot(): DailyBriefCronSnapshot {
+    const [snapshot] = this.scheduler.snapshot();
+    if (!snapshot) throw new Error("daily brief scheduler has no task");
+    return snapshot;
   }
 }
 
@@ -144,18 +245,142 @@ export function dailyBriefCronFromEnv(env: Record<string, string | undefined> = 
   };
 }
 
+export function cronSchedulesFromEnv(env: Record<string, string | undefined> = process.env): CronTaskOptions[] {
+  const tasks: CronTaskOptions[] = [];
+  const daily = dailyBriefCronFromEnv(env);
+  if (daily) tasks.push(dailyBriefTaskFromOptions(daily));
+
+  const raw = env.BLUE_TANUKI_SCHEDULES_JSON?.trim();
+  if (raw) {
+    const parsed = parseSchedulesJson(raw);
+    tasks.push(...parsed);
+  }
+
+  return normalizeCronTasks(tasks);
+}
+
+function dailyBriefTaskFromOptions(opts: DailyBriefCronOptions): CronTaskOptions {
+  return {
+    id: "daily_brief",
+    name: "daily_brief",
+    enabled: opts.enabled,
+    channel: opts.channel,
+    target: opts.target,
+    content: opts.content,
+    time: opts.time ?? "07:00",
+    interval_ms: opts.interval_ms,
+  };
+}
+
+function parseSchedulesJson(raw: string): CronTaskOptions[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`BLUE_TANUKI_SCHEDULES_JSON must be valid JSON: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error("BLUE_TANUKI_SCHEDULES_JSON must be an array");
+  }
+  return parsed.map((item, index) => parseScheduleObject(item, index));
+}
+
+function parseScheduleObject(item: unknown, index: number): CronTaskOptions {
+  if (!isRecord(item)) {
+    throw new Error(`BLUE_TANUKI_SCHEDULES_JSON[${index}] must be an object`);
+  }
+  return {
+    id: requiredString(item.id, `BLUE_TANUKI_SCHEDULES_JSON[${index}].id`),
+    name: "scheduled_message",
+    enabled: optionalBoolean(item.enabled, `BLUE_TANUKI_SCHEDULES_JSON[${index}].enabled`),
+    channel: requiredString(item.channel, `BLUE_TANUKI_SCHEDULES_JSON[${index}].channel`),
+    target: requiredString(item.target, `BLUE_TANUKI_SCHEDULES_JSON[${index}].target`),
+    content: requiredString(item.content, `BLUE_TANUKI_SCHEDULES_JSON[${index}].content`),
+    time: optionalString(item.time, `BLUE_TANUKI_SCHEDULES_JSON[${index}].time`),
+    interval_ms: optionalPositiveInteger(item.interval_ms, `BLUE_TANUKI_SCHEDULES_JSON[${index}].interval_ms`),
+  };
+}
+
+function normalizeCronTasks(tasks: CronTaskOptions[]): NormalizedCronTask[] {
+  const seen = new Set<string>();
+  return tasks.map((task, index) => {
+    const id = requireTrimmed(task.id, `cron task ${index} id`);
+    if (!/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(id)) {
+      throw new Error(`cron task id '${id}' must match /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/`);
+    }
+    if (seen.has(id)) throw new Error(`duplicate cron task id: ${id}`);
+    seen.add(id);
+    const time = task.time ?? "07:00";
+    parseLocalTime(time);
+    return {
+      id,
+      name: task.name ?? "scheduled_message",
+      enabled: task.enabled !== false,
+      channel: requireTrimmed(task.channel, `cron task ${id} channel`),
+      target: requireTrimmed(task.target, `cron task ${id} target`),
+      content: requireTrimmed(task.content, `cron task ${id} content`),
+      time,
+      interval_ms: task.interval_ms,
+    };
+  });
+}
+
+function requiredString(value: unknown, label: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+  return value;
+}
+
+function optionalString(value: unknown, label: string): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${label} must be a non-empty string when set`);
+  }
+  return value;
+}
+
+function optionalBoolean(value: unknown, label: string): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "boolean") throw new Error(`${label} must be boolean when set`);
+  return value;
+}
+
+function optionalPositiveInteger(value: unknown, label: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isInteger(value) || Number(value) <= 0) {
+    throw new Error(`${label} must be a positive integer when set`);
+  }
+  return Number(value);
+}
+
+function requireTrimmed(value: string, label: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error(`${label} must be non-empty`);
+  return trimmed;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function parsePositiveInt(value: string | undefined): number | undefined {
   if (!value) return undefined;
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : undefined;
 }
 
-export function delayUntilLocalTime(hhmm: string, now: Date): number {
+function parseLocalTime(hhmm: string): { hour: number; minute: number } {
   const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
-  if (!m) throw new Error(`invalid daily brief time: ${hhmm}`);
+  if (!m) throw new Error(`invalid scheduled time: ${hhmm}`);
   const hour = Number(m[1]);
   const minute = Number(m[2]);
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) throw new Error(`invalid daily brief time: ${hhmm}`);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) throw new Error(`invalid scheduled time: ${hhmm}`);
+  return { hour, minute };
+}
+
+export function delayUntilLocalTime(hhmm: string, now: Date): number {
+  const { hour, minute } = parseLocalTime(hhmm);
   const next = new Date(now);
   next.setHours(hour, minute, 0, 0);
   if (next.getTime() <= now.getTime()) next.setDate(next.getDate() + 1);
