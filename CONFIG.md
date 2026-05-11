@@ -91,6 +91,16 @@ tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki state=open 
 tool:github.read resource=pr owner=gatchimuchio repo=blue-tanuki number=1
 ```
 
+## Browser read tool
+
+`browser.read` is a lightweight page reader, not a full headless Chromium
+automation backend. It fetches public pages through the same SSRF guard as
+`http.fetch`, then returns bounded title, text, and links.
+
+```text
+tool:browser.read url=https://example.com max_chars=4000
+```
+
 ## Persistence
 
 ```bash

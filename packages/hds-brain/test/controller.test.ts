@@ -337,6 +337,32 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit browser.read requests to tool_call with HTTP network capability", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound("tool:browser.read url=https://example.com max_chars=4000 max_bytes=8192"),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "browser.read",
+        arguments: {
+          url: "https://example.com",
+          max_chars: 4000,
+          max_bytes: 8192,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["browser.read"],
+      allowed_capabilities: ["tool:browser.read", "network:http"],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("does not send unsupported explicit tool requests to the LLM", () => {
     const c = new HDSUpperController();
     const { command } = c.decide(inbound("tool:shell.exec command=pwd"));

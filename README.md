@@ -22,7 +22,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Slack / Discord adapters with silent fallback when credentials are absent
 - Daily Brief scheduled-message smoke via internal cron
 - Optional token-gated HTTP webhook ingress at `/webhook`
-- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, and `github.read` with sandbox / network guards
+- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, and `browser.read` with sandbox / network guards
 
 ## v0.1 explicit boundaries
 
@@ -142,6 +142,16 @@ Requests go through the same public-address and allowlist checks as `http.fetch`
 tool:github.read resource=repo owner=gatchimuchio repo=blue-tanuki
 tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki state=open max_results=5
 tool:github.read resource=pr owner=gatchimuchio repo=blue-tanuki number=1
+```
+
+## Browser read tool
+
+`browser.read` is a lightweight, no-JavaScript page reader. It fetches a public
+URL through the same SSRF guard as `http.fetch`, then extracts bounded title,
+text, and links.
+
+```text
+tool:browser.read url=https://example.com max_chars=4000
 ```
 
 ## Runtime snapshot

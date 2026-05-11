@@ -65,6 +65,8 @@ export interface GitHubReadOptions {
   request?: (target: GitHubReadTarget) => Promise<GitHubReadResponse>;
 }
 
+export interface BrowserReadOptions extends HttpFetchOptions {}
+
 export interface FileSearchOptions {
   env?: Env;
 }
@@ -562,6 +564,75 @@ function parseJsonOrText(body: string): unknown {
   }
 }
 
+function decodeHtmlEntities(value: string): string {
+  const named: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    gt: ">",
+    lt: "<",
+    nbsp: " ",
+    quot: '"',
+  };
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (_match, entity: string) => {
+    const lower = entity.toLowerCase();
+    if (lower.startsWith("#x")) {
+      const code = Number.parseInt(lower.slice(2), 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : "";
+    }
+    if (lower.startsWith("#")) {
+      const code = Number.parseInt(lower.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : "";
+    }
+    return named[lower] ?? "";
+  });
+}
+
+function htmlTitle(html: string): string | null {
+  const match = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+  if (!match) return null;
+  const title = decodeHtmlEntities(match[1]!.replace(/\s+/g, " ").trim());
+  return title.length > 0 ? truncateText(title, 240) : null;
+}
+
+function htmlToText(html: string, maxChars: number): string {
+  const text = decodeHtmlEntities(
+    html
+      .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<!--[\s\S]*?-->/g, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+  );
+  return truncateText(text, maxChars);
+}
+
+function htmlLinks(html: string, baseUrl: string, maxLinks: number): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const hrefPattern = /<a\b[^>]*\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>]+))/gi;
+  for (const match of html.matchAll(hrefPattern)) {
+    const raw = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+    if (!raw || raw.startsWith("#") || raw.toLowerCase().startsWith("javascript:")) {
+      continue;
+    }
+    try {
+      const href = new URL(decodeHtmlEntities(raw), baseUrl);
+      if (href.protocol !== "http:" && href.protocol !== "https:") continue;
+      const normalized = href.href;
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      out.push(normalized);
+      if (out.length >= maxLinks) break;
+    } catch {
+      continue;
+    }
+  }
+  return out;
+}
+
 async function defaultHttpRequest(
   target: HttpFetchTarget,
   method: "GET" | "HEAD",
@@ -853,6 +924,46 @@ export async function invokeGitHubRead(
   };
 }
 
+export async function invokeBrowserRead(
+  args: Record<string, unknown>,
+  opts: BrowserReadOptions = {},
+): Promise<unknown> {
+  const url = stringArg(args, "url")!;
+  const maxBytes = positiveIntArg(args, "max_bytes", 256_000, 512_000);
+  const maxChars = positiveIntArg(args, "max_chars", 8_000, 50_000);
+  const fetched = (await invokeHttpFetch(
+    { url, method: "GET", max_bytes: maxBytes },
+    opts,
+  )) as {
+    url: string;
+    status: number;
+    ok: boolean;
+    content_type: string | null;
+    body: string;
+    truncated: boolean;
+  };
+  if (!fetched.ok) {
+    throw new Error(`browser.read returned HTTP ${fetched.status}`);
+  }
+  const body = fetched.body;
+  const isHtml =
+    fetched.content_type === null ||
+    fetched.content_type.toLowerCase().includes("html") ||
+    /<\/?[a-z][\s\S]*>/i.test(body);
+  const text = isHtml
+    ? htmlToText(body, maxChars)
+    : truncateText(body.replace(/\s+/g, " ").trim(), maxChars);
+  return {
+    url: fetched.url,
+    status: fetched.status,
+    content_type: fetched.content_type,
+    title: isHtml ? htmlTitle(body) : null,
+    text,
+    links: isHtml ? htmlLinks(body, fetched.url, 20) : [],
+    truncated: fetched.truncated || text.length >= maxChars,
+  };
+}
+
 export async function invokeFileSearch(
   args: Record<string, unknown>,
   opts: FileSearchOptions = {},
@@ -1041,6 +1152,15 @@ export const githubReadTool: Tool = {
   },
 };
 
+export const browserReadTool: Tool = {
+  name: "browser.read",
+  description: "Fetch a public web page through the SSRF guard and extract bounded readable text.",
+  required_capabilities: ["tool:browser.read", "network:http"],
+  async invoke(args: Record<string, unknown>): Promise<unknown> {
+    return await invokeBrowserRead(args);
+  },
+};
+
 export function registerBuiltinTools(registry: {
   register(tool: Tool): void;
 }): void {
@@ -1051,4 +1171,5 @@ export function registerBuiltinTools(registry: {
   registry.register(httpFetchTool);
   registry.register(webSearchTool);
   registry.register(githubReadTool);
+  registry.register(browserReadTool);
 }

@@ -11,7 +11,8 @@ The runbook assumes:
   routing, tool capability envelope, action output rendering, workspace plugin
   loader, permission enforcement, `http.fetch` SSRF hardening,
   `file.search`/`file.write`/`file.edit` sandboxing,
-  unauthenticated `github.read`, Unicode detector normalization with raw audit
+  unauthenticated `github.read`, lightweight `browser.read`,
+  Unicode detector normalization with raw audit
   retention, WebChat resume token separation, Docker packaging, GitHub Actions
   CI, systemd packaging, one-time resume approval tokens, packaging
   validation, setup wizard/env-file loading, and `--audit-dump`).
@@ -236,6 +237,7 @@ Built-in tool capabilities:
 | `http.fetch`  | `tool:http.fetch`, `network:http`     |
 | `web.search` | `tool:web.search`, `network:http`     |
 | `github.read` | `tool:github.read`, `network:github.com` |
+| `browser.read` | `tool:browser.read`, `network:http` |
 
 If a capability is missing, the executor returns failed feedback before the
 tool is invoked. This is separate from `allowed_tools`: `allowed_tools` says
@@ -259,6 +261,10 @@ filenames, and key/certificate files are not read or written.
 Authenticated private-repo access and write operations are separate future
 tools because they require credential and final-review policy work.
 
+`browser.read` is a lightweight no-JavaScript page reader. It is not the future
+headless Chromium automation backend; it fetches public pages through
+`http.fetch` guards and returns bounded title/text/link extraction.
+
 Detector input is normalized immediately before scoring. HDS-BRAIN keeps raw
 request content in the audit trace while scoring against NFKC-normalized content
 with zero-width and bidi control characters removed. `DecisionLog.input`
@@ -277,6 +283,7 @@ tool:file.edit path=notes/today.md search=hello replace=hi expected_replacements
 tool:http.fetch url=https://example.com method=HEAD
 tool:web.search query="blue tanuki" max_results=5
 tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
+tool:browser.read url=https://example.com max_chars=4000
 /tool echo text="hello"
 tool:http.fetch {"url":"https://example.com","method":"GET"}
 ```

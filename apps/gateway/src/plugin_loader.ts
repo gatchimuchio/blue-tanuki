@@ -51,6 +51,7 @@ const BUILTIN_TOOL_PERMISSIONS = [
   "tool:http.fetch",
   "tool:web.search",
   "tool:github.read",
+  "tool:browser.read",
   "network:http",
   "network:github.com",
 ] as const;

@@ -91,6 +91,7 @@ describe("plugin loader", () => {
         "tool:http.fetch",
         "tool:web.search",
         "tool:github.read",
+        "tool:browser.read",
         "network:http",
         "network:github.com",
       ],

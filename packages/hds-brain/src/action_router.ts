@@ -49,6 +49,10 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     allowed_capabilities: ["tool:github.read", "network:github.com"],
     timeout_ms: 15_000,
   },
+  "browser.read": {
+    allowed_capabilities: ["tool:browser.read", "network:http"],
+    timeout_ms: 15_000,
+  },
 };
 
 /**
@@ -61,6 +65,7 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  *   - tool:http.fetch url=https://example.com method=HEAD
  *   - tool:web.search query="blue tanuki" max_results=5
  *   - tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
+ *   - tool:browser.read url=https://example.com max_chars=4000
  *   - /tool echo text="hello"
  *   - tool:http.fetch {"url":"https://example.com","method":"GET"}
  *
@@ -207,10 +212,14 @@ function coerceToolArgs(
     toolName === "http.fetch" ||
     toolName === "web.search" ||
     toolName === "github.read" ||
+    toolName === "browser.read" ||
     toolName === "file.write" ||
     toolName === "file.edit"
   ) {
     coercePositiveInt(next, "max_bytes");
+  }
+  if (toolName === "browser.read") {
+    coercePositiveInt(next, "max_chars");
   }
   if (toolName === "github.read") {
     coercePositiveInt(next, "number");

@@ -9,6 +9,7 @@ import {
   invokeHttpFetch,
   invokeWebSearch,
   invokeGitHubRead,
+  invokeBrowserRead,
   registerBuiltinTools,
   type FileSearchOptions,
   type GitHubReadOptions,
@@ -33,11 +34,13 @@ describe("built-in tools", () => {
     expect(registry.get("http.fetch")).toBeDefined();
     expect(registry.get("web.search")).toBeDefined();
     expect(registry.get("github.read")).toBeDefined();
+    expect(registry.get("browser.read")).toBeDefined();
     expect(registry.listCapabilities()).toEqual([
       "fs:read",
       "fs:write",
       "network:github.com",
       "network:http",
+      "tool:browser.read",
       "tool:echo",
       "tool:file.edit",
       "tool:file.search",
@@ -575,6 +578,54 @@ describe("built-in tools", () => {
         fakeGitHub(),
       ),
     ).rejects.toThrow(/number/);
+  });
+
+  it("browser.read extracts bounded readable text and links through http.fetch", async () => {
+    const seen: string[] = [];
+    const result = (await invokeBrowserRead(
+      { url: "https://example.test/docs", max_chars: 80, max_bytes: 4096 },
+      fakeHttp(
+        {
+          "example.test": { address: "93.184.216.34", family: 4 },
+        },
+        async (target) => {
+          seen.push(target.url.href);
+          return {
+            status: 200,
+            ok: true,
+            content_type: "text/html; charset=utf-8",
+            location: null,
+            body:
+              "<html><head><title>Alpha &amp; Beta</title><style>.x{}</style></head>" +
+              "<body><script>ignore()</script><h1>Hello</h1><p>Readable text</p>" +
+              "<a href=\"/next\">Next</a><a href=\"javascript:bad()\">Bad</a></body></html>",
+            truncated: false,
+          };
+        },
+      ),
+    )) as {
+      url: string;
+      title: string;
+      text: string;
+      links: string[];
+    };
+
+    expect(seen).toEqual(["https://example.test/docs"]);
+    expect(result.title).toBe("Alpha & Beta");
+    expect(result.text).toContain("Hello Readable text");
+    expect(result.text).not.toContain("ignore");
+    expect(result.links).toEqual(["https://example.test/next"]);
+  });
+
+  it("browser.read inherits http.fetch SSRF enforcement", async () => {
+    await expect(
+      invokeBrowserRead(
+        { url: "http://metadata.test/" },
+        fakeHttp({
+          "metadata.test": { address: "169.254.169.254", family: 4 },
+        }),
+      ),
+    ).rejects.toThrow(/non-public address/);
   });
 });
 

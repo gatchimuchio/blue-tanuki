@@ -12,10 +12,12 @@ export {
   httpFetchTool,
   webSearchTool,
   githubReadTool,
+  browserReadTool,
   invokeFileWrite,
   invokeFileEdit,
   invokeWebSearch,
   invokeGitHubRead,
+  invokeBrowserRead,
   registerBuiltinTools,
   type FileWriteOptions,
   type WebSearchOptions,
@@ -23,4 +25,5 @@ export {
   type GitHubReadOptions,
   type GitHubReadTarget,
   type GitHubReadResponse,
+  type BrowserReadOptions,
 } from "./builtin.js";

@@ -30,6 +30,7 @@
     "tool:http.fetch",
     "tool:web.search",
     "tool:github.read",
+    "tool:browser.read",
     "fs:read",
     "fs:write",
     "network:http",
