@@ -43,6 +43,7 @@ import {
   formatAuditJsonReport,
   formatAuditTextReport,
 } from "./audit_dump.js";
+import { buildRuntimeStatusSnapshot } from "./runtime_status.js";
 
 /**
  * Gateway serve mode.
@@ -269,14 +270,30 @@ export async function serve(): Promise<ServeShutdown> {
         plugins,
       }),
       runtime: {
-        getSnapshot: async () => ({
-          hds: hds.getRuntimeSnapshot(),
-          pending_approvals: pendingApprovalSnapshot(),
-          scheduled_tasks: cron.snapshot(),
-          runtime_schedules_count: runtimeSchedules.activeCount(),
-          pending_schedule_approvals_count: runtimeSchedules.pendingCount(),
-          runtime_schedules: runtimeSchedules.snapshot(),
-        }),
+        getSnapshot: async () => {
+          const hdsSnapshot = hds.getRuntimeSnapshot();
+          const pendingApprovals = pendingApprovalSnapshot();
+          const runtimeSchedulesCount = runtimeSchedules.activeCount();
+          const pendingScheduleApprovalsCount = runtimeSchedules.pendingCount();
+          return {
+            ...buildRuntimeStatusSnapshot({
+              gateway_status: "running",
+              hds: hdsSnapshot,
+              webchat_token: process.env.WEBCHAT_TOKEN,
+              webchat_resume_token: process.env.WEBCHAT_RESUME_TOKEN,
+              telegram_bot_token: process.env.TELEGRAM_BOT_TOKEN,
+              pending_approvals_count: pendingApprovals.length,
+              runtime_schedules_count: runtimeSchedulesCount,
+              pending_schedule_approvals_count: pendingScheduleApprovalsCount,
+            }),
+            hds: hdsSnapshot,
+            pending_approvals: pendingApprovals,
+            scheduled_tasks: cron.snapshot(),
+            runtime_schedules_count: runtimeSchedulesCount,
+            pending_schedule_approvals_count: pendingScheduleApprovalsCount,
+            runtime_schedules: runtimeSchedules.snapshot(),
+          };
+        },
       },
       approval: {
         list: async () => pendingApprovalSnapshot(),

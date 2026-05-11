@@ -1,126 +1,142 @@
 # `--doctor` Diagnostic
 
-Status: Phase 5-S6
-Entry: `apps/gateway` → `node ./dist/main.js --doctor [--json]`
-Convenience: `pnpm --filter @blue-tanuki/gateway run doctor` or `pnpm --filter @blue-tanuki/gateway run doctor:dev`
+Status: Phase 8-S2b
 
-> Note: `pnpm doctor` (without `run`) is reserved by pnpm itself; use `pnpm run doctor`, `pnpm --filter @blue-tanuki/gateway run doctor`, or `node ./dist/main.js --doctor` directly.
+Entry: `apps/gateway` -> `node ./dist/main.js --doctor [--json]`
 
-## What it is
+Convenience:
 
-A fast, hermetic, side-effect-light probe that answers a single question: *will `serve` start cleanly with the current environment?*
-
-Doctor never makes outbound network calls. It checks local invariants only.
-
-## Exit codes
-
-| Code | Meaning              | Example                                          |
-| ---- | -------------------- | ------------------------------------------------ |
-| `0`  | All checks pass      | Required envs set, optional envs set, port free  |
-| `1`  | One or more warnings | Optional envs unset (non-blocking)               |
-| `2`  | One or more errors   | `WEBCHAT_TOKEN` / `WEBCHAT_RESUME_TOKEN` missing, port in use, Node too old |
-
-CI pipelines should treat `0` as green, `1` as yellow (proceed but flag), `2` as red (block deploy).
-
-## Checks performed
-
-| Check id             | Level on miss | What it inspects                                   |
-| -------------------- | ------------- | -------------------------------------------------- |
-| `node_version`       | error         | `process.versions.node` ≥ 22.14.0                  |
-| `env:WEBCHAT_TOKEN`  | error         | Required for `/inbound` and `/ws-ticket`. Length-only, never logged. |
-| `env:WEBCHAT_RESUME_TOKEN` | error   | Required for `/resume`. Length-only, never logged. |
-| `webchat_token_separation` | error   | `WEBCHAT_RESUME_TOKEN` must differ from `WEBCHAT_TOKEN`. |
-| `env:SLACK_BOT_TOKEN` | warn         | Optional. Slack runs silent if unset.              |
-| `env:SLACK_APP_TOKEN` | warn         | Optional. Slack runs silent if unset.              |
-| `env:DISCORD_BOT_TOKEN` | warn        | Optional. Discord runs silent if unset.            |
-| `env:ANTHROPIC_API_KEY` | warn        | Optional unless `LLM_BACKEND=anthropic`.            |
-| `llm_backend`        | error         | Validates `stub`, `anthropic`, `openai`, `openai-compatible`, and `LLM_PROVIDERS_JSON` names/aliases. |
-| `llm_command_route`  | error         | Validates HDS-BRAIN's configured per-command LLM route hint and limits. |
-| `session_dir`        | error         | If `BLUE_TANUKI_SESSION_DIR` is set, the directory must be creatable and writable. |
-| `audit_dir`          | error         | If `BLUE_TANUKI_AUDIT_DIR` is set, the directory must be creatable and writable. |
-| `manifests`          | error         | Each bundled package has a schema-valid `blue-tanuki.plugin.json` matching package name/version/entry metadata. |
-| `port`               | error         | `WEBCHAT_HOST:WEBCHAT_PORT` (default `127.0.0.1:8787`) is bindable. |
-
-## What doctor explicitly does NOT check
-
-- Live Slack / Discord / LLM API connectivity. Those are slow, side-effecting, and depend on network conditions; they belong to `pnpm smoke:live`, not to a fast hermetic probe.
-- Slack / Discord token *validity*. Doctor only checks presence and length. A real call would issue an `auth.test` and would no longer be hermetic.
-- HDS-BRAIN policy soundness. The detector / policy invariants are guarded by `@blue-tanuki/hds-brain`'s own test suite.
-
-## Output formats
-
-### Text (default)
-
-```
-blue-tanuki doctor — OK (2026-04-30T07:24:21Z)
-
-  ✓ Node.js version              22.22.2 (>= 22.14.0)
-  ✓ env WEBCHAT_TOKEN            present (length=16)
-  ✓ env WEBCHAT_RESUME_TOKEN     present (length=24)
-  ✓ webchat token separation     inbound and resume tokens differ
-  ✓ env SLACK_BOT_TOKEN          present (length=12)
-  ...
-  ✓ plugin manifests             7 manifests valid
-  ✓ port 127.0.0.1:8787          bindable
-
-Summary: 14 ok, 0 warn, 0 error.
-Exit code: 0
+```bash
+pnpm run doctor
+pnpm --filter @blue-tanuki/gateway run doctor
+node apps/gateway/dist/main.js --doctor
 ```
 
-Glyphs: `✓` ok, `!` warn, `✗` error.
+`pnpm doctor` without `run` is reserved by pnpm itself.
 
-### JSON (`--json`)
+## What It Is
+
+`doctor` is a fast, hermetic, side-effect-light local probe. It answers:
+
+```md
+Can this owner start BLUE-TANUKI safely with the current environment?
+If not, what should the owner do next?
+```
+
+Doctor never makes outbound network calls. Live Slack / Discord / LLM API checks remain in `pnpm smoke:live`.
+
+## Exit Codes
+
+| Code | Meaning | Operator action |
+|---|---|---|
+| `0` | All checks pass | Continue |
+| `1` | One or more warnings | Read `next_action`; proceed only when warnings are intentionally accepted |
+| `2` | One or more errors | Stop and fix before serve mode |
+
+## JSON Contract
+
+Each check includes remediation fields:
 
 ```json
 {
-  "ok": true,
-  "exit_code": 0,
-  "timestamp": "2026-04-30T07:24:21Z",
-  "checks": [
-    { "id": "node_version", "level": "ok", "label": "Node.js version", "detail": "22.22.2 (>= 22.14.0)" }
-  ]
+  "id": "env:WEBCHAT_TOKEN",
+  "level": "error",
+  "status": "error",
+  "label": "env WEBCHAT_TOKEN",
+  "detail": "missing (required)",
+  "cause": "missing (required)",
+  "impact": "WebChat inbound and Control Center read APIs cannot be used safely.",
+  "next_action": "Run pnpm setup -- --yes or set WEBCHAT_TOKEN to a distinct random value, then restart.",
+  "doc_ref": "docs/CREDENTIAL_READINESS_MATRIX.md",
+  "safe_to_ignore": false
 }
 ```
 
-Stable contract (locked by tests):
+Stable fields:
 
 - `ok: boolean`
 - `exit_code: 0 | 1 | 2`
-- `timestamp: string` (ISO-8601 UTC)
-- `checks: { id, level, label, detail }[]`
-- `level ∈ "ok" | "warn" | "error"`
+- `timestamp: string`
+- `checks[].id`
+- `checks[].level`: `ok | warn | error`
+- `checks[].status`: `ok | warning | error`
+- `checks[].label`
+- `checks[].detail`
+- `checks[].cause`
+- `checks[].impact`
+- `checks[].next_action`
+- `checks[].doc_ref`
+- `checks[].safe_to_ignore`
 
-### Machine consumption
+`level` is kept for backward compatibility. `status` is the owner-facing spelling.
 
-```bash
-node ./dist/main.js --doctor --json | jq -e '.exit_code == 0 and ([.checks[] | select(.level=="error")] | length == 0)'
+## Text Output
+
+Warnings and errors include the same remediation fields:
+
+```text
+blue-tanuki doctor - WARN (2026-05-12T00:00:00.000Z)
+
+  OK    Node.js version              24.14.0 (>= 22.14.0)
+  WARN  env SLACK_BOT_TOKEN          unset (optional)
+        status: warning
+        cause: SLACK_BOT_TOKEN is optional and currently unset (optional).
+        impact: The related preview channel or live smoke path may be skipped; WebChat and HDS authority remain usable.
+        next_action: Leave SLACK_BOT_TOKEN unset if unused, or set it and rerun pnpm smoke:live.
+        doc_ref: docs/CREDENTIAL_READINESS_MATRIX.md
+        safe_to_ignore: true
+
+Summary: 18 ok, 2 warn, 0 error.
+Exit code: 1
 ```
+
+## Checks Performed
+
+| Check id | What it inspects |
+|---|---|
+| `node_version` | Node.js version |
+| `env:WEBCHAT_TOKEN` | WebChat inbound token presence and length only |
+| `env:WEBCHAT_RESUME_TOKEN` | approval/resume token presence and length only |
+| `webchat_token_separation` | inbound/resume token separation |
+| `webhook_token` | optional webhook token strength and separation |
+| `settings_token` | optional settings token strength and separation |
+| `env:SLACK_BOT_TOKEN` | optional Slack token presence |
+| `env:SLACK_APP_TOKEN` | optional Slack Socket Mode token presence |
+| `env:DISCORD_BOT_TOKEN` | optional Discord token presence |
+| `env:ANTHROPIC_API_KEY` | optional Anthropic token presence |
+| `llm_backend` | provider registry consistency |
+| `llm_command_route` | HDS command route hint consistency |
+| `cron_schedules` | boot-time schedule JSON parse and shape |
+| `session_dir` | session directory writability |
+| `audit_dir` | audit directory writability |
+| `file_root` | file tool sandbox root |
+| `shell_root` | shell exec root |
+| `manifests` | bundled plugin manifest/package consistency |
+| `compatibility_matrix` | channel scope and preview quarantine |
+| `port` | WebChat bind address availability |
 
 ## Privacy
 
-- No env value is ever logged. For `WEBCHAT_TOKEN`, `WEBCHAT_RESUME_TOKEN`, and other secrets, only the string length is reported, and only as a sanity check.
-- The bundled-manifests check parses manifest contents but never loads or imports plugin code.
+- Secret values are never logged.
+- Tokens and API keys are reported by presence or length only.
+- `next_action`, `cause`, and `impact` must never include secret values.
+- Doctor does not import plugin code while checking manifests.
 
-## Failure modes & remediation
+## What Doctor Does Not Check
 
-| Failure                                                                | Remediation                                                                |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `env WEBCHAT_TOKEN: missing (required)`                                | Set `WEBCHAT_TOKEN` to a sufficiently random value (≥ 16 chars).           |
-| `env WEBCHAT_TOKEN: present but suspiciously short`                    | The token is present but < 8 chars. Replace with a real secret.            |
-| `env WEBCHAT_RESUME_TOKEN: missing (required)`                         | Set a separate resume token before starting serve mode.                    |
-| `webchat token separation: WEBCHAT_RESUME_TOKEN must differ from WEBCHAT_TOKEN` | Generate a distinct resume token; do not reuse the inbound token. |
-| `Node.js version: 20.x is below required 22.14.0`                      | Upgrade Node to ≥ 22.14.0.                                                 |
-| `LLM_BACKEND: anthropic but ANTHROPIC_API_KEY is unset`                | Either set the key, or fall back to `LLM_BACKEND=stub`.                    |
-| `LLM_BACKEND: unknown value 'made-up'`                                 | Use `stub`, `anthropic`, `openai`, `openai-compatible`, or a provider name/alias from `LLM_PROVIDERS_JSON`. |
-| `LLM_BACKEND: invalid LLM_PROVIDERS_JSON`                              | Fix the provider catalog JSON. Each provider needs `name`, `endpoint`, and `model`. |
-| `LLM command route: backend_hint 'missing' is not registered`           | Set `BLUE_TANUKI_LLM_BACKEND_HINT` to a configured provider name/alias, or unset it. |
-| `BLUE_TANUKI_SESSION_DIR: cannot create '…'`                           | Pick a path the user owns; ensure no file exists at that path.             |
-| `BLUE_TANUKI_AUDIT_DIR: cannot create '…'`                              | Pick a path the user owns; ensure no file exists at that path.             |
-| `port 127.0.0.1:8787: cannot bind: EADDRINUSE`                         | Stop the conflicting process or set `WEBCHAT_PORT` to a free port.         |
-| `plugin manifests: packages/foo: readManifest: ...`                     | Restore or fix the package's `blue-tanuki.plugin.json`.                    |
-| `plugin manifests: packages/foo: name/version/entry mismatch`           | Align the manifest with package.json before booting a loader-enabled build. |
+- Live external API connectivity.
+- Slack / Discord token validity.
+- Telegram token validity.
+- Audit chain integrity for long-running deployments. Use `--audit-verify`.
+- HDS policy soundness beyond local configuration checks.
 
-## Future work
+## Operator Use
 
-- Keep plugin loading and permission enforcement boot-fail containment intact.
-- Keep live external checks in `pnpm smoke:live` so `--doctor` remains hermetic.
+For JSON automation:
+
+```bash
+node apps/gateway/dist/main.js --doctor --json |
+  jq -e '.exit_code != 2 and ([.checks[] | select(.level=="error")] | length == 0)'
+```
+
+For owner operation, read every warning/error and follow `next_action`.

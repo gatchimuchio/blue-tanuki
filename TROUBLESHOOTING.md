@@ -2,6 +2,8 @@
 
 まず [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) で初回経路を確認し、常駐運用では [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) と [docs/UPDATE_ROLLBACK_RUNBOOK.md](./docs/UPDATE_ROLLBACK_RUNBOOK.md) を併用する。
 
+`doctor` の warning/error には `cause`、`impact`、`next_action`、`doc_ref`、`safe_to_ignore` が付く。迷ったら `next_action` を先に実行し、`safe_to_ignore=false` は起動前に必ず直す。
+
 ## `pnpm` が見つからない
 
 What failed: dependency / script runner が起動できない。
@@ -35,6 +37,18 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 ```
 
 `/approval` と `/resume` は resume token 側の surface である。
+
+## Runtime snapshot next action is not healthy
+
+Check:
+
+- `hds_invariants_ok` が `true`
+- `audit_chain_valid` が `true`
+- `webchat_ready` が `true`
+- `pending_approvals_count` が意図した値
+- `pending_schedule_approvals_count` が意図した値
+
+`next_recommended_action` がある場合は、その内容を先に処理する。値に secret や schedule content が出てはいけない。
 
 ## Approval is asked even in full access
 

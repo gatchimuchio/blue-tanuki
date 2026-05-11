@@ -214,6 +214,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
   http://127.0.0.1:8787/runtime/snapshot
 ```
 
+First-run status fields include `gateway_status`, `hds_invariants_ok`, `webchat_ready`, `telegram_configured`, approval/schedule counts, `audit_chain_valid`, and `next_recommended_action`. The snapshot never exposes credential values or schedule content.
+
 Expected invariants:
 
 ```json
@@ -273,6 +275,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/CAPABILITY_ENVELOPE.md](./docs/CAPABILITY_ENVELOPE.md) - manifest-driven capability rules
 - [docs/CONFORMANCE.md](./docs/CONFORMANCE.md) - preview quarantine and release gates
 - [docs/LLM_DEVELOPMENT_GUIDE.md](./docs/LLM_DEVELOPMENT_GUIDE.md) - Codex/LLM implementation rules
+- [docs/doctor-output.md](./docs/doctor-output.md) - actionable doctor JSON/text fields
 - [CLAIM.md](./CLAIM.md) - product claim and non-claim boundary
 - [SECURITY.md](./SECURITY.md) - authority and memory security model
 - [AUDIT.md](./AUDIT.md) - hash-chain audit and runtime snapshot

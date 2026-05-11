@@ -45,15 +45,27 @@ import { cronSchedulesFromEnv } from "./cron_channel.js";
  */
 
 export type CheckLevel = "ok" | "warn" | "error";
+export type CheckStatus = "ok" | "warning" | "error";
 
 export interface CheckResult {
   /** Stable identifier used in JSON output and tests. */
   id: string;
   level: CheckLevel;
+  status: CheckStatus;
   /** Short label shown in the human-readable header. */
   label: string;
   /** Free-form details (one line preferred). */
   detail: string;
+  /** One-line explanation of the condition. */
+  cause: string;
+  /** What the condition affects for the owner. */
+  impact: string;
+  /** Concrete next step or local doc reference. */
+  next_action: string;
+  /** Repository-local documentation reference. */
+  doc_ref: string;
+  /** Whether an owner may safely ignore this condition for local operation. */
+  safe_to_ignore: boolean;
 }
 
 export interface DoctorReport {
@@ -73,6 +85,16 @@ export interface DoctorOptions {
   node_version?: string;
   /** Override repo root for manifest validation. Used by tests. */
   manifest_root?: string;
+}
+
+type CheckDraft = Pick<CheckResult, "id" | "level" | "label" | "detail">;
+
+interface Remediation {
+  cause: string;
+  impact: string;
+  next_action: string;
+  doc_ref: string;
+  safe_to_ignore: boolean;
 }
 
 /**
@@ -117,7 +139,7 @@ export function compareSemver(a: string, b: string): number {
   return 0;
 }
 
-function checkNodeVersion(actual: string): CheckResult {
+function checkNodeVersion(actual: string): CheckDraft {
   const ok = compareSemver(actual, MIN_NODE_VERSION) >= 0;
   return {
     id: "node_version",
@@ -129,7 +151,7 @@ function checkNodeVersion(actual: string): CheckResult {
   };
 }
 
-function checkRequiredEnv(env: NodeJS.ProcessEnv, name: string): CheckResult {
+function checkRequiredEnv(env: NodeJS.ProcessEnv, name: string): CheckDraft {
   const v = env[name];
   if (!v) {
     return {
@@ -155,7 +177,7 @@ function checkRequiredEnv(env: NodeJS.ProcessEnv, name: string): CheckResult {
   };
 }
 
-function checkOptionalEnv(env: NodeJS.ProcessEnv, name: string): CheckResult {
+function checkOptionalEnv(env: NodeJS.ProcessEnv, name: string): CheckDraft {
   const v = env[name];
   if (!v) {
     return {
@@ -173,7 +195,7 @@ function checkOptionalEnv(env: NodeJS.ProcessEnv, name: string): CheckResult {
   };
 }
 
-function checkWebchatTokenSeparation(env: NodeJS.ProcessEnv): CheckResult {
+function checkWebchatTokenSeparation(env: NodeJS.ProcessEnv): CheckDraft {
   if (!env.WEBCHAT_TOKEN || !env.WEBCHAT_RESUME_TOKEN) {
     return {
       id: "webchat_token_separation",
@@ -198,7 +220,7 @@ function checkWebchatTokenSeparation(env: NodeJS.ProcessEnv): CheckResult {
   };
 }
 
-function checkSettingsToken(env: NodeJS.ProcessEnv): CheckResult {
+function checkSettingsToken(env: NodeJS.ProcessEnv): CheckDraft {
   const token = env.BLUE_TANUKI_SETTINGS_TOKEN;
   if (!token) {
     return {
@@ -236,7 +258,7 @@ function checkSettingsToken(env: NodeJS.ProcessEnv): CheckResult {
   };
 }
 
-function checkWebhookToken(env: NodeJS.ProcessEnv): CheckResult {
+function checkWebhookToken(env: NodeJS.ProcessEnv): CheckDraft {
   const token = env.WEBHOOK_TOKEN;
   if (!token) {
     return {
@@ -282,7 +304,7 @@ function envValue(env: NodeJS.ProcessEnv, ...names: string[]): string | undefine
   return undefined;
 }
 
-function checkLlmBackend(env: NodeJS.ProcessEnv): CheckResult {
+function checkLlmBackend(env: NodeJS.ProcessEnv): CheckDraft {
   const backend = (envValue(env, "LLM_BACKEND", "LLM_DEFAULT_BACKEND") ?? "stub")
     .trim()
     .toLowerCase();
@@ -393,7 +415,7 @@ function checkLlmBackend(env: NodeJS.ProcessEnv): CheckResult {
   };
 }
 
-function checkLlmCommandRoute(env: NodeJS.ProcessEnv): CheckResult {
+function checkLlmCommandRoute(env: NodeJS.ProcessEnv): CheckDraft {
   try {
     const route = buildLLMCommandRouteFromEnv(env);
     const providers = listConfiguredLLMProviders(env).map((name) =>
@@ -428,7 +450,7 @@ function checkLlmCommandRoute(env: NodeJS.ProcessEnv): CheckResult {
   }
 }
 
-async function probePort(port: number, host: string): Promise<CheckResult> {
+async function probePort(port: number, host: string): Promise<CheckDraft> {
   return new Promise((resolve) => {
     const srv = net.createServer();
     const finish = (level: CheckLevel, detail: string): void => {
@@ -456,7 +478,7 @@ async function probePort(port: number, host: string): Promise<CheckResult> {
   });
 }
 
-async function checkSessionDir(env: NodeJS.ProcessEnv): Promise<CheckResult> {
+async function checkSessionDir(env: NodeJS.ProcessEnv): Promise<CheckDraft> {
   const dir = env.BLUE_TANUKI_SESSION_DIR;
   if (!dir) {
     return {
@@ -506,7 +528,7 @@ async function checkSessionDir(env: NodeJS.ProcessEnv): Promise<CheckResult> {
  * environment checks; chain verification is what `--audit-dump` is for.
  * Keeping the two separate avoids a slow doctor on long-running deployments.
  */
-async function checkAuditDir(env: NodeJS.ProcessEnv): Promise<CheckResult> {
+async function checkAuditDir(env: NodeJS.ProcessEnv): Promise<CheckDraft> {
   const dir = env.BLUE_TANUKI_AUDIT_DIR;
   if (!dir) {
     return {
@@ -547,7 +569,7 @@ async function checkAuditDir(env: NodeJS.ProcessEnv): Promise<CheckResult> {
   };
 }
 
-function checkCronSchedules(env: NodeJS.ProcessEnv): CheckResult {
+function checkCronSchedules(env: NodeJS.ProcessEnv): CheckDraft {
   try {
     const tasks = cronSchedulesFromEnv(env);
     const enabled = tasks.filter((task) => task.enabled !== false).length;
@@ -569,7 +591,7 @@ function checkCronSchedules(env: NodeJS.ProcessEnv): CheckResult {
   }
 }
 
-async function checkFileRoot(env: NodeJS.ProcessEnv): Promise<CheckResult> {
+async function checkFileRoot(env: NodeJS.ProcessEnv): Promise<CheckDraft> {
   const dir = env.BLUE_TANUKI_FILE_ROOT;
   if (!dir) {
     return {
@@ -610,7 +632,7 @@ async function checkFileRoot(env: NodeJS.ProcessEnv): Promise<CheckResult> {
   }
 }
 
-async function checkShellRoot(env: NodeJS.ProcessEnv): Promise<CheckResult> {
+async function checkShellRoot(env: NodeJS.ProcessEnv): Promise<CheckDraft> {
   const dir = env.BLUE_TANUKI_SHELL_ROOT;
   if (!dir) {
     return {
@@ -668,7 +690,7 @@ async function locateRepoRoot(): Promise<string | null> {
   return null;
 }
 
-async function checkBundledManifests(rootOverride?: string): Promise<CheckResult> {
+async function checkBundledManifests(rootOverride?: string): Promise<CheckDraft> {
   const root = rootOverride ? path.resolve(rootOverride) : await locateRepoRoot();
   if (!root) {
     return {
@@ -726,7 +748,7 @@ async function checkBundledManifests(rootOverride?: string): Promise<CheckResult
   };
 }
 
-async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckResult> {
+async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDraft> {
   const root = rootOverride ? path.resolve(rootOverride) : await locateRepoRoot();
   if (!root) {
     return {
@@ -837,6 +859,208 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckRes
   };
 }
 
+function statusFromLevel(level: CheckLevel): CheckStatus {
+  return level === "warn" ? "warning" : level;
+}
+
+function enrichCheck(check: CheckDraft): CheckResult {
+  const remediation = remediationFor(check);
+  return {
+    ...check,
+    status: statusFromLevel(check.level),
+    ...remediation,
+  };
+}
+
+function remediationFor(check: CheckDraft): Remediation {
+  const ok = check.level === "ok";
+  const defaultOk = {
+    cause: check.detail,
+    impact: "No owner action is required.",
+    next_action: "Continue.",
+    doc_ref: "docs/FIRST_RUN_CHECKLIST.md",
+    safe_to_ignore: true,
+  };
+  if (ok) return defaultOk;
+
+  const statusWord = statusFromLevel(check.level);
+  const defaultProblem = {
+    cause: check.detail,
+    impact: `${check.label} is ${statusWord}; affected capability may be unavailable or unsafe.`,
+    next_action: "Inspect the check detail, correct configuration, then rerun pnpm run doctor.",
+    doc_ref: "TROUBLESHOOTING.md",
+    safe_to_ignore: false,
+  };
+
+  if (check.id === "node_version") {
+    return {
+      cause: check.detail,
+      impact: "Gateway scripts may fail before BLUE-TANUKI can start.",
+      next_action: `Install Node.js ${MIN_NODE_VERSION} or newer, then rerun pnpm install and pnpm run doctor.`,
+      doc_ref: "docs/FIRST_RUN_CHECKLIST.md#1-前提",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "env:WEBCHAT_TOKEN") {
+    return {
+      cause: check.detail,
+      impact: "WebChat inbound and Control Center read APIs cannot be used safely.",
+      next_action: "Run pnpm setup -- --yes or set WEBCHAT_TOKEN to a distinct random value, then restart.",
+      doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "env:WEBCHAT_RESUME_TOKEN") {
+    return {
+      cause: check.detail,
+      impact: "Approval and resume operations cannot be safely authorized.",
+      next_action: "Run pnpm setup -- --yes or set WEBCHAT_RESUME_TOKEN to a distinct random value, then restart.",
+      doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "webchat_token_separation") {
+    return {
+      cause: check.detail,
+      impact: "Inbound access could be reused for approval if the tokens are not separated.",
+      next_action: "Generate a new WEBCHAT_RESUME_TOKEN that differs from WEBCHAT_TOKEN, then restart.",
+      doc_ref: "SECURITY.md#ApprovalRisk-and-ApprovalLevel",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "settings_token") {
+    return {
+      cause: check.detail,
+      impact: "Settings writes may be disabled or unsafe if the token is weak or reused.",
+      next_action: "Leave BLUE_TANUKI_SETTINGS_TOKEN unset to disable settings, or set a unique secret and restart.",
+      doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
+      safe_to_ignore: check.level === "warn",
+    };
+  }
+
+  if (check.id === "webhook_token") {
+    return {
+      cause: check.detail,
+      impact: "Webhook ingress may be disabled or unsafe if the token is weak or reused.",
+      next_action: "Leave WEBHOOK_TOKEN unset to disable /webhook, or set a unique secret and restart.",
+      doc_ref: "CONFIG.md#Webhook-ingress",
+      safe_to_ignore: check.level === "warn",
+    };
+  }
+
+  if (
+    check.id === "env:SLACK_BOT_TOKEN" ||
+    check.id === "env:SLACK_APP_TOKEN" ||
+    check.id === "env:DISCORD_BOT_TOKEN" ||
+    check.id === "env:ANTHROPIC_API_KEY"
+  ) {
+    const name = check.id.slice("env:".length);
+    return {
+      cause: `${name} is optional and currently ${check.detail}.`,
+      impact: "The related preview channel or live smoke path may be skipped; WebChat and HDS authority remain usable.",
+      next_action: `Leave ${name} unset if unused, or set it and rerun pnpm smoke:live.`,
+      doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
+      safe_to_ignore: true,
+    };
+  }
+
+  if (check.id === "llm_backend" || check.id === "llm_command_route") {
+    return {
+      cause: check.detail,
+      impact: "Downstream LLM execution may fail, but HDS-BRAIN authority remains upstream.",
+      next_action: "Use LLM_BACKEND=stub for offline mode, or fix the configured provider/model/endpoint/key.",
+      doc_ref: "CONFIG.md#Optional-LLM",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "cron_schedules") {
+    return {
+      cause: check.detail,
+      impact: "Boot-time scheduled messages may not register.",
+      next_action: "Fix BLUE_TANUKI_SCHEDULES_JSON or remove it, then rerun pnpm run doctor.",
+      doc_ref: "CONFIG.md#Generic-scheduled-messages",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "session_dir") {
+    return {
+      cause: check.detail,
+      impact: "Session continuity may be lost or gateway startup may fail.",
+      next_action: "Set BLUE_TANUKI_SESSION_DIR to a writable directory or leave it unset for memory-only sessions.",
+      doc_ref: "docs/PERMANENT_USE_CHECKLIST.md#Startup",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "audit_dir") {
+    return {
+      cause: check.detail,
+      impact: "Persistent hash-chain audit may be unavailable.",
+      next_action: "Set BLUE_TANUKI_AUDIT_DIR to a writable persistent directory, then rerun audit verification.",
+      doc_ref: "AUDIT.md",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "file_root") {
+    return {
+      cause: check.detail,
+      impact: "file.search/file.write/file.edit may be disabled or fail closed.",
+      next_action: "Set BLUE_TANUKI_FILE_ROOT to the intended writable sandbox root, or leave it unset to disable file tools.",
+      doc_ref: "CONFIG.md#File-tools",
+      safe_to_ignore: check.level === "warn",
+    };
+  }
+
+  if (check.id === "shell_root") {
+    return {
+      cause: check.detail,
+      impact: "shell.exec may be disabled or fail closed.",
+      next_action: "Set BLUE_TANUKI_SHELL_ROOT to the intended command root, or leave it unset to disable shell.exec.",
+      doc_ref: "CONFIG.md#Shell-exec-tool",
+      safe_to_ignore: check.level === "warn",
+    };
+  }
+
+  if (check.id === "manifests") {
+    return {
+      cause: check.detail,
+      impact: "Plugin/channel/tool registration may be unsafe or unavailable.",
+      next_action: "Fix the listed manifest/package drift before starting serve mode.",
+      doc_ref: "docs/CONFORMANCE.md",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "compatibility_matrix") {
+    return {
+      cause: check.detail,
+      impact: "Release scope or preview quarantine may be inconsistent.",
+      next_action: "Fix docs/compatibility-matrix.json and channel docs before release.",
+      doc_ref: "docs/CHANNEL_READINESS_MATRIX.md",
+      safe_to_ignore: false,
+    };
+  }
+
+  if (check.id === "port") {
+    return {
+      cause: check.detail,
+      impact: "WebChat Control Center cannot bind to the configured address.",
+      next_action: "Stop the process using the port or set WEBCHAT_PORT/WEBCHAT_HOST to an available loopback address.",
+      doc_ref: "TROUBLESHOOTING.md",
+      safe_to_ignore: false,
+    };
+  }
+
+  return defaultProblem;
+}
+
 /**
  * Run all checks and return a structured report.
  */
@@ -844,33 +1068,34 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   const env = opts.env ?? process.env;
   const node_version = opts.node_version ?? process.versions.node;
 
-  const checks: CheckResult[] = [];
-  checks.push(checkNodeVersion(node_version));
-  checks.push(checkRequiredEnv(env, "WEBCHAT_TOKEN"));
-  checks.push(checkRequiredEnv(env, "WEBCHAT_RESUME_TOKEN"));
-  checks.push(checkWebchatTokenSeparation(env));
-  checks.push(checkWebhookToken(env));
-  checks.push(checkSettingsToken(env));
-  checks.push(checkOptionalEnv(env, "SLACK_BOT_TOKEN"));
-  checks.push(checkOptionalEnv(env, "SLACK_APP_TOKEN"));
-  checks.push(checkOptionalEnv(env, "DISCORD_BOT_TOKEN"));
-  checks.push(checkOptionalEnv(env, "ANTHROPIC_API_KEY"));
-  checks.push(checkLlmBackend(env));
-  checks.push(checkLlmCommandRoute(env));
-  checks.push(checkCronSchedules(env));
-  checks.push(await checkSessionDir(env));
-  checks.push(await checkAuditDir(env));
-  checks.push(await checkFileRoot(env));
-  checks.push(await checkShellRoot(env));
-  checks.push(await checkBundledManifests(opts.manifest_root));
-  checks.push(await checkCompatibilityMatrix(opts.manifest_root));
+  const draftChecks: CheckDraft[] = [];
+  draftChecks.push(checkNodeVersion(node_version));
+  draftChecks.push(checkRequiredEnv(env, "WEBCHAT_TOKEN"));
+  draftChecks.push(checkRequiredEnv(env, "WEBCHAT_RESUME_TOKEN"));
+  draftChecks.push(checkWebchatTokenSeparation(env));
+  draftChecks.push(checkWebhookToken(env));
+  draftChecks.push(checkSettingsToken(env));
+  draftChecks.push(checkOptionalEnv(env, "SLACK_BOT_TOKEN"));
+  draftChecks.push(checkOptionalEnv(env, "SLACK_APP_TOKEN"));
+  draftChecks.push(checkOptionalEnv(env, "DISCORD_BOT_TOKEN"));
+  draftChecks.push(checkOptionalEnv(env, "ANTHROPIC_API_KEY"));
+  draftChecks.push(checkLlmBackend(env));
+  draftChecks.push(checkLlmCommandRoute(env));
+  draftChecks.push(checkCronSchedules(env));
+  draftChecks.push(await checkSessionDir(env));
+  draftChecks.push(await checkAuditDir(env));
+  draftChecks.push(await checkFileRoot(env));
+  draftChecks.push(await checkShellRoot(env));
+  draftChecks.push(await checkBundledManifests(opts.manifest_root));
+  draftChecks.push(await checkCompatibilityMatrix(opts.manifest_root));
 
   if (opts.probe_port !== false) {
     const port = parseInt(env.WEBCHAT_PORT ?? "8787", 10);
     const host = env.WEBCHAT_HOST ?? "127.0.0.1";
-    checks.push(await probePort(port, host));
+    draftChecks.push(await probePort(port, host));
   }
 
+  const checks = draftChecks.map(enrichCheck);
   const has_error = checks.some((c) => c.level === "error");
   const has_warn = checks.some((c) => c.level === "warn");
   const exit_code: 0 | 1 | 2 = has_error ? 2 : has_warn ? 1 : 0;
@@ -892,11 +1117,19 @@ export function formatTextReport(report: DoctorReport): string {
       : report.exit_code === 1
       ? "WARN"
       : "ERROR";
-  lines.push(`blue-tanuki doctor — ${status} (${report.timestamp})`);
+  lines.push(`blue-tanuki doctor - ${status} (${report.timestamp})`);
   lines.push("");
   for (const c of report.checks) {
-    const mark = c.level === "ok" ? "✓" : c.level === "warn" ? "!" : "✗";
-    lines.push(`  ${mark} ${c.label.padEnd(28)} ${c.detail}`);
+    const mark = c.level === "ok" ? "OK" : c.level === "warn" ? "WARN" : "ERROR";
+    lines.push(`  ${mark.padEnd(5)} ${c.label.padEnd(28)} ${c.detail}`);
+    if (c.level !== "ok") {
+      lines.push(`        status: ${c.status}`);
+      lines.push(`        cause: ${c.cause}`);
+      lines.push(`        impact: ${c.impact}`);
+      lines.push(`        next_action: ${c.next_action}`);
+      lines.push(`        doc_ref: ${c.doc_ref}`);
+      lines.push(`        safe_to_ignore: ${String(c.safe_to_ignore)}`);
+    }
   }
   lines.push("");
   lines.push(

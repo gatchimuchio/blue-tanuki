@@ -723,6 +723,28 @@ describe("runDoctor — compatibility matrix gate", () => {
 });
 
 describe("Output formatters", () => {
+  it("adds actionable remediation fields to every check", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    for (const c of r.checks) {
+      expect(c.status).toMatch(/^(ok|warning|error)$/);
+      expect(c.cause.length).toBeGreaterThan(0);
+      expect(c.impact.length).toBeGreaterThan(0);
+      expect(c.next_action.length).toBeGreaterThan(0);
+      expect(c.doc_ref.length).toBeGreaterThan(0);
+      expect(typeof c.safe_to_ignore).toBe("boolean");
+    }
+    expect(r.checks.find((c) => c.id === "env:SLACK_BOT_TOKEN")).toMatchObject({
+      level: "warn",
+      status: "warning",
+      safe_to_ignore: true,
+      doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
+    });
+  });
+
   it("formatTextReport contains all check labels", async () => {
     const r = await runDoctor({
       env: baseEnv(),
@@ -733,7 +755,9 @@ describe("Output formatters", () => {
     for (const c of r.checks) {
       expect(text).toContain(c.label);
     }
-    expect(text).toMatch(/^blue-tanuki doctor —/);
+    expect(text).toMatch(/^blue-tanuki doctor - /);
+    expect(text).toContain("next_action:");
+    expect(text).toContain("safe_to_ignore:");
     expect(text).toContain(`Exit code: ${r.exit_code}`);
   });
 
@@ -750,6 +774,8 @@ describe("Output formatters", () => {
     expect(parsed.timestamp).toBe(r.timestamp);
     expect(Array.isArray(parsed.checks)).toBe(true);
     expect(parsed.checks.length).toBe(r.checks.length);
+    expect(parsed.checks[0]).toHaveProperty("status");
+    expect(parsed.checks[0]).toHaveProperty("next_action");
   });
 
   it("never logs the WebChat token values (length only)", async () => {

@@ -10,6 +10,7 @@ import {
   type WebChatApprovalSurface,
   type WebChatAuditSurface,
   type WebChatAuthoritySurface,
+  type WebChatRuntimeSurface,
   type WebChatSettingsSurface,
 } from "../src/index.js";
 
@@ -41,6 +42,7 @@ function setup(
       ticket_store?: TicketStore;
       rate_limits?: WebChatRateLimits | false;
       settings?: WebChatSettingsSurface;
+      runtime?: WebChatRuntimeSurface;
       approval?: WebChatApprovalSurface;
       audit?: WebChatAuditSurface;
       authority?: WebChatAuthoritySurface;
@@ -61,6 +63,7 @@ function setup(
     ws_ticket_ttl_ms: opts.ws_ticket_ttl_ms,
     ticket_store: opts.ticket_store,
     settings: opts.settings,
+    runtime: opts.runtime,
     approval: opts.approval,
     audit: opts.audit,
     authority: opts.authority,
@@ -640,6 +643,77 @@ describe("WebChatChannel — audit dump API", () => {
       const r = await postJson(
         ctx.port,
         "/audit/dump",
+        {},
+        { authorization: `Bearer ${TOKEN}` },
+      );
+      expect(r.status).toBe(405);
+    } finally {
+      await ctx.teardown();
+    }
+  });
+});
+
+describe("WebChatChannel — runtime snapshot API", () => {
+  it("serves safe first-run status only with the inbound token", async () => {
+    const ctx = setup({
+      runtime: {
+        getSnapshot: async () => ({
+          gateway_status: "running",
+          hds_invariants_ok: true,
+          webchat_ready: true,
+          telegram_configured: false,
+          pending_approvals_count: 1,
+          runtime_schedules_count: 2,
+          pending_schedule_approvals_count: 1,
+          audit_chain_valid: true,
+          next_recommended_action: "Review pending approvals in Control Center",
+          scheduled_tasks: [{ id: "safe", payload_hash: "abc123" }],
+        }),
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      expect((await getRaw(ctx.port, "/runtime/snapshot")).status).toBe(401);
+      expect(
+        (await getRaw(ctx.port, "/runtime/snapshot", {
+          authorization: `Bearer ${RESUME_TOKEN}`,
+        })).status,
+      ).toBe(401);
+
+      const ok = await getRaw(ctx.port, "/runtime/snapshot", {
+        authorization: `Bearer ${TOKEN}`,
+      });
+      expect(ok.status).toBe(200);
+      const body = JSON.parse(ok.text);
+      expect(body).toMatchObject({
+        gateway_status: "running",
+        hds_invariants_ok: true,
+        webchat_ready: true,
+        telegram_configured: false,
+        pending_approvals_count: 1,
+        runtime_schedules_count: 2,
+        pending_schedule_approvals_count: 1,
+        audit_chain_valid: true,
+      });
+      expect(JSON.stringify(body)).not.toContain("private schedule content");
+      expect(JSON.stringify(body)).not.toContain(RESUME_TOKEN);
+      expect(JSON.stringify(body)).not.toContain(TOKEN);
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("does not accept POST /runtime/snapshot", async () => {
+    const ctx = setup({
+      runtime: {
+        getSnapshot: async () => ({ gateway_status: "running" }),
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      const r = await postJson(
+        ctx.port,
+        "/runtime/snapshot",
         {},
         { authorization: `Bearer ${TOKEN}` },
       );
