@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Replaced repository-wide Codex agent rules in `AGENTS.md` with the Phase 8/v1.0 completion posture.
+- Added `docs/IMPLEMENTATION_INSTRUCTIONS.md` as the active execution plan, with Phase 8-S1 (`ApprovalLevel` first-class + runtime schedule CRUD) as the next implementation lane.
+
 ## 0.1.0 - 2026-05-06
 
 v0.1 release-candidate completion.

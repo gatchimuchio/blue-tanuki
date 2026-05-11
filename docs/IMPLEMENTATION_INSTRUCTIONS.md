@@ -1,0 +1,1659 @@
+# BLUE-TANUKI Implementation Instructions v9
+
+## Role of This File
+
+This file is the active implementation instruction for Codex / LLM coding agents.
+
+It is not a marketing roadmap.
+
+It is a completion-oriented execution contract from the current repository state to v1.0-class completion.
+
+It incorporates a rejection audit of OpenClaw. OpenClaw is treated as a **rejected design pattern**, not a master plan. BLUE-TANUKI exists because OpenClaw-style strategy produces unsafe software promoted as successful, and Codex must not import OpenClaw assumptions as design starting points.
+
+Use this file with `AGENTS.md`.
+
+If `docs/ROADMAP.md` conflicts with this file, treat `docs/ROADMAP.md` as context and this file as the active execution plan.
+
+---
+
+# 0. Product Definition
+
+BLUE-TANUKI is a local owner-operated resident AI control plane.
+
+Permanent principle:
+
+```md
+HDS-BRAIN owns authority.
+LLMs, tools, channels, plugins, skills, memory, cron, browser automation, UI, onboarding, update flows, companion apps, and external services are downstream devices.
+```
+
+Completion means:
+
+- not maximum feature count,
+- not maximum channel count,
+- not LLM autonomy,
+- not a chatbot clone,
+- not superficial "5-minute demo" success,
+- but a resident control plane where broad local capability can exist without hidden authority, untraceable side effects, or final-review bypass.
+
+---
+
+# 1. OpenClaw Rejection Audit
+
+## 1.1 Position
+
+OpenClaw is rejected as a design pattern. This section exists only to make the rejection criteria explicit so that no Codex run reintroduces those patterns by drift.
+
+## 1.2 Comparison Target
+
+OpenClaw demonstrates a broad multi-channel assistant strategy:
+
+- onboarding-oriented setup,
+- daemon/service installation,
+- dashboard/control UI,
+- many channels,
+- DM pairing / allowlist model,
+- doctor/update/rollback docs,
+- companion apps / nodes / voice / canvas,
+- skills/plugin ecosystem.
+
+BLUE-TANUKI must not copy this as-is.
+
+The comparison question is:
+
+```md
+Does this actually make a beginner safely and permanently operational,
+or does it only make first contact easy while pushing complexity into long-term operation?
+```
+
+## 1.3 Key Finding
+
+OpenClaw-style "5-minute setup" is not equivalent to permanent usability.
+
+Risks:
+
+- first-run success can hide long-term service/config/credential complexity,
+- many channels increase failure surface,
+- pairing and allowlists improve safety but increase cognitive load,
+- daemon/service installation can become opaque under failure,
+- updates require package/service/config coordination,
+- doctor output must be actionable or it becomes developer-only diagnostics,
+- companion apps can improve UX but create extra support surfaces,
+- channel count can become a distraction from safe operation.
+
+## 1.4 BLUE-TANUKI Response
+
+BLUE-TANUKI must answer with:
+
+```md
+Safety-first permanence.
+```
+
+Meaning:
+
+1. HDS authority and final-review remain non-bypassable.
+2. First-run path must become simple, but only after the safe path exists.
+3. Permanent-use UX is a release gate, not a marketing claim.
+4. Channel selection must be intentional.
+5. OpenClaw's useful UX patterns are adapted under BLUE-TANUKI's authority model.
+6. Unsupported or high-maintenance channels remain preview/third-party/reserved.
+
+## 1.5 Adopt / Adapt / Reject / Reserve
+
+| OpenClaw pattern | Assessment | BLUE-TANUKI action |
+|---|---|---|
+| Guided onboarding | Useful but can hide complexity | Adapt under HDS/doctor/actionable setup |
+| Daemon/service install | Useful for permanence but failure-prone | Adapt after safety kernel |
+| Dashboard / Control UI | Useful if it closes next-action loop | Adapt as Control Center |
+| Many channels | Feature breadth, high operational burden | Reject as core strategy |
+| Telegram as fastest channel | Valid practical starter | Adopt |
+| WhatsApp ecosystem | Third-party extension surface, audit/authority boundary cannot be guaranteed | Reject as first-party; reserved-third-party only as deliberate safety + liability boundary |
+| DM pairing / allowlist | Strong inbound safety idea | Adapt into owner access model |
+| Device/node pairing | Useful later, not core v0.1 | Reserve for v0.3+ |
+| Update / rollback docs | Necessary for permanence | Adopt |
+| Doctor diagnostics | Necessary only if actionable | Adapt with "what next" output |
+| Skills/plugin marketplace | Supply-chain risk | Reject for first-party core |
+| Companion apps / voice / canvas | UX-expanding but support-heavy | Reserve for later phases |
+
+---
+
+# 2. Global Completion Strategy
+
+The repository must move through these completion bands:
+
+## Band A — Safety Kernel
+
+Goal:
+
+- authority path closed,
+- Approval Gate closed,
+- audit closed,
+- runtime invariants visible.
+
+Already mostly implemented.
+
+## Band B — v0.1 Completion
+
+Goal:
+
+- local owner setup works,
+- WebChat / Telegram smoke works,
+- runtime schedule is safe,
+- approval levels are first-class,
+- operator usability closure exists,
+- release bundle and validation pass.
+
+Remaining primary work:
+
+- ApprovalLevel first-class (Phase 8-S1)
+- runtime schedule CRUD (Phase 8-S1)
+- operator usability docs (Phase 8-S2a)
+- doctor actionable + Control Center first-run status (Phase 8-S2b)
+- OpenClaw rejection audit document (Phase 8-S3)
+- v0.1 live smoke cleanup
+- docs consistency
+
+## Band C — v0.1.x Stabilization
+
+Goal:
+
+- GitHub write downstream tool,
+- Slack / Discord release polish,
+- browser automation preview,
+- stronger live smoke,
+- conformance test expansion.
+
+## Band D — v0.2 Capability Expansion
+
+Goal:
+
+- Google integrations,
+- Teams / LINE,
+- F-reference audit integration,
+- memory continuity not authority,
+- adapter maturity.
+
+## Band E — v0.3 Resident UX
+
+Goal:
+
+- Control Center polish,
+- notification center,
+- approval UX,
+- settings UX,
+- installer experience,
+- local app feel.
+
+## Band F — v1.0 Release Hardening
+
+Goal:
+
+- repeatable install,
+- documented recovery,
+- stable extension boundary,
+- security review checklist complete,
+- permanent-use UX proven,
+- v1.0 support/non-support boundary clear,
+- no critical preview paths in main release.
+
+---
+
+# 3. Global Invariants
+
+These must remain true:
+
+```json
+{
+  "hds_calls_llm": false,
+  "process_policy_enforced": true,
+  "external_metadata_can_escalate_authority": false,
+  "memory_used_for_authority": false,
+  "final_review_boundary_enforced_by_approval_gate": true
+}
+```
+
+Do not regress:
+
+- hash-chain audit verification,
+- runtime snapshot visibility,
+- approval audit trace,
+- plugin capability enforcement,
+- file root sandbox,
+- SSRF guard,
+- resume token separation,
+- one-time approval token behavior,
+- boot-time schedule behavior,
+- Daily Brief smoke behavior,
+- release bundle secret exclusion,
+- setup/config preservation,
+- update/rollback clarity.
+
+---
+
+# 4. Current State Assumption
+
+Codex must verify this by grep before coding, but current expected state is:
+
+Completed or mostly completed:
+
+- `AGENTS.md`
+- `docs/ROADMAP.md`
+- HDS-BRAIN authority path
+- Runtime Invariants
+- Approval Gate
+- full-access local default
+- final-review boundary
+- hash-chain audit
+- plugin loader
+- capability envelope
+- WebChat
+- Telegram
+- Slack preview
+- Discord preview
+- boot-time Daily Brief / generic scheduled messages
+- file tools
+- http / web search tools
+- `github.read`
+- `browser.read`
+- `shell.exec`
+- local setup/settings/doctor/release bundle
+- HDS long-term memory addendum as non-authority memory component
+
+Known gaps:
+
+- L1/L2/L3 are not yet first-class `ApprovalLevel`
+- runtime schedule CRUD is not implemented
+- operator usability closure is not complete
+- GitHub write is not implemented
+- Slack / Discord are preview-level
+- browser automation is not implemented
+- Google integrations are not implemented
+- Teams / LINE are not implemented
+- resident native UX is not complete
+- v1.0 hardening is not complete
+
+---
+
+# 5. Execution Queue
+
+Codex must proceed sequentially unless explicitly instructed otherwise.
+
+| Phase | Band | Task | Priority | Dependency |
+|---|---|---|---:|---|
+| 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | current |
+| 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | 8-S1 |
+| 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | 8-S2a |
+| 8-S3 | B | OpenClaw Rejection Audit document | P0 | 8-S2b |
+| 8-S4 | C | GitHub write tool | P1 | 8-S1 |
+| 8-S5 | C | Slack / Discord release polish + live smoke | P1 | 8-S2b |
+| 8-S6 | C | Browser automation preview | P2 | 8-S1 |
+| 9-S1 | D | F-reference audit integration | P1 | 8-S2b |
+| 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | 9-S1 |
+| 9-S3 | D | Google write integration | P2 | 9-S2 |
+| 9-S4 | D | Teams / LINE adapters | P2 | 8-S5 |
+| 10-S1 | E | Control Center approval UX polish | P1 | 8-S1, 8-S2b |
+| 10-S2 | E | Resident notification center | P2 | 10-S1 |
+| 10-S3 | E | Distribution UX hardening | P1 | 8-S2a, 8-S2b |
+| 11-S1 | F | v1.0 security review closure | P0 | all main features |
+| 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
+
+---
+
+# 6. Universal Phase Template
+
+Each phase must follow this pattern:
+
+```md
+# Phase X-SY — Title
+
+## Objective
+
+## Scope
+
+## Non-Goals
+
+## Inspect First
+
+## Implementation Requirements
+
+## Safety Requirements
+
+## Operator Usability Requirements
+
+## Audit Requirements
+
+## Tests
+
+## Docs
+
+## Validation Commands
+
+## Manual Smoke
+
+## Permanent-Use Check
+
+## Acceptance Criteria
+
+## Final Report Format
+```
+
+Do not implement a phase if the instruction is not specific enough to satisfy this template.
+
+---
+
+# Phase 8-S1 — ApprovalLevel first-class + runtime schedule CRUD
+
+## Objective
+
+Convert the draft L1/L2/L3 approval model into a first-class TypeScript workflow layer, then implement runtime `schedule.*` CRUD on top of that layer.
+
+This phase completes the missing foundation needed for runtime automation, GitHub write, browser automation, Google integrations, and resident automation.
+
+## Critical Correction
+
+Do **not** collapse `ApprovalRisk`.
+
+Keep `ApprovalRisk` as the severity axis with three levels in v0.1:
+
+```ts
+type ApprovalRisk = "low" | "medium" | "high";
+```
+
+`critical` is intentionally deferred. A 4-tier severity axis multiplies enum-comparison, test, and docs cost everywhere it is referenced, and the present design has no operation that needs to be distinguished from `high`. If a future operation genuinely cannot be served by `high -> L3_final_review`, raise it as a separate security phase and add `critical` then.
+
+Add:
+
+```ts
+type ApprovalLevel =
+  | "L1_observe"
+  | "L2_operate"
+  | "L3_final_review";
+```
+
+Meaning:
+
+- `ApprovalRisk` = severity
+- `ApprovalLevel` = approval workflow
+
+Mapping:
+
+- low read/noop/llm operations -> L1
+- ordinary non-final-review state change -> L2
+- final-review operation -> L3
+- high risk -> L3
+- schedule create/update/delete -> L3
+- schedule list -> L1
+
+## Scope
+
+Implement:
+
+1. `ApprovalLevel` type and derivation
+2. `ApprovalEvaluation.approval_level`
+3. authority trace inclusion of `approval_level`
+4. final-review expansion to include schedule update/delete
+5. runtime schedule schema/store
+6. `schedule.create`
+7. `schedule.update`
+8. `schedule.delete`
+9. `schedule.list`
+10. existing cron lane integration
+11. safe runtime snapshot counters
+12. audit lifecycle events
+13. tests
+14. docs
+15. changelog
+16. phase report
+
+## Non-Goals
+
+Do not implement:
+
+- GitHub write
+- browser automation
+- Slack / Discord release polish
+- Google integrations
+- Teams / LINE
+- native app/menu bar distribution
+- arbitrary cron expression parser
+- memory authority integration
+- ApprovalRisk redesign
+- guided onboarding
+- daemon install changes
+- new external npm dependency unless justified
+
+## Inspect First
+
+```bash
+git status --short
+
+grep -rn "ApprovalRisk" packages/hds-brain/src apps/gateway/src
+grep -rn "FINAL_REVIEW_OPERATIONS" packages/hds-brain/src apps/gateway/src
+grep -rn "ApprovalMode" packages/hds-brain/src apps/gateway/src
+grep -rn "BLUE_TANUKI_SCHEDULES_JSON" .
+grep -rn "CronSchedulerChannel" apps/gateway/src packages
+grep -rn "cron.process" packages/hds-brain/src apps/gateway/src
+grep -rn "pendingApprovals" apps/gateway/src
+grep -rn "runtime/snapshot" apps/gateway/src packages/channel-webchat/src
+grep -rn "TOOL_SPECS" packages/hds-brain/src
+grep -rn "channel_send" packages/hds-brain/src apps/gateway/src
+grep -rn "ToolRegistry" packages apps
+grep -rn "registerBuiltinTools" packages apps
+```
+
+Expected anchors (estimated paths — confirm by grep before editing):
+
+```txt
+packages/hds-brain/src/approval_policy.ts
+packages/hds-brain/src/action_router.ts
+packages/hds-brain/src/controller.ts
+apps/gateway/src/approval_runtime.ts
+apps/gateway/src/serve.ts
+apps/gateway/src/cron_channel.ts
+apps/gateway/src/plugin_loader.ts
+packages/blue-tanuki/src/tools/builtin.ts
+SECURITY.md
+CONFIG.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+```
+
+These paths are inferred from the repository's documented architecture; not all are guaranteed to exist with these exact names. If grep returns no match for a listed file, Codex must:
+
+1. Search for the equivalent symbol or responsibility using the grep commands above.
+2. Use the actual discovered path.
+3. Report the path correction in the Final Report `Files changed` section.
+
+Do not invent a missing file. Do not create `packages/blue-tanuki/` if no such package exists in the workspace — the tool registration site is whichever package actually exports the tool registry.
+
+## Implementation Requirements
+
+### ApprovalLevel
+
+Add:
+
+```ts
+export type ApprovalLevel =
+  | "L1_observe"
+  | "L2_operate"
+  | "L3_final_review";
+```
+
+Add derivation:
+
+```ts
+export function approvalLevelFromContext(ctx: ApprovalContext): ApprovalLevel
+```
+
+or equivalent.
+
+Update:
+
+- `ApprovalEvaluation`
+- `AuthorityTransparencyTrace.resolved_factors`
+- approval docs
+- tests
+
+### Final-review set
+
+Ensure it contains:
+
+```txt
+tool.file.delete
+tool.shell.exec
+external.send
+credential.access
+settings.write
+schedule.create
+schedule.update
+schedule.delete
+payment.charge
+```
+
+Note on `payment.charge`: no payment functionality exists in v0.1. The entry is a **defensive placeholder** so that any future payment-class operation is forced through L3 from the moment it is introduced. Tests must assert the placeholder is present in the final-review set; tests must not exercise an actual payment path.
+
+### Runtime schedule schema
+
+Use existing schedule semantics.
+
+```ts
+interface RuntimeSchedule {
+  id: string;
+  origin: "runtime";
+  enabled: boolean;
+  channel: string;
+  target: string;
+  content: string;
+  time?: string;
+  interval_ms?: number;
+  created_at_ms: number;
+  updated_at_ms: number;
+  payload_hash: string;
+  status: "pending" | "active" | "disabled" | "deleted" | "rejected";
+}
+```
+
+Do not add arbitrary cron syntax.
+
+### ENV
+
+Add if needed:
+
+```bash
+BLUE_TANUKI_SCHEDULES_DIR=.blue-tanuki/schedules
+BLUE_TANUKI_SCHEDULE_APPROVAL_TIMEOUT_MS=86400000
+```
+
+### Tool commands
+
+Support:
+
+```txt
+tool:schedule.list
+tool:schedule.create channel=webchat target=local-user content="runtime smoke" interval_ms=120000
+tool:schedule.update id=<id> content="updated smoke"
+tool:schedule.delete id=<id>
+```
+
+JSON form:
+
+```txt
+tool:schedule.create {"channel":"webchat","target":"local-user","content":"runtime smoke","interval_ms":120000}
+```
+
+Capabilities:
+
+```txt
+tool:schedule.list
+schedule:read
+
+tool:schedule.create
+schedule:create
+
+tool:schedule.update
+schedule:update
+
+tool:schedule.delete
+schedule:delete
+```
+
+### Pending behavior
+
+- create requested -> pending -> approval -> active
+- create rejected/timeout -> not active
+- update requested -> pending while old schedule remains active
+- update approved -> atomic replace
+- update rejected/timeout -> old schedule remains active
+- delete requested -> pending while old schedule remains active
+- delete approved -> disabled/deleted and unregistered
+- delete rejected/timeout -> old schedule remains active
+- conflicting update/delete while pending -> reject
+
+### Scheduler lane
+
+Boot-time and runtime schedules must share one effective scheduler lane.
+
+Add `origin`:
+
+```ts
+origin: "boot" | "runtime"
+```
+
+Do not expose `content` in runtime snapshot.
+
+Snapshot may expose:
+
+```ts
+runtime_schedules_count: number
+pending_schedule_approvals_count: number
+scheduled_tasks: safe metadata only
+```
+
+### Audit lifecycle
+
+Record:
+
+```txt
+schedule.lifecycle.requested
+schedule.lifecycle.approved
+schedule.lifecycle.rejected
+schedule.lifecycle.activated
+schedule.lifecycle.updated
+schedule.lifecycle.deleted
+schedule.lifecycle.fired
+```
+
+Can use existing `authority_event` / `command_lifecycle` if new audit kind is too invasive.
+
+Required fields:
+
+- schedule_id
+- origin
+- operation
+- actor
+- approval_level
+- risk
+- payload_hash
+- previous_payload_hash when applicable
+- command_id
+- request_id
+- timestamp
+
+## Operator Usability Requirements
+
+This phase is not an onboarding phase, but schedule errors must already be owner-usable.
+
+For every schedule rejection/error, output must answer:
+
+- what failed,
+- whether anything was activated,
+- whether the schedule can still fire,
+- next action,
+- audit reference when available.
+
+## Tests
+
+Required:
+
+- ApprovalLevel classification
+- final-review operation list
+- full_access containment
+- reusable grant non-bypass
+- schedule list L1
+- schedule create/update/delete L3
+- valid schedule create
+- invalid id/channel/target/content/time/interval
+- duplicate active schedule rejection
+- create pending/approved/rejected/timeout
+- update pending/approved/rejected/timeout
+- delete pending/approved/rejected/timeout
+- pending conflict rejection
+- runtime schedule fires through cron/HDS path
+- trusted metadata required for channel_send
+- boot-time schedule regression
+- Daily Brief regression
+- audit chain valid
+- runtime snapshot invariants unchanged
+
+## Docs
+
+Update:
+
+```txt
+SECURITY.md
+CONFIG.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/phase8-s1-approval-level-runtime-schedule.md
+```
+
+## Validation Commands
+
+```bash
+pnpm install
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm smoke:serve
+pnpm smoke:resume
+pnpm smoke:live
+pnpm run doctor
+pnpm validate:packaging
+pnpm release:bundle -- --dry-run
+```
+
+## Manual Smoke
+
+1. Start gateway with full access.
+2. Submit `tool:schedule.create ... interval_ms=120000`.
+3. Confirm pending approval.
+4. Approve.
+5. Confirm activation.
+6. Confirm message fires.
+7. Confirm audit lifecycle.
+8. Delete schedule.
+9. Approve delete.
+10. Confirm no further fires.
+
+## Acceptance Criteria
+
+- `ApprovalLevel` exists.
+- `ApprovalRisk` is three-tier (`low | medium | high`) and `critical` is intentionally absent in v0.1.
+- L1/L2/L3 behavior is tested.
+- schedule create/update/delete are L3.
+- schedule list is L1.
+- pending schedules do not run.
+- rejected schedules do not run.
+- boot-time schedules still work.
+- audit remains valid.
+- runtime invariants unchanged.
+- schedule errors are owner-actionable.
+- docs updated.
+- validation reported.
+
+---
+
+# Phase 8-S2a — Operator Usability Docs
+
+## Objective
+
+Produce the documentation that lets an owner safely run BLUE-TANUKI v0.1 beyond first-run success.
+
+This Phase is docs-only. No runtime code changes. Splitting docs from the doctor/Control-Center code changes (Phase 8-S2b) keeps each PR reviewable and prevents the docs from drifting against not-yet-written code.
+
+## Scope
+
+Create or update:
+
+1. First-run checklist
+2. Permanent-use checklist
+3. Channel readiness matrix
+4. Credential readiness matrix
+5. Update / rollback / recovery runbook
+6. README.md operator path
+7. QUICKSTART.md alignment
+8. CONFIG.md alignment
+9. TROUBLESHOOTING.md alignment
+10. CHANGELOG.md entry
+11. Phase 8-S2a report
+
+## Non-Goals
+
+- no doctor code change (Phase 8-S2b)
+- no Control Center status endpoint change (Phase 8-S2b)
+- no new channel
+- no new tool
+- no native app rewrite
+- no "5-minute" marketing claim unless criteria are actually met
+
+## Inspect First
+
+```bash
+grep -rn "setup" README.md QUICKSTART.md CONFIG.md docs apps/gateway/src
+grep -rn "doctor" README.md QUICKSTART.md CONFIG.md docs apps/gateway/src
+grep -rn "WEBCHAT_TOKEN" README.md QUICKSTART.md CONFIG.md docs apps/gateway/src
+grep -rn "TELEGRAM_BOT_TOKEN" README.md QUICKSTART.md CONFIG.md docs apps/gateway/src
+grep -rn "release:bundle" .
+grep -rn "rollback\|update\|uninstall" README.md QUICKSTART.md docs install apps/gateway/src
+grep -rn "runtime schedule outside v0.1" .
+```
+
+Note: `pnpm setup` is **already implemented** in Phase 6-S1 and exists in the repo. Phase 8-S2a strengthens the operator-usability surface around it, not the command itself.
+
+## Implementation Requirements
+
+### First-run checklist
+
+Create:
+
+```txt
+docs/FIRST_RUN_CHECKLIST.md
+```
+
+Must include:
+
+- prerequisites,
+- setup command (reference existing `pnpm setup`),
+- env/token expectations,
+- start command,
+- open Control Center,
+- send first WebChat message,
+- optional Telegram setup,
+- expected success output,
+- common failure cases,
+- next action for each failure.
+
+### Permanent-use checklist
+
+Create:
+
+```txt
+docs/PERMANENT_USE_CHECKLIST.md
+```
+
+Must include:
+
+- startup,
+- stop/restart,
+- config location,
+- credential location/handling,
+- audit verification,
+- approval queue,
+- runtime schedules,
+- channel readiness,
+- update,
+- rollback,
+- uninstall/purge,
+- backup/restore,
+- known limitations.
+
+### Channel readiness matrix
+
+Create:
+
+```txt
+docs/CHANNEL_READINESS_MATRIX.md
+```
+
+Fields per channel:
+
+- channel,
+- status (first-party / preview / reserved-third-party),
+- setup difficulty,
+- credential requirement,
+- live smoke support,
+- skip path support,
+- inbound support,
+- outbound support,
+- rate limit/backoff status,
+- known failure modes,
+- next phase.
+
+### Credential readiness matrix
+
+Create:
+
+```txt
+docs/CREDENTIAL_READINESS_MATRIX.md
+```
+
+Fields per credential/env:
+
+- credential/env,
+- required for,
+- secret class,
+- setup source,
+- doctor check (record current state; do not change doctor code here),
+- safe missing behavior,
+- failure message,
+- rotation notes.
+
+### Update / rollback runbook
+
+Create:
+
+```txt
+docs/UPDATE_ROLLBACK_RUNBOOK.md
+```
+
+Do not claim auto-update unless implemented.
+
+Must include:
+
+- source install update,
+- release bundle update,
+- config preservation,
+- audit/session/memory preservation,
+- rollback,
+- doctor after update,
+- when to stop,
+- when to purge.
+
+### README / QUICKSTART / CONFIG / TROUBLESHOOTING alignment
+
+- README.md must link to the new docs above.
+- QUICKSTART.md must reference the first-run checklist as the long-form companion.
+- CONFIG.md must be consistent with the credential readiness matrix.
+- TROUBLESHOOTING.md must be consistent with documented failure modes.
+- Any stale text such as "Runtime schedule creation remains outside v0.1" must be removed (Phase 8-S1 supersedes it).
+
+## OpenClaw Rejection Constraint
+
+Do not claim "beginner can use in 5 minutes" unless the repo has a tested flow satisfying:
+
+- clean environment,
+- documented OS,
+- prerequisite check,
+- setup command,
+- start command,
+- Control Center open,
+- first message success,
+- doctor success or actionable warning,
+- no unexplained daemon/credential state.
+
+If the repo does not meet this, state in the docs:
+
+```md
+v0.1 provides a guided first-run path, not a verified 5-minute beginner guarantee.
+```
+
+The OpenClaw-style "5-minute" claim is treated as an anti-pattern. Honest first-run language is preferred over marketing parity.
+
+## Tests
+
+Static checks only (no runtime code change):
+
+- every doc path referenced by README.md / QUICKSTART.md exists,
+- readiness matrices parse if structured,
+- no doc contradicts CONFIG.md ENV definitions,
+- no stale "Runtime schedule creation remains outside v0.1" text remains after Phase 8-S1,
+- compatibility matrix status is consistent across docs.
+
+If the repo lacks a docs-link checker, add a minimal one under `scripts/` and wire it into `pnpm test` or a dedicated `pnpm docs:check` script.
+
+## Docs
+
+Update:
+
+```txt
+README.md
+QUICKSTART.md
+CONFIG.md
+TROUBLESHOOTING.md
+docs/FIRST_RUN_CHECKLIST.md
+docs/PERMANENT_USE_CHECKLIST.md
+docs/CHANNEL_READINESS_MATRIX.md
+docs/CREDENTIAL_READINESS_MATRIX.md
+docs/UPDATE_ROLLBACK_RUNBOOK.md
+docs/phase8-s2a-operator-usability-docs.md
+CHANGELOG.md
+```
+
+## Validation Commands
+
+```bash
+pnpm install
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm run doctor
+pnpm validate:packaging
+pnpm release:bundle -- --dry-run
+```
+
+No new runtime behavior expected, so smoke is unchanged.
+
+## Acceptance Criteria
+
+- owner can follow docs without knowing code internals,
+- no false 5-minute claim anywhere in repo,
+- first-run and permanent-use are separated documents,
+- channel and credential readiness are explicit,
+- update/rollback story exists,
+- runtime invariants remain unchanged (no code changed),
+- docs-link checker passes,
+- validation reported.
+
+---
+
+# Phase 8-S2b — Doctor Actionable Output + Control Center First-Run Status
+
+## Objective
+
+Make `doctor` diagnostics owner-actionable and expose enough safe runtime state through Control Center / runtime snapshot to answer first-run and permanent-use questions without leaking secrets.
+
+This Phase is code-focused. It depends on Phase 8-S2a docs being in place so that doctor and Control Center output can link to authoritative docs.
+
+## Scope
+
+1. Doctor JSON / human output gains structured remediation fields.
+2. Control Center / runtime snapshot exposes first-run status answers.
+3. Tests for doctor schema and runtime snapshot fields.
+4. Docs updated to reflect the new fields.
+
+## Non-Goals
+
+- no new doc creation (Phase 8-S2a covers docs)
+- no new channel
+- no GitHub write
+- no browser automation
+- no Google integration
+- no native app rewrite
+
+## Inspect First
+
+```bash
+grep -rn "doctor" apps/gateway/src scripts packages
+grep -rn "runtime/snapshot" apps/gateway/src packages/channel-webchat/src
+grep -rn "ControlCenter\|control_center\|control-center" .
+grep -rn "first_run\|first-run\|firstRun" .
+```
+
+## Implementation Requirements
+
+### Doctor actionable output
+
+Every warning/error in doctor output must map to:
+
+```md
+status         (ok | warning | error)
+cause          (one-line)
+impact         (what is affected)
+next_action    (concrete command or doc reference)
+doc_ref        (doc file or anchor in this repo)
+safe_to_ignore (true | false)
+```
+
+Both JSON and human-readable output must carry these fields (JSON authoritative; human output derived).
+
+If, after this PR, certain legacy doctor messages still cannot be mapped, the PR must:
+
+- list them explicitly in `docs/phase8-s2b-doctor-gap.md` as a follow-up,
+- mark each as `safe_to_ignore: false` with `next_action: "report to maintainer"` until properly mapped.
+
+### Control Center first-run status
+
+Control Center or runtime snapshot must expose enough safe information to answer:
+
+- Is gateway running?
+- Is HDS invariant state healthy?
+- Is WebChat ready?
+- Is Telegram configured?
+- Are there pending approvals?
+- Are runtime schedules pending/active?
+- Is audit chain valid?
+- What is the next recommended action?
+
+No secrets. No schedule payload content. No credential values. Counts and statuses only.
+
+Extend `/runtime/snapshot` (or equivalent) with:
+
+```ts
+{
+  gateway_status: "running" | "starting" | "degraded",
+  hds_invariants_ok: boolean,
+  webchat_ready: boolean,
+  telegram_configured: boolean,
+  pending_approvals_count: number,
+  runtime_schedules_count: number,
+  pending_schedule_approvals_count: number,
+  audit_chain_valid: boolean,
+  next_recommended_action: string | null
+}
+```
+
+`next_recommended_action` must be a short human-readable hint such as `"Configure TELEGRAM_BOT_TOKEN to enable Telegram"` or `null` if the system is healthy and idle.
+
+## Safety Requirements
+
+- doctor output must not leak secret values,
+- runtime snapshot must not expose schedule payload `content`,
+- `next_recommended_action` must not contain credentials,
+- runtime invariants 5-tuple remains unchanged,
+- audit chain validation result must reflect the actual chain state.
+
+## Tests
+
+- doctor JSON schema validation,
+- doctor remediation fields present for every status entry,
+- runtime snapshot new fields present and typed,
+- secrets-leak negative test on doctor and snapshot output,
+- runtime invariants unchanged,
+- existing doctor / snapshot regression tests still pass.
+
+## Docs
+
+Update:
+
+```txt
+README.md
+TROUBLESHOOTING.md
+docs/phase8-s2b-doctor-and-status.md
+CHANGELOG.md
+```
+
+## Validation Commands
+
+```bash
+pnpm install
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm smoke:serve
+pnpm smoke:resume
+pnpm smoke:live
+pnpm run doctor
+pnpm validate:packaging
+pnpm release:bundle -- --dry-run
+```
+
+## Manual Smoke
+
+1. Start gateway with no Telegram token configured.
+2. Call `pnpm run doctor`; confirm every warning includes `status / cause / impact / next_action / doc_ref / safe_to_ignore`.
+3. Hit `/runtime/snapshot`; confirm new fields including `telegram_configured: false` and a meaningful `next_recommended_action`.
+4. Configure Telegram; rerun doctor and snapshot; confirm `telegram_configured: true` and `next_recommended_action` advances.
+
+## Acceptance Criteria
+
+- doctor output is owner-actionable,
+- doctor JSON schema is tested,
+- Control Center / snapshot answers first-run status questions,
+- no secret leakage,
+- runtime invariants unchanged,
+- validation reported.
+
+---
+
+# Phase 8-S3 — OpenClaw Rejection Audit Document
+
+## Objective
+
+Create an explicit internal engineering document recording the criteria by which OpenClaw's design pattern is rejected as a basis for BLUE-TANUKI, and the specific roadmap consequences that follow.
+
+This is an internal engineering document, not marketing material. It exists so that no future Codex run reintroduces OpenClaw assumptions by drift, and so that the rejection criteria are reviewable as a single artifact.
+
+## Output
+
+Create:
+
+```txt
+docs/OPENCLAW_REJECTION_AUDIT.md
+```
+
+## Required Sections
+
+1. Scope and intent (engineering audit, not commentary)
+2. What OpenClaw appears to optimize
+3. Why BLUE-TANUKI rejects each of those optimizations
+4. 5-minute setup claim — rejection of marketing parity
+5. Permanent-use UX — why BLUE-TANUKI treats this as a release gate instead
+6. Channel breadth — why count is rejected as a quality metric
+7. Safety boundary — what BLUE-TANUKI requires that OpenClaw's pattern does not
+8. Update/rollback — what BLUE-TANUKI requires that OpenClaw's pattern does not
+9. Skills/plugin supply-chain — why BLUE-TANUKI rejects unsigned third-party skill execution
+10. WhatsApp ecosystem — why first-party exclusion is a safety + liability boundary, not a deferral
+11. Adopt / Adapt / Reject / Reserve table (carried from this instruction file)
+12. Resulting BLUE-TANUKI roadmap effects
+
+## Acceptance Criteria
+
+- no marketing tone,
+- no feature-count framing,
+- explicit rejection criteria stated in engineering terms,
+- WhatsApp exclusion explained as deliberate safety + liability boundary,
+- concrete roadmap effects listed,
+- claims about OpenClaw phrased as "comparison target observations" rather than asserted facts about that project,
+- file committed and linked from AGENTS.md if appropriate.
+
+---
+
+# Phase 8-S4 — GitHub Write Tool
+
+## Objective
+
+Add authenticated GitHub write operations as downstream tools using the Phase 8-S1 ApprovalLevel model.
+
+## Scope
+
+Initial supported operations:
+
+- issue create
+- issue comment create
+- issue update
+- PR create
+- PR comment create
+
+Deferred:
+
+- merge PR
+- close issue/PR
+- delete branch
+- force update
+- release publish
+- workflow dispatch
+- secrets
+- repository settings
+
+## Approval Mapping
+
+- `github.read` remains read-only.
+- issue/PR/comment create is external write.
+- public mutation defaults to L3 unless specifically proven safe as L2.
+- destructive operations, when later added, must be L3.
+
+## Capabilities
+
+Possible capabilities:
+
+```txt
+tool:github.write
+network:api.github.com
+secrets:GITHUB_TOKEN
+github:issue.write
+github:pr.write
+github:comment.write
+```
+
+## Safety Requirements
+
+- no GitHub metadata as authority
+- no approval bypass
+- token required
+- fail closed without token
+- repository allowlist if implemented must be documented
+- audit every write attempt and result digest
+- user-visible error must identify safe retry state
+
+## Docs
+
+Update:
+
+```txt
+README.md
+CONFIG.md
+SECURITY.md
+AUDIT.md
+CHANGELOG.md
+docs/phase8-s4-github-write.md
+```
+
+---
+
+# Phase 8-S5 — Slack / Discord Release Polish + Live Smoke
+
+## Objective
+
+Move Slack and Discord adapters from preview toward first-party release quality.
+
+## Scope
+
+- rate limit handling
+- backoff
+- recoverable/non-recoverable typed errors
+- improved user-visible error messages
+- docs
+- live smoke credential path
+- skip path remains green without credentials
+- conformance tests
+- audit-compatible traces
+
+## Non-Goals
+
+- no authority model change
+- no external write policy change
+- no new channel expansion
+
+## Acceptance Criteria
+
+- Slack/Discord conformance tests pass
+- live smoke skips safely without credentials
+- live smoke can run with credentials
+- compatibility matrix accurately reflects status
+- no channel metadata authority escalation
+- permanent-use failure modes documented
+
+---
+
+# Phase 8-S6 — Browser Automation Preview
+
+## Objective
+
+Add headless browser automation as disabled-by-default preview.
+
+## Scope
+
+- preview package or module
+- explicit env enable
+- sandbox policy
+- network policy
+- resource limits
+- no credential leakage
+- ApprovalRisk / ApprovalLevel mapping
+- audit trace
+- smoke skip path
+
+## Non-Goals
+
+- not main release quality
+- not enabled by default
+- not a general remote-control browser without guardrails
+- not a replacement for `browser.read`
+
+## Approval Mapping
+
+- read-only page snapshot may be L1/L2 depending network risk
+- click/navigation with side effect potential is L3
+- form submit is L3
+- file upload/download is L3
+- credential usage is L3
+
+## Acceptance Criteria
+
+- preview quarantine documented
+- disabled by default
+- tests pass
+- runtime invariants unchanged
+- permanent-use limitations explicit
+
+---
+
+# Phase 9-S1 — F-reference Audit Integration
+
+## Objective
+
+Integrate F-reference audit traces without making memory authority.
+
+## Scope
+
+- memory read references as `F:<id>`
+- memory write references as `F:<id>`
+- audit trace inclusion
+- safe Control Center display of references
+- no authority escalation
+
+## Non-Goals
+
+- no memory-based permission grant
+- no memory-based owner consent
+- no memory-driven privileged action
+
+## Acceptance Criteria
+
+- `memory_used_for_authority=false`
+- F-reference visible in audit
+- memory cannot bypass approval
+- tests cover non-escalation
+
+---
+
+# Phase 9-S2 — Gmail / Google Calendar / Drive Read Integration
+
+## Objective
+
+Add Google read integrations for Daily Brief and local assistant utility.
+
+## Scope
+
+- Gmail read summary
+- Calendar read summary
+- Drive read/search metadata
+- credential capability declarations
+- read-only audit traces
+- Daily Brief source integration
+
+## Approval Mapping
+
+- read-only summaries may be L1/L2 depending credential sensitivity
+- credential access is final-review where needed
+- no write operations in this phase
+
+## Non-Goals
+
+- no email send
+- no calendar write
+- no Drive write
+- no autonomous cross-service action
+
+---
+
+# Phase 9-S3 — Google Write Integration
+
+## Objective
+
+Add write operations only after read integration is stable.
+
+## Scope
+
+Potential operations:
+
+- Gmail draft create
+- Gmail send
+- Calendar create/update/delete
+- Drive file create/update
+
+## Approval Mapping
+
+- drafts: L2 or L3 depending external visibility
+- send email: L3
+- calendar create/update/delete: L3
+- Drive write/delete/share: L3
+
+## Requirements
+
+- explicit approval
+- audit trace
+- no metadata authority
+- credential capability declarations
+- safe failure modes
+
+---
+
+# Phase 9-S4 — Teams / LINE Adapters
+
+## Objective
+
+Add Teams and LINE as first-party target adapters.
+
+## Requirements
+
+- adapter contract
+- capability envelope
+- conformance tests
+- live smoke skip path
+- no authority metadata escalation
+- docs
+- compatibility matrix update
+- permanent-use failure modes
+
+## Non-Goals
+
+- WhatsApp first-party support
+
+---
+
+# Phase 10-S1 — Control Center Approval UX Polish
+
+## Objective
+
+Make Approval Queue, Authority Trace, Runtime Schedules, and Audit visibility usable as a resident console.
+
+## Scope
+
+- approval queue clarity
+- final-review labeling
+- ApprovalLevel display
+- schedule pending/active display
+- authority trace display
+- audit chain status
+- first-run next action
+- permanent-use status card
+- no secret/content leakage
+
+## Non-Goals
+
+- no native app shell
+- no mobile
+- no voice
+
+---
+
+# Phase 10-S2 — Resident Notification Center
+
+## Objective
+
+Add resident notification behavior without creating a second authority path.
+
+## Scope
+
+- local notifications or in-app notification center
+- approval required notifications
+- schedule fired/failed notifications
+- connector failure notifications
+- audit status warning notifications
+
+## Safety
+
+- notification is display only
+- notification cannot approve by itself
+- notification metadata is not authority
+
+---
+
+# Phase 10-S3 — Distribution UX Hardening
+
+## Objective
+
+Improve installation/update/uninstall experience without pretending to be a signed native product unless actually implemented.
+
+## Scope
+
+- installer docs
+- doctor gates
+- config preservation
+- release bundle checks
+- platform notes
+- recovery docs
+- rollback docs
+- uninstall/purge docs
+
+## Non-Goals
+
+- no false claim of signed installer
+- no automatic updater unless explicitly implemented
+- no commercial SaaS framing
+
+---
+
+# Phase 11-S1 — v1.0 Security + Permanent-Use Review Closure
+
+## Objective
+
+Run a full security, architecture, and permanent-use closure before v1.0.
+
+## Required Review Areas
+
+- authority path
+- approval model
+- final-review operations
+- runtime automation
+- external write tools
+- channel adapters
+- memory / F-reference
+- browser automation preview
+- Google integrations
+- install/update/uninstall
+- audit verification
+- capability envelope
+- secret handling
+- SSRF/file/process sandbox
+- docs consistency
+- compatibility matrix
+- first-run UX
+- permanent-use UX
+- recovery/rollback
+
+## Output
+
+Create:
+
+```txt
+docs/v1.0-security-and-permanent-use-review.md
+```
+
+## Acceptance Criteria
+
+- no known final-review bypass
+- no hidden authority source
+- no undocumented privileged operation
+- no stale preview promoted as release
+- no false 5-minute claim
+- permanent-use checklist passes
+- all validation reported
+
+---
+
+# Phase 11-S2 — v1.0 Release Candidate
+
+## Objective
+
+Prepare a v1.0 release candidate.
+
+## Scope
+
+- changelog consolidation
+- docs index
+- release bundle
+- validation matrix
+- known limitations
+- non-goals
+- support boundary
+- upgrade notes
+- compatibility matrix
+- final smoke
+- first-run proof
+- permanent-use proof
+
+## Acceptance Criteria
+
+- v1.0 claim is accurate
+- no unsupported channel is described as supported
+- no preview feature is described as complete
+- release bundle validates
+- security/permanent-use review exists
+- smoke/test results reported
+
+---
+
+# Global Validation Command Set
+
+Use this set after major phases:
+
+```bash
+pnpm install
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm smoke:serve
+pnpm smoke:resume
+pnpm smoke:live
+pnpm run doctor
+pnpm validate:packaging
+pnpm release:bundle -- --dry-run
+```
+
+For release phases also run:
+
+```bash
+pnpm release:bundle
+pnpm release:verify
+```
+
+If unavailable, report exactly.
+
+---
+
+# Global Final Report Format
+
+Every phase must end with:
+
+```md
+## Files changed
+
+## Summary
+
+## Safety boundary impact
+
+## Runtime Invariants impact
+
+## Approval Gate impact
+
+## Operator usability impact
+
+## Audit impact
+
+## Tests / validation
+
+## Remaining risks
+
+## Recommended next task
+```
+
+Do not hide failed tests.
+
+Do not claim completion unless acceptance criteria are satisfied.
+
+---
+
+# Current Active Phase
+
+The active next phase is:
+
+```txt
+Phase 8-S1 — ApprovalLevel first-class + runtime schedule CRUD
+```
+
+Do not begin Phase 8-S2a, 8-S2b, 8-S3, GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or OpenClaw rejection audit docs before Phase 8-S1 is completed unless explicitly instructed.
