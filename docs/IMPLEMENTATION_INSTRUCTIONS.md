@@ -251,6 +251,7 @@ Completed or mostly completed:
 - `github.read`
 - `browser.read`
 - `shell.exec`
+- `github.write`
 - local setup/settings/doctor/release bundle
 - HDS long-term memory addendum as non-authority memory component
 - ApprovalLevel first-class
@@ -259,7 +260,6 @@ Completed or mostly completed:
 
 Known gaps:
 
-- GitHub write is not implemented
 - Slack / Discord are preview-level
 - browser automation is not implemented
 - Google integrations are not implemented
@@ -279,8 +279,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | completed |
 | 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | completed |
 | 8-S3 | B | OpenClaw Rejection Audit document | P0 | completed |
-| 8-S4 | C | GitHub write tool | P1 | current |
-| 8-S5 | C | Slack / Discord release polish + live smoke | P1 | 8-S2b |
+| 8-S4 | C | GitHub write tool | P1 | completed |
+| 8-S5 | C | Slack / Discord release polish + live smoke | P1 | current |
 | 8-S6 | C | Browser automation preview | P2 | 8-S1 |
 | 9-S1 | D | F-reference audit integration | P1 | 8-S2b |
 | 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | 9-S1 |
@@ -1648,7 +1648,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 8-S4 — GitHub Write Tool
+Phase 8-S5 — Slack / Discord Release Polish + Live Smoke
 ```
 
-Do not begin Slack/Discord polish, browser automation, onboarding/daemon work, Google integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 8-S4 is completed unless explicitly instructed.
+Do not begin browser automation, onboarding/daemon work, Google integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 8-S5 is completed unless explicitly instructed.

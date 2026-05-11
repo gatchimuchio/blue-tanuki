@@ -120,6 +120,8 @@ describe("runDoctor — happy paths", () => {
         SLACK_APP_TOKEN: "xapp-aaa-bbb",
         DISCORD_BOT_TOKEN: "discord-bot-token",
         ANTHROPIC_API_KEY: "sk-ant-abcdefghijkl",
+        GITHUB_TOKEN: "ghp-doctor-token",
+        BLUE_TANUKI_GITHUB_REPOS: "gatchimuchio/blue-tanuki",
       },
       probe_port: false,
       node_version: "22.14.0",

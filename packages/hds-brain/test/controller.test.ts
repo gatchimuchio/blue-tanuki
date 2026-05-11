@@ -364,6 +364,41 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit github.write requests to L3-capable tool_call constraints", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound('tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki title="Phase smoke" body="hello"'),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "github.write",
+        arguments: {
+          operation: "issue.create",
+          owner: "gatchimuchio",
+          repo: "blue-tanuki",
+          title: "Phase smoke",
+          body: "hello",
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["github.write"],
+      allowed_capabilities: [
+        "tool:github.write",
+        "network:github.com",
+        "secrets:GITHUB_TOKEN",
+        "github:issue.write",
+        "github:pr.write",
+        "github:comment.write",
+      ],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("routes explicit browser.read requests to tool_call with HTTP network capability", () => {
     const c = new HDSUpperController();
     const { log, command } = c.decide(

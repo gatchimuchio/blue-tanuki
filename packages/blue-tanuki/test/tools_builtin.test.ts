@@ -9,11 +9,13 @@ import {
   invokeHttpFetch,
   invokeWebSearch,
   invokeGitHubRead,
+  invokeGitHubWrite,
   invokeBrowserRead,
   invokeShellExec,
   registerBuiltinTools,
   type FileSearchOptions,
   type GitHubReadOptions,
+  type GitHubWriteOptions,
   type HttpFetchOptions,
 } from "../src/tools/builtin.js";
 import { ToolRegistry } from "../src/tools/registry.js";
@@ -35,13 +37,18 @@ describe("built-in tools", () => {
     expect(registry.get("http.fetch")).toBeDefined();
     expect(registry.get("web.search")).toBeDefined();
     expect(registry.get("github.read")).toBeDefined();
+    expect(registry.get("github.write")).toBeDefined();
     expect(registry.get("browser.read")).toBeDefined();
     expect(registry.get("shell.exec")).toBeDefined();
     expect(registry.listCapabilities()).toEqual([
       "fs:read",
       "fs:write",
+      "github:comment.write",
+      "github:issue.write",
+      "github:pr.write",
       "network:github.com",
       "network:http",
+      "secrets:GITHUB_TOKEN",
       "shell:exec",
       "tool:browser.read",
       "tool:echo",
@@ -49,6 +56,7 @@ describe("built-in tools", () => {
       "tool:file.search",
       "tool:file.write",
       "tool:github.read",
+      "tool:github.write",
       "tool:http.fetch",
       "tool:shell.exec",
       "tool:web.search",
@@ -584,6 +592,220 @@ describe("built-in tools", () => {
     ).rejects.toThrow(/number/);
   });
 
+  it("github.write creates an issue only with token and allowlisted repo", async () => {
+    const seen: Array<{
+      method: string;
+      path: string;
+      body: Record<string, unknown>;
+      maxBytes: number;
+      token: string;
+    }> = [];
+    const result = (await invokeGitHubWrite(
+      {
+        operation: "issue.create",
+        owner: "gatchimuchio",
+        repo: "blue-tanuki",
+        title: "Phase smoke",
+        body: "created by test",
+        max_bytes: 4096,
+      },
+      fakeGitHubWrite(async (target) => {
+        seen.push(target);
+        return {
+          status: 201,
+          ok: true,
+          content_type: "application/json",
+          body: JSON.stringify({
+            id: 123,
+            number: 7,
+            title: "Phase smoke",
+            html_url: "https://github.com/gatchimuchio/blue-tanuki/issues/7",
+          }),
+          truncated: false,
+          rate_limit_remaining: "58",
+          request_id: "ABC123",
+        };
+      }),
+    )) as {
+      operation: string;
+      api_host: string;
+      repo: string;
+      method: string;
+      path: string;
+      status: number;
+      github_request_id: string;
+      result_digest: string;
+      result: { number: number; title: string; html_url: string };
+    };
+
+    expect(seen).toEqual([
+      {
+        method: "POST",
+        path: "/repos/gatchimuchio/blue-tanuki/issues",
+        body: { title: "Phase smoke", body: "created by test" },
+        maxBytes: 4096,
+        token: "ghp_dummy",
+      },
+    ]);
+    expect(result).toMatchObject({
+      operation: "issue.create",
+      api_host: "api.github.com",
+      repo: "gatchimuchio/blue-tanuki",
+      method: "POST",
+      path: "/repos/gatchimuchio/blue-tanuki/issues",
+      status: 201,
+      github_request_id: "ABC123",
+      result: {
+        number: 7,
+        title: "Phase smoke",
+        html_url: "https://github.com/gatchimuchio/blue-tanuki/issues/7",
+      },
+    });
+    expect(result.result_digest).toMatch(/^[a-f0-9]{64}$/);
+    expect(JSON.stringify(result)).not.toContain("ghp_dummy");
+  });
+
+  it("github.write supports PR creation and comment/update paths", async () => {
+    const seen: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
+    const opts = fakeGitHubWrite(async (target) => {
+      seen.push({ method: target.method, path: target.path, body: target.body });
+      return {
+        status: target.method === "PATCH" ? 200 : 201,
+        ok: true,
+        content_type: "application/json",
+        body: JSON.stringify({ number: 42, html_url: "https://github.test/42" }),
+        truncated: false,
+        rate_limit_remaining: "57",
+        request_id: "REQ",
+      };
+    });
+
+    await invokeGitHubWrite(
+      {
+        operation: "pr.create",
+        owner: "gatchimuchio",
+        repo: "blue-tanuki",
+        title: "Add feature",
+        head: "feature",
+        base: "main",
+        draft: "true",
+      },
+      opts,
+    );
+    await invokeGitHubWrite(
+      {
+        operation: "pr.comment.create",
+        owner: "gatchimuchio",
+        repo: "blue-tanuki",
+        number: 42,
+        body: "review note",
+      },
+      opts,
+    );
+    await invokeGitHubWrite(
+      {
+        operation: "issue.update",
+        owner: "gatchimuchio",
+        repo: "blue-tanuki",
+        number: 7,
+        title: "Updated issue",
+      },
+      opts,
+    );
+
+    expect(seen).toEqual([
+      {
+        method: "POST",
+        path: "/repos/gatchimuchio/blue-tanuki/pulls",
+        body: { title: "Add feature", head: "feature", base: "main", draft: true },
+      },
+      {
+        method: "POST",
+        path: "/repos/gatchimuchio/blue-tanuki/issues/42/comments",
+        body: { body: "review note" },
+      },
+      {
+        method: "PATCH",
+        path: "/repos/gatchimuchio/blue-tanuki/issues/7",
+        body: { title: "Updated issue" },
+      },
+    ]);
+  });
+
+  it("github.write fails closed before network request when token or repo allowlist is missing", async () => {
+    let called = false;
+    const opts = fakeGitHubWrite(async () => {
+      called = true;
+      throw new Error("should not call network");
+    }, {});
+
+    await expect(
+      invokeGitHubWrite(
+        {
+          operation: "issue.create",
+          owner: "gatchimuchio",
+          repo: "blue-tanuki",
+          title: "blocked",
+        },
+        opts,
+      ),
+    ).rejects.toThrow(/BLUE_TANUKI_GITHUB_REPOS.*mutation_sent=false/);
+
+    await expect(
+      invokeGitHubWrite(
+        {
+          operation: "issue.create",
+          owner: "gatchimuchio",
+          repo: "blue-tanuki",
+          title: "blocked",
+        },
+        fakeGitHubWrite(async () => {
+          called = true;
+          throw new Error("should not call network");
+        }, { GITHUB_TOKEN: "ghp_dummy", BLUE_TANUKI_GITHUB_REPOS: "other/repo" }),
+      ),
+    ).rejects.toThrow(/denied repository.*mutation_sent=false/);
+
+    await expect(
+      invokeGitHubWrite(
+        {
+          operation: "issue.create",
+          owner: "gatchimuchio",
+          repo: "blue-tanuki",
+          title: "blocked",
+        },
+        fakeGitHubWrite(async () => {
+          called = true;
+          throw new Error("should not call network");
+        }, { BLUE_TANUKI_GITHUB_REPOS: "gatchimuchio/blue-tanuki" }),
+      ),
+    ).rejects.toThrow(/GITHUB_TOKEN.*mutation_sent=false/);
+
+    expect(called).toBe(false);
+  });
+
+  it("github.write reports safe retry state on GitHub API errors", async () => {
+    await expect(
+      invokeGitHubWrite(
+        {
+          operation: "issue.create",
+          owner: "gatchimuchio",
+          repo: "blue-tanuki",
+          title: "bad",
+        },
+        fakeGitHubWrite(async () => ({
+          status: 422,
+          ok: false,
+          content_type: "application/json",
+          body: JSON.stringify({ message: "Validation Failed" }),
+          truncated: false,
+          rate_limit_remaining: "56",
+          request_id: "ERR",
+        })),
+      ),
+    ).rejects.toThrow(/mutation_status=not_confirmed.*check GitHub\/audit/);
+  });
+
   it("browser.read extracts bounded readable text and links through http.fetch", async () => {
     const seen: string[] = [];
     const result = (await invokeBrowserRead(
@@ -725,6 +947,24 @@ function fakeGitHub(
   }),
 ): GitHubReadOptions {
   return { request };
+}
+
+function fakeGitHubWrite(
+  request: NonNullable<GitHubWriteOptions["request"]> = async () => ({
+    status: 201,
+    ok: true,
+    content_type: "application/json",
+    body: "{}",
+    truncated: false,
+    rate_limit_remaining: "60",
+    request_id: "REQ",
+  }),
+  env: Record<string, string | undefined> = {
+    GITHUB_TOKEN: "ghp_dummy",
+    BLUE_TANUKI_GITHUB_REPOS: "gatchimuchio/blue-tanuki",
+  },
+): GitHubWriteOptions {
+  return { request, env };
 }
 
 function nextRedirectHost(hostname: string): string {

@@ -51,10 +51,15 @@ const BUILTIN_TOOL_PERMISSIONS = [
   "tool:http.fetch",
   "tool:web.search",
   "tool:github.read",
+  "tool:github.write",
   "tool:browser.read",
   "tool:shell.exec",
   "network:http",
   "network:github.com",
+  "secrets:GITHUB_TOKEN",
+  "github:issue.write",
+  "github:pr.write",
+  "github:comment.write",
   "shell:exec",
 ] as const;
 

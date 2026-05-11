@@ -49,6 +49,17 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     allowed_capabilities: ["tool:github.read", "network:github.com"],
     timeout_ms: 15_000,
   },
+  "github.write": {
+    allowed_capabilities: [
+      "tool:github.write",
+      "network:github.com",
+      "secrets:GITHUB_TOKEN",
+      "github:issue.write",
+      "github:pr.write",
+      "github:comment.write",
+    ],
+    timeout_ms: 15_000,
+  },
   "browser.read": {
     allowed_capabilities: ["tool:browser.read", "network:http"],
     timeout_ms: 15_000,
@@ -85,6 +96,7 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  *   - tool:http.fetch url=https://example.com method=HEAD
  *   - tool:web.search query="blue tanuki" max_results=5
  *   - tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
+ *   - tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki title="hello" body="world"
  *   - tool:browser.read url=https://example.com max_chars=4000
  *   - tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
  *   - tool:schedule.list
@@ -237,6 +249,7 @@ function coerceToolArgs(
     toolName === "http.fetch" ||
     toolName === "web.search" ||
     toolName === "github.read" ||
+    toolName === "github.write" ||
     toolName === "browser.read" ||
     toolName === "file.write" ||
     toolName === "file.edit" ||
@@ -252,7 +265,7 @@ function coerceToolArgs(
   if (toolName === "browser.read") {
     coercePositiveInt(next, "max_chars");
   }
-  if (toolName === "github.read") {
+  if (toolName === "github.read" || toolName === "github.write") {
     coercePositiveInt(next, "number");
   }
   if (toolName === "file.edit") {

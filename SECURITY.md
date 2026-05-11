@@ -73,7 +73,7 @@ The Runtime Invariants endpoint exposes the current values for the core containm
 |---|---|---|---|---|
 | L1 | observe gate | read-only/no-op/ordinary `llm.call` operations | auto-allow when policy permits; audit still records evaluation | `approvalLevelFromContext()` maps low-risk non-final-review operations to `L1_observe`. |
 | L2 | operate gate | ordinary state-changing operations outside final-review | reusable grants may apply | medium-risk non-final-review operations map to `L2_operate`; `ApprovalGrantStore` can match operation/scope/risk/actor/capability. |
-| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
+| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete / GitHub write | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
 
 Operationally, HDS-BRAIN may ASSERT a command, but the executor must not run it until Approval Gate evaluation has completed. The Approval Gate result, `approval_level`, authority trace, and downstream lifecycle events are recorded into the same hash-chain audit log before executor feedback closes the loop.
 
@@ -90,8 +90,23 @@ These always require review regardless of full-access default:
 - schedule create
 - schedule update
 - schedule delete
+- GitHub issue/PR/comment write
 
 `payment.charge` is a defensive placeholder. v0.1 has no payment feature, but any future payment-class operation is L3 from the moment it is introduced.
+
+## GitHub write boundary
+
+`github.write` is a downstream external write tool. It is never authority and GitHub metadata cannot escalate authority.
+
+Rules:
+
+- `github.read` remains read-only and non-authority.
+- `github.write` requires `GITHUB_TOKEN`.
+- `github.write` requires `BLUE_TANUKI_GITHUB_REPOS`; non-allowlisted repositories fail before a mutation is sent.
+- `github.write` is `github.write` operation in Approval Gate and maps to `L3_final_review`.
+- Full access and reusable approval grants do not bypass `github.write`.
+- Result output is bounded to safe ids/URLs plus `result_digest`; token values are never returned.
+- Executor feedback records the result digest in the hash-chain audit.
 
 ## Runtime schedule boundary
 

@@ -238,6 +238,7 @@ Built-in tool capabilities:
 | `http.fetch`  | `tool:http.fetch`, `network:http`     |
 | `web.search` | `tool:web.search`, `network:http`     |
 | `github.read` | `tool:github.read`, `network:github.com` |
+| `github.write` | `tool:github.write`, `network:github.com`, `secrets:GITHUB_TOKEN`, `github:issue.write`, `github:pr.write`, `github:comment.write` |
 | `browser.read` | `tool:browser.read`, `network:http` |
 | `shell.exec` | `tool:shell.exec`, `shell:exec` |
 
@@ -258,10 +259,13 @@ re-checked with `fs.realpath`; paths outside the sandbox and symlink escapes are
 rejected. Secret-like paths such as `.env`, `.git`, `.ssh`, private key
 filenames, and key/certificate files are not read or written.
 
-`github.read` is read-only and unauthenticated in v0.1. It is fixed to
+`github.read` is read-only and unauthenticated. It is fixed to
 `api.github.com` and supports public repo, issue, and pull request metadata.
-Authenticated private-repo access and write operations are separate future
-tools because they require credential and final-review policy work.
+
+`github.write` is authenticated, fixed to `api.github.com`, restricted by
+`BLUE_TANUKI_GITHUB_REPOS`, and always L3 final-review. It supports initial
+issue/PR/comment write operations only. Token values are never returned in tool
+output.
 
 `browser.read` is a lightweight no-JavaScript page reader. It is not the future
 headless Chromium automation backend; it fetches public pages through
@@ -291,6 +295,7 @@ tool:file.edit path=notes/today.md search=hello replace=hi expected_replacements
 tool:http.fetch url=https://example.com method=HEAD
 tool:web.search query="blue tanuki" max_results=5
 tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
+tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki title="Bug report" body="details"
 tool:browser.read url=https://example.com max_chars=4000
 tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
 /tool echo text="hello"

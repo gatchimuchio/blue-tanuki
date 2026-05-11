@@ -99,6 +99,17 @@ schedule.lifecycle.fired
 
 Schedule audit records include safe metadata such as `schedule_id`, `origin`, `operation`, `actor`, `approval_level`, `risk`, `payload_hash`, `previous_payload_hash`, `command_id`, and `request_id`. Schedule `content` is not exposed in runtime snapshots or schedule list output.
 
+## GitHub write audit
+
+`github.write` is audited through the normal Approval Gate and executor feedback chain:
+
+- HDS decision log records the inbound request and ASSERT.
+- `approval_gate` / `authority_event` records `operation=github.write`, `approval_level=L3_final_review`, risk, actor, and authority trace.
+- `command_lifecycle` records pending/approved/rejected transitions.
+- `executor_feedback` records status, error if any, metrics, and a digest of the bounded result object.
+
+The tool result includes `result_digest`, GitHub request metadata, and safe issue/PR/comment ids or URLs. `GITHUB_TOKEN` is never written to audit output or tool result output.
+
 ## What is not treated as authority
 
 - LLM output

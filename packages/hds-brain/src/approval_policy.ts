@@ -27,6 +27,7 @@ export type ApprovalOperation =
   | "schedule.create"
   | "schedule.update"
   | "schedule.delete"
+  | "github.write"
   | "payment.charge"
   | "unknown";
 export type ApprovalScopeKind = "command" | "file" | "folder" | "repo" | "channel" | "task_type" | "global";
@@ -118,6 +119,7 @@ export const FINAL_REVIEW_OPERATIONS = new Set<ApprovalOperation>([
   "schedule.create",
   "schedule.update",
   "schedule.delete",
+  "github.write",
   "payment.charge",
 ]);
 
@@ -152,6 +154,7 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
   if (hasAny(caps, ["schedule:create", "automation:create"])) return "schedule.create";
   if (hasAny(caps, ["schedule:update", "automation:update"])) return "schedule.update";
   if (hasAny(caps, ["schedule:delete", "automation:delete"])) return "schedule.delete";
+  if (hasAny(caps, ["tool:github.write"]) || hasPrefix(caps, "github:")) return "github.write";
   if (hasAny(caps, ["settings:write"])) return "settings.write";
   if (hasAny(caps, ["shell:exec", "process:exec"])) return "tool.shell.exec";
   if (hasAny(caps, ["fs:delete", "file:delete"])) return "tool.file.delete";
@@ -178,7 +181,7 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
 
 export function riskForOperation(op: ApprovalOperation, caps: readonly ToolCapability[] = []): ApprovalRisk {
   if (["credential.access", "payment.charge"].includes(op)) return "high";
-  if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create", "schedule.update", "schedule.delete"].includes(op)) return "high";
+  if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create", "schedule.update", "schedule.delete", "github.write"].includes(op)) return "high";
   if (
     ["tool.file.write", "tool.network.http", "channel.send"].includes(op) ||
     hasPrefix(caps, "network:")
@@ -312,6 +315,14 @@ function scopeFromCommand(command: ExecuteCommand, op: ApprovalOperation): Pick<
   if (command.type === "channel_send") return { target_scope: "channel", channel: command.payload.channel, target: `${command.payload.channel}:${command.payload.target}` };
   if (command.type === "tool_call") {
     const args = command.payload.arguments;
+    if (op === "github.write") {
+      const ownerValue = typeof args.owner === "string" ? args.owner : undefined;
+      const repoValue = typeof args.repo === "string" ? args.repo : undefined;
+      return {
+        target_scope: "repo",
+        target: ownerValue && repoValue ? `${ownerValue}/${repoValue}` : command.payload.tool_name,
+      };
+    }
     const pathValue = typeof args.path === "string" ? args.path : undefined;
     const rootValue = typeof args.root === "string" ? args.root : undefined;
     const queryValue = typeof args.query === "string" ? args.query : undefined;

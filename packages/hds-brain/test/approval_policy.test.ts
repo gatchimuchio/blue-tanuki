@@ -248,6 +248,47 @@ describe("approval policy", () => {
     expect(r.context.risk).toBe("medium");
     expect(r.final_review_required).toBe(false);
   });
+
+  it("forces github.write through L3 final-review even in full-access mode", () => {
+    const cmd = toolCommand(
+      "github.write",
+      { operation: "issue.create", owner: "gatchimuchio", repo: "blue-tanuki", title: "hi" },
+      [
+        "tool:github.write",
+        "network:github.com",
+        "secrets:GITHUB_TOKEN",
+        "github:issue.write",
+        "github:pr.write",
+        "github:comment.write",
+      ],
+    );
+    const grant = buildApprovalGrant({
+      mode: "remember_this_decision",
+      decision: "allow",
+      operation: "github.write",
+      target_scope: "repo",
+      target: "gatchimuchio/blue-tanuki",
+      risk: "high",
+      actor: "alice",
+      created_by: "alice",
+      expires_at: null,
+    });
+    const r = evaluateApproval(cmd, [grant], {
+      actor: "alice",
+      now: 1,
+      default_mode: "full_access",
+    });
+
+    expect(FINAL_REVIEW_OPERATIONS.has("github.write")).toBe(true);
+    expect(r.context.operation).toBe("github.write");
+    expect(r.context.target_scope).toBe("repo");
+    expect(r.context.target).toBe("gatchimuchio/blue-tanuki");
+    expect(r.context.risk).toBe("high");
+    expect(r.approval_level).toBe("L3_final_review");
+    expect(r.final_review_required).toBe(true);
+    expect(r.decision).toBe("ask");
+    expect(r.reason).toContain("grant_matched_but_final_review_required");
+  });
 });
 
 

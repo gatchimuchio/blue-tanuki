@@ -86,7 +86,10 @@ Declaration of expected runtime side effects. The format is `<scope>:<target>`. 
 | `fs:write:<rel_path>`    | Writes (read-modify-write or rename) under `<rel_path>`.    |
 | `tool:<name>`            | Executor tool capability used by `allowed_capabilities`.    |
 | `network:http`           | Generic HTTP client capability for gated tools.             |
-| `network:github.com`     | GitHub API read capability fixed to `api.github.com`.       |
+| `network:github.com`     | GitHub API capability fixed to `api.github.com`.            |
+| `github:issue.write`     | GitHub issue create/update capability.                      |
+| `github:pr.write`        | GitHub pull request create capability.                      |
+| `github:comment.write`   | GitHub issue/PR comment create capability.                  |
 | `shell:exec`             | Runs a bounded non-shell child process after Approval Gate. |
 | `channel:send`           | Sends through an outbound channel.                          |
 

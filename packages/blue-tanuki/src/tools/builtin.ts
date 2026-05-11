@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { lookup as dnsLookup } from "node:dns/promises";
 import { promises as fs } from "node:fs";
 import * as http from "node:http";
@@ -64,6 +65,31 @@ export interface GitHubReadResponse {
 
 export interface GitHubReadOptions {
   request?: (target: GitHubReadTarget) => Promise<GitHubReadResponse>;
+}
+
+export type GitHubWriteMethod = "POST" | "PATCH";
+
+export interface GitHubWriteTarget {
+  method: GitHubWriteMethod;
+  path: string;
+  body: Record<string, unknown>;
+  maxBytes: number;
+  token: string;
+}
+
+export interface GitHubWriteResponse {
+  status: number;
+  ok: boolean;
+  content_type: string | null;
+  body: string;
+  truncated: boolean;
+  rate_limit_remaining: string | null;
+  request_id: string | null;
+}
+
+export interface GitHubWriteOptions {
+  env?: Env;
+  request?: (target: GitHubWriteTarget) => Promise<GitHubWriteResponse>;
 }
 
 export interface BrowserReadOptions extends HttpFetchOptions {}
@@ -575,6 +601,10 @@ function githubResource(args: Record<string, unknown>): string {
   return (stringArg(args, "resource", false) ?? "repo").toLowerCase();
 }
 
+function githubOperation(args: Record<string, unknown>): string {
+  return (stringArg(args, "operation")!).toLowerCase();
+}
+
 function githubState(args: Record<string, unknown>): "open" | "closed" | "all" {
   const state = (stringArg(args, "state", false) ?? "open").toLowerCase();
   if (state !== "open" && state !== "closed" && state !== "all") {
@@ -615,6 +645,182 @@ function githubPath(args: Record<string, unknown>): { resource: string; path: st
     };
   }
   throw new Error("resource must be repo, issue, issues, pr, or prs");
+}
+
+function githubBoolArg(
+  args: Record<string, unknown>,
+  name: string,
+  fallback: boolean,
+): boolean {
+  const value = args[name];
+  if (value === undefined) return fallback;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const lowered = value.toLowerCase();
+    if (lowered === "true") return true;
+    if (lowered === "false") return false;
+  }
+  throw new Error(`${name} must be true or false`);
+}
+
+function githubOptionalBody(args: Record<string, unknown>): string | undefined {
+  return stringArg(args, "body", false);
+}
+
+function githubWriteRoute(args: Record<string, unknown>): {
+  operation: string;
+  method: GitHubWriteMethod;
+  path: string;
+  body: Record<string, unknown>;
+  repo: string;
+} {
+  const owner = githubNameArg(args, "owner");
+  const repoName = githubNameArg(args, "repo");
+  const ownerPath = encodeURIComponent(owner);
+  const repoPath = encodeURIComponent(repoName);
+  const repo = `${owner}/${repoName}`;
+  const operation = githubOperation(args);
+
+  if (operation === "issue.create") {
+    const body: Record<string, unknown> = {
+      title: stringArg(args, "title")!,
+    };
+    const issueBody = githubOptionalBody(args);
+    if (issueBody !== undefined) body.body = issueBody;
+    return {
+      operation,
+      method: "POST",
+      path: `/repos/${ownerPath}/${repoPath}/issues`,
+      body,
+      repo,
+    };
+  }
+
+  if (operation === "issue.comment.create" || operation === "pr.comment.create") {
+    const number = requiredPositiveIntArg(args, "number", 1_000_000);
+    return {
+      operation,
+      method: "POST",
+      path: `/repos/${ownerPath}/${repoPath}/issues/${number}/comments`,
+      body: { body: stringArg(args, "body")! },
+      repo,
+    };
+  }
+
+  if (operation === "issue.update") {
+    const number = requiredPositiveIntArg(args, "number", 1_000_000);
+    const body: Record<string, unknown> = {};
+    const title = stringArg(args, "title", false);
+    const issueBody = githubOptionalBody(args);
+    if (title !== undefined) body.title = title;
+    if (issueBody !== undefined) body.body = issueBody;
+    if (Object.keys(body).length === 0) {
+      throw new Error("issue.update requires title or body; close/reopen is deferred");
+    }
+    return {
+      operation,
+      method: "PATCH",
+      path: `/repos/${ownerPath}/${repoPath}/issues/${number}`,
+      body,
+      repo,
+    };
+  }
+
+  if (operation === "pr.create") {
+    const body: Record<string, unknown> = {
+      title: stringArg(args, "title")!,
+      head: stringArg(args, "head")!,
+      base: stringArg(args, "base")!,
+      draft: githubBoolArg(args, "draft", false),
+    };
+    const prBody = githubOptionalBody(args);
+    if (prBody !== undefined) body.body = prBody;
+    if (args.maintainer_can_modify !== undefined) {
+      body.maintainer_can_modify = githubBoolArg(args, "maintainer_can_modify", true);
+    }
+    return {
+      operation,
+      method: "POST",
+      path: `/repos/${ownerPath}/${repoPath}/pulls`,
+      body,
+      repo,
+    };
+  }
+
+  throw new Error(
+    "operation must be issue.create, issue.comment.create, issue.update, pr.create, or pr.comment.create",
+  );
+}
+
+function githubWriteToken(env: Env): string {
+  const token = env.GITHUB_TOKEN?.trim();
+  if (!token) {
+    throw new Error("GITHUB_TOKEN is required for github.write; mutation_sent=false");
+  }
+  return token;
+}
+
+function githubAllowedRepos(env: Env): Set<string> {
+  const raw = env.BLUE_TANUKI_GITHUB_REPOS?.trim();
+  if (!raw) {
+    throw new Error("BLUE_TANUKI_GITHUB_REPOS is required for github.write; mutation_sent=false");
+  }
+  const repos = raw
+    .split(/[,\s]+/)
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry.length > 0);
+  if (repos.length === 0) {
+    throw new Error("BLUE_TANUKI_GITHUB_REPOS must list at least one owner/repo; mutation_sent=false");
+  }
+  for (const repo of repos) {
+    if (!/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/.test(repo)) {
+      throw new Error(`invalid BLUE_TANUKI_GITHUB_REPOS entry: ${repo}; mutation_sent=false`);
+    }
+  }
+  return new Set(repos);
+}
+
+function assertGitHubRepoAllowed(env: Env, repo: string): void {
+  const allowed = githubAllowedRepos(env);
+  if (!allowed.has(repo.toLowerCase())) {
+    throw new Error(
+      `github.write denied repository ${repo}; mutation_sent=false; next_action=add ${repo} to BLUE_TANUKI_GITHUB_REPOS if intended`,
+    );
+  }
+}
+
+function stableJson(value: unknown): string {
+  const seen = new WeakSet<object>();
+  const normalize = (v: unknown): unknown => {
+    if (v === undefined) return "[undefined]";
+    if (typeof v === "bigint") return v.toString();
+    if (typeof v !== "object" || v === null) return v;
+    if (seen.has(v)) return "[circular]";
+    seen.add(v);
+    if (Array.isArray(v)) return v.map((item) => normalize(item));
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(v as Record<string, unknown>).sort()) {
+      out[key] = normalize((v as Record<string, unknown>)[key]);
+    }
+    return out;
+  };
+  return JSON.stringify(normalize(value));
+}
+
+function sha256Hex(value: unknown): string {
+  return createHash("sha256").update(stableJson(value)).digest("hex");
+}
+
+function githubResultSummary(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return { value_type: typeof value };
+  }
+  const record = value as Record<string, unknown>;
+  const summary: Record<string, unknown> = {};
+  for (const key of ["id", "node_id", "number", "state", "title", "html_url", "url"] as const) {
+    if (record[key] !== undefined) summary[key] = record[key];
+  }
+  return summary;
 }
 
 function parseJsonOrText(body: string): unknown {
@@ -881,6 +1087,97 @@ async function defaultGitHubReadRequest(
   });
 }
 
+async function defaultGitHubWriteRequest(
+  target: GitHubWriteTarget,
+): Promise<GitHubWriteResponse> {
+  return await new Promise((resolve, reject) => {
+    const requestBody = Buffer.from(JSON.stringify(target.body), "utf8");
+    let finished = false;
+    const finish = (result: GitHubWriteResponse): void => {
+      if (finished) return;
+      finished = true;
+      resolve(result);
+    };
+    const fail = (error: Error): void => {
+      if (finished) return;
+      finished = true;
+      reject(error);
+    };
+    const req = https.request(
+      {
+        protocol: "https:",
+        hostname: "api.github.com",
+        path: target.path,
+        method: target.method,
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${target.token}`,
+          "Content-Type": "application/json",
+          "Content-Length": String(requestBody.length),
+          "User-Agent": "BLUE-TANUKI/0.1 github.write",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        timeout: HTTP_FETCH_TIMEOUT_MS,
+      },
+      (res) => {
+        const status = res.statusCode ?? 0;
+        const contentType = headerString(res.headers["content-type"]);
+        const rateLimitRemaining = headerString(res.headers["x-ratelimit-remaining"]);
+        const requestId = headerString(res.headers["x-github-request-id"]);
+        const chunks: Buffer[] = [];
+        let seenBytes = 0;
+        let keptBytes = 0;
+        let truncated = false;
+        res.on("data", (chunk: Buffer | string) => {
+          if (finished) return;
+          const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          seenBytes += buf.length;
+          if (keptBytes < target.maxBytes) {
+            const keep = buf.subarray(0, target.maxBytes - keptBytes);
+            chunks.push(keep);
+            keptBytes += keep.length;
+          }
+          if (seenBytes >= target.maxBytes) {
+            truncated = true;
+            res.destroy();
+            finish({
+              status,
+              ok: status >= 200 && status < 300,
+              content_type: contentType,
+              body: Buffer.concat(chunks).toString("utf8"),
+              truncated,
+              rate_limit_remaining: rateLimitRemaining,
+              request_id: requestId,
+            });
+          }
+        });
+        res.on("end", () => {
+          finish({
+            status,
+            ok: status >= 200 && status < 300,
+            content_type: contentType,
+            body: Buffer.concat(chunks).toString("utf8"),
+            truncated,
+            rate_limit_remaining: rateLimitRemaining,
+            request_id: requestId,
+          });
+        });
+        res.on("error", (error) => {
+          if (!finished) fail(error);
+        });
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy(new Error(`github.write timed out after ${HTTP_FETCH_TIMEOUT_MS}ms; mutation_status=not_confirmed`));
+    });
+    req.on("error", (error) => {
+      if (!finished) fail(error);
+    });
+    req.write(requestBody);
+    req.end();
+  });
+}
+
 function isRedirect(status: number): boolean {
   return status === 301 || status === 302 || status === 303 ||
     status === 307 || status === 308;
@@ -982,6 +1279,48 @@ export async function invokeGitHubRead(
     truncated: response.truncated,
     rate_limit_remaining: response.rate_limit_remaining,
     data: parseJsonOrText(response.body),
+  };
+}
+
+export async function invokeGitHubWrite(
+  args: Record<string, unknown>,
+  opts: GitHubWriteOptions = {},
+): Promise<unknown> {
+  const maxBytes = positiveIntArg(args, "max_bytes", 128_000, 512_000);
+  const env = opts.env ?? process.env;
+  const route = githubWriteRoute(args);
+  assertGitHubRepoAllowed(env, route.repo);
+  const token = githubWriteToken(env);
+  const request = opts.request ?? defaultGitHubWriteRequest;
+  const response = await request({
+    method: route.method,
+    path: route.path,
+    body: route.body,
+    maxBytes,
+    token,
+  });
+  const data = parseJsonOrText(response.body);
+  if (!response.ok) {
+    const message = typeof data === "object" && data !== null && !Array.isArray(data)
+      ? optionalString((data as Record<string, unknown>).message)
+      : null;
+    throw new Error(
+      `github.write returned HTTP ${response.status}; mutation_status=not_confirmed; next_action=check GitHub/audit before retrying${message ? `; message=${message}` : ""}`,
+    );
+  }
+  return {
+    operation: route.operation,
+    api_host: "api.github.com",
+    repo: route.repo,
+    method: route.method,
+    path: route.path,
+    status: response.status,
+    content_type: response.content_type,
+    truncated: response.truncated,
+    rate_limit_remaining: response.rate_limit_remaining,
+    github_request_id: response.request_id,
+    result_digest: sha256Hex(data),
+    result: githubResultSummary(data),
   };
 }
 
@@ -1290,6 +1629,22 @@ export const githubReadTool: Tool = {
   },
 };
 
+export const githubWriteTool: Tool = {
+  name: "github.write",
+  description: "Create/update GitHub issues, pull requests, and comments on allowlisted repositories.",
+  required_capabilities: [
+    "tool:github.write",
+    "network:github.com",
+    "secrets:GITHUB_TOKEN",
+    "github:issue.write",
+    "github:pr.write",
+    "github:comment.write",
+  ],
+  async invoke(args: Record<string, unknown>): Promise<unknown> {
+    return await invokeGitHubWrite(args);
+  },
+};
+
 export const browserReadTool: Tool = {
   name: "browser.read",
   description: "Fetch a public web page through the SSRF guard and extract bounded readable text.",
@@ -1318,6 +1673,7 @@ export function registerBuiltinTools(registry: {
   registry.register(httpFetchTool);
   registry.register(webSearchTool);
   registry.register(githubReadTool);
+  registry.register(githubWriteTool);
   registry.register(browserReadTool);
   registry.register(shellExecTool);
 }

@@ -22,7 +22,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Slack / Discord adapters with silent fallback when credentials are absent
 - Daily Brief and generic scheduled-message smoke via internal cron
 - Optional token-gated HTTP webhook ingress at `/webhook`
-- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `browser.read`, and `shell.exec` with sandbox / network / approval guards
+- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `browser.read`, and `shell.exec` with sandbox / network / approval guards
 
 ## v0.1 explicit boundaries
 
@@ -177,15 +177,30 @@ export BLUE_TANUKI_WEB_SEARCH_ENDPOINT="https://search.example.com/search?q={que
 
 `web.search` is provider-neutral and disabled until an endpoint is configured. Requests go through the same public-address and allowlist checks as `http.fetch`.
 
-## GitHub read tool
+## GitHub tools
 
-`github.read` is read-only and unauthenticated in v0.1. It talks only to `api.github.com`; private repository access and write operations are deferred.
+`github.read` is read-only and unauthenticated. `github.write` is authenticated, restricted to `api.github.com`, restricted to allowlisted repositories, and always L3 final-review. Full access and remembered grants do not bypass owner confirmation.
 
 ```text
 tool:github.read resource=repo owner=gatchimuchio repo=blue-tanuki
 tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki state=open max_results=5
 tool:github.read resource=pr owner=gatchimuchio repo=blue-tanuki number=1
 ```
+
+```bash
+export GITHUB_TOKEN="github-token-with-issue-pr-scope"
+export BLUE_TANUKI_GITHUB_REPOS="gatchimuchio/blue-tanuki"
+```
+
+```text
+tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki title="Bug report" body="details"
+tool:github.write operation=issue.comment.create owner=gatchimuchio repo=blue-tanuki number=1 body="follow-up"
+tool:github.write operation=issue.update owner=gatchimuchio repo=blue-tanuki number=1 title="Updated title"
+tool:github.write operation=pr.create owner=gatchimuchio repo=blue-tanuki title="Change" head=feature base=main draft=true
+tool:github.write operation=pr.comment.create owner=gatchimuchio repo=blue-tanuki number=1 body="review note"
+```
+
+`github.write` output returns safe GitHub ids/URLs and a `result_digest`; it never prints the token.
 
 ## Browser read tool
 
@@ -267,6 +282,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 
 - [docs/ROADMAP.md](./docs/ROADMAP.md) - internal roadmap v9 and Sacred Constraints
 - [docs/OPENCLAW_REJECTION_AUDIT.md](./docs/OPENCLAW_REJECTION_AUDIT.md) - internal OpenClaw rejection criteria
+- [docs/phase8-s4-github-write.md](./docs/phase8-s4-github-write.md) - GitHub write safety boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

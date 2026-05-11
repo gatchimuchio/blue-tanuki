@@ -30,7 +30,8 @@ import { cronSchedulesFromEnv } from "./cron_channel.js";
  *     (length-only; never log values)
  *   - Optional env: WEBHOOK_TOKEN separation when /webhook is enabled
  *   - Optional env: SLACK_BOT_TOKEN, SLACK_APP_TOKEN, DISCORD_BOT_TOKEN,
- *                   ANTHROPIC_API_KEY (presence only)
+ *                   ANTHROPIC_API_KEY, GITHUB_TOKEN,
+ *                   BLUE_TANUKI_GITHUB_REPOS (presence only)
  *   - WEBCHAT_PORT is bindable (probe by binding then closing)
  *   - BLUE_TANUKI_SESSION_DIR (if set) is writable / can be created
  *   - BLUE_TANUKI_AUDIT_DIR   (if set) is writable / can be created
@@ -956,13 +957,15 @@ function remediationFor(check: CheckDraft): Remediation {
     check.id === "env:SLACK_BOT_TOKEN" ||
     check.id === "env:SLACK_APP_TOKEN" ||
     check.id === "env:DISCORD_BOT_TOKEN" ||
-    check.id === "env:ANTHROPIC_API_KEY"
+    check.id === "env:ANTHROPIC_API_KEY" ||
+    check.id === "env:GITHUB_TOKEN" ||
+    check.id === "env:BLUE_TANUKI_GITHUB_REPOS"
   ) {
     const name = check.id.slice("env:".length);
     return {
       cause: `${name} is optional and currently ${check.detail}.`,
-      impact: "The related preview channel or live smoke path may be skipped; WebChat and HDS authority remain usable.",
-      next_action: `Leave ${name} unset if unused, or set it and rerun pnpm smoke:live.`,
+      impact: "The related preview channel, live smoke path, or external write tool may be skipped; WebChat and HDS authority remain usable.",
+      next_action: `Leave ${name} unset if unused, or set it and rerun the relevant smoke/doctor command.`,
       doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
       safe_to_ignore: true,
     };
@@ -1079,6 +1082,8 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   draftChecks.push(checkOptionalEnv(env, "SLACK_APP_TOKEN"));
   draftChecks.push(checkOptionalEnv(env, "DISCORD_BOT_TOKEN"));
   draftChecks.push(checkOptionalEnv(env, "ANTHROPIC_API_KEY"));
+  draftChecks.push(checkOptionalEnv(env, "GITHUB_TOKEN"));
+  draftChecks.push(checkOptionalEnv(env, "BLUE_TANUKI_GITHUB_REPOS"));
   draftChecks.push(checkLlmBackend(env));
   draftChecks.push(checkLlmCommandRoute(env));
   draftChecks.push(checkCronSchedules(env));

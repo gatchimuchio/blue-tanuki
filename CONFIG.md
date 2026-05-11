@@ -140,7 +140,7 @@ BLUE_TANUKI_HTTP_ALLOWLIST=search.example.com
 `{query}` and `{max_results}` placeholders, or BLUE-TANUKI will append `q` and
 `count` query parameters. Requests inherit `http.fetch` SSRF protections.
 
-## GitHub read tool
+## GitHub tools
 
 `github.read` is read-only, unauthenticated, and fixed to `api.github.com` in
 v0.1. It supports public repo metadata, issue metadata, issue lists, pull
@@ -150,6 +150,26 @@ request metadata, and pull request lists.
 tool:github.read resource=repo owner=gatchimuchio repo=blue-tanuki
 tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki state=open max_results=5
 tool:github.read resource=pr owner=gatchimuchio repo=blue-tanuki number=1
+```
+
+`github.write` is authenticated, downstream-only, fixed to `api.github.com`,
+restricted to allowlisted repositories, and always L3 final-review.
+
+```bash
+GITHUB_TOKEN=github-token-with-issue-pr-scope
+BLUE_TANUKI_GITHUB_REPOS=gatchimuchio/blue-tanuki
+```
+
+`BLUE_TANUKI_GITHUB_REPOS` is a comma/space separated list of `owner/repo`
+entries. If either `GITHUB_TOKEN` or the allowlist is missing, `github.write`
+fails before sending a mutation.
+
+```text
+tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki title="Bug report" body="details"
+tool:github.write operation=issue.comment.create owner=gatchimuchio repo=blue-tanuki number=1 body="follow-up"
+tool:github.write operation=issue.update owner=gatchimuchio repo=blue-tanuki number=1 title="Updated title"
+tool:github.write operation=pr.create owner=gatchimuchio repo=blue-tanuki title="Change" head=feature base=main draft=true
+tool:github.write operation=pr.comment.create owner=gatchimuchio repo=blue-tanuki number=1 body="review note"
 ```
 
 ## Browser read tool
