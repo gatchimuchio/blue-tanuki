@@ -145,7 +145,6 @@ Goal:
 
 Remaining primary work:
 
-- OpenClaw rejection audit document (Phase 8-S3)
 - v0.1 live smoke cleanup
 - docs consistency
 
@@ -256,10 +255,10 @@ Completed or mostly completed:
 - HDS long-term memory addendum as non-authority memory component
 - ApprovalLevel first-class
 - runtime schedule CRUD
+- OpenClaw rejection audit document
 
 Known gaps:
 
-- operator usability closure is not complete
 - GitHub write is not implemented
 - Slack / Discord are preview-level
 - browser automation is not implemented
@@ -279,8 +278,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | completed |
 | 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | completed |
 | 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | completed |
-| 8-S3 | B | OpenClaw Rejection Audit document | P0 | current |
-| 8-S4 | C | GitHub write tool | P1 | 8-S1 |
+| 8-S3 | B | OpenClaw Rejection Audit document | P0 | completed |
+| 8-S4 | C | GitHub write tool | P1 | current |
 | 8-S5 | C | Slack / Discord release polish + live smoke | P1 | 8-S2b |
 | 8-S6 | C | Browser automation preview | P2 | 8-S1 |
 | 9-S1 | D | F-reference audit integration | P1 | 8-S2b |
@@ -1649,7 +1648,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 8-S3 — OpenClaw Rejection Audit Document
+Phase 8-S4 — GitHub Write Tool
 ```
 
-Do not begin GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or post-8-S3 implementation lanes before Phase 8-S3 is completed unless explicitly instructed.
+Do not begin Slack/Discord polish, browser automation, onboarding/daemon work, Google integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 8-S4 is completed unless explicitly instructed.

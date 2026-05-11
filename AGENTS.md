@@ -45,6 +45,8 @@ Do not optimize a local task in a way that makes a later completion phase harder
 
 OpenClaw is a **rejected design pattern**, not a neutral reference.
 
+Canonical internal audit artifact: `docs/OPENCLAW_REJECTION_AUDIT.md`.
+
 BLUE-TANUKI rejects OpenClaw's strategy of:
 
 - feature breadth over safety,
@@ -630,6 +632,7 @@ Important active files (currently existing):
 ```txt
 AGENTS.md
 docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/OPENCLAW_REJECTION_AUDIT.md
 README.md
 QUICKSTART.md
 SECURITY.md

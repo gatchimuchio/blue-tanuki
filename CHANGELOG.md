@@ -11,6 +11,7 @@
 - Advanced active implementation docs to Phase 8-S2a after Phase 8-S1 completion.
 - Added Phase 8-S2a operator-usability docs: first-run checklist, permanent-use checklist, channel readiness matrix, credential readiness matrix, update/rollback runbook, and docs static checker.
 - Added Phase 8-S2b: actionable doctor remediation fields and safe runtime first-run status fields.
+- Added Phase 8-S3: internal OpenClaw rejection audit document and advanced the active execution lane to GitHub write.
 
 ## 0.1.0 - 2026-05-06
 

@@ -265,7 +265,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 
 ## Documents
 
-- [docs/ROADMAP.md](./docs/ROADMAP.md) - internal roadmap v6 and Sacred Constraints
+- [docs/ROADMAP.md](./docs/ROADMAP.md) - internal roadmap v9 and Sacred Constraints
+- [docs/OPENCLAW_REJECTION_AUDIT.md](./docs/OPENCLAW_REJECTION_AUDIT.md) - internal OpenClaw rejection criteria
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

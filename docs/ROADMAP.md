@@ -47,7 +47,6 @@ Goal:
 
 Remaining primary work:
 
-- OpenClaw rejection audit document (Phase 8-S3)
 - v0.1 live smoke cleanup
 - docs consistency
 
@@ -103,8 +102,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 8-S1 | B | ApprovalLevel first-class + runtime schedule CRUD | P0 | completed |
 | 8-S2a | B | Operator Usability Docs (First-Run + Permanent-Use + Matrices + Runbook) | P0 | completed |
 | 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | completed |
-| 8-S3 | B | OpenClaw Rejection Audit document | P0 | current |
-| 8-S4 | C | GitHub write tool | P1 | 8-S1 |
+| 8-S3 | B | OpenClaw Rejection Audit document | P0 | completed |
+| 8-S4 | C | GitHub write tool | P1 | current |
 | 8-S5 | C | Slack / Discord release polish + live smoke | P1 | 8-S2b |
 | 8-S6 | C | Browser automation preview | P2 | 8-S1 |
 | 9-S1 | D | F-reference audit integration | P1 | 8-S2b |
@@ -120,10 +119,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 8-S3 - OpenClaw Rejection Audit document
+Phase 8-S4 - GitHub write tool
 ```
 
-Do not begin GitHub write, Slack/Discord polish, browser automation, onboarding/daemon work, or post-8-S3 implementation lanes before Phase 8-S3 is completed unless explicitly instructed.
+Do not begin Slack/Discord polish, browser automation, onboarding/daemon work, Google integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 8-S4 is completed unless explicitly instructed.
 
 ## 4. Completed Phase Summaries
 
@@ -153,6 +152,13 @@ Do not begin GitHub write, Slack/Discord polish, browser automation, onboarding/
 - Runtime status helper and tests
 - WebChat runtime snapshot auth / no-secret regression
 
+### Phase 8-S3
+
+- Internal OpenClaw rejection audit document
+- Engineering rejection criteria for feature breadth, channel count, unsafe plugin surfaces, and first-run-only claims
+- WhatsApp first-party exclusion recorded as deliberate safety and liability boundary
+- Active execution lane advanced to Phase 8-S4 GitHub write
+
 ## 5. Non-Goals
 
 Do not add:
@@ -172,6 +178,7 @@ Do not add:
 ## 6. Reference Docs
 
 - [Active Implementation Instructions](IMPLEMENTATION_INSTRUCTIONS.md)
+- [OpenClaw Rejection Audit](OPENCLAW_REJECTION_AUDIT.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)
 - [Channel Readiness Matrix](CHANNEL_READINESS_MATRIX.md)
