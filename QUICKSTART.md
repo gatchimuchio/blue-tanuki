@@ -59,7 +59,7 @@ Telegram inbound uses Bot API long polling. Outbound target is `chat_id`.
 
 ## 5. Daily Brief smoke
 
-v0.1 の Daily Brief は Gmail/GCal/Drive を読まない。これは scheduled `channel_send` smoke である。
+Daily Brief is a scheduled `channel_send` smoke by default. Gmail/GCal/Drive can be enabled as an optional read-only source after the basic smoke works.
 
 ```bash
 export BLUE_TANUKI_DAILY_BRIEF_ENABLED=1
@@ -74,6 +74,14 @@ Test interval:
 
 ```bash
 export BLUE_TANUKI_DAILY_BRIEF_INTERVAL_MS=60000
+```
+
+Optional read-only Google source:
+
+```bash
+export BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED=1
+export BLUE_TANUKI_DAILY_BRIEF_GOOGLE_SERVICES="gmail,calendar,drive"
+export GOOGLE_ACCESS_TOKEN="<read-only-google-oauth-token>"
 ```
 
 ## 6. Boot-time scheduled-message smoke

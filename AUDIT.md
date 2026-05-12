@@ -110,6 +110,17 @@ Schedule audit records include safe metadata such as `schedule_id`, `origin`, `o
 
 The tool result includes `result_digest`, GitHub request metadata, and safe issue/PR/comment ids or URLs. `GITHUB_TOKEN` is never written to audit output or tool result output.
 
+## Google read audit
+
+`gmail.read`, `google.calendar.read`, and `google.drive.read` are audited through the normal Approval Gate and executor feedback chain:
+
+- Approval records credential-access context when OAuth token capabilities are present.
+- Tool results include bounded summaries/metadata and `result_digest`.
+- Executor feedback records status, error if any, metrics, and a digest of the bounded result object.
+- Daily Brief Google source records the dynamic cron `payload_hash` and `blue_tanuki.cron.content_source=google_read`.
+
+OAuth access tokens are never written to audit output, runtime snapshots, schedule snapshots, or tool result output.
+
 ## Channel delivery audit compatibility
 
 Slack / Discord delivery failures are returned to executor feedback as typed downstream results:

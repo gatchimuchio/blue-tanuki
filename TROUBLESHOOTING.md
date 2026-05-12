@@ -88,7 +88,7 @@ Check:
 - runtime snapshot shows audit chain valid
 - for test, set `BLUE_TANUKI_DAILY_BRIEF_INTERVAL_MS=60000`
 
-v0.1 Daily Brief is scheduled-message smoke, not Gmail/GCal/Drive integration.
+Daily Brief is scheduled-message smoke by default. If the optional Google source is enabled, also check `BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED`, the selected Google services, and read-only Google OAuth token envs.
 
 ## Telegram does not respond
 

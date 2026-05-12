@@ -160,6 +160,10 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
   if (hasAny(caps, ["tool:github.write"]) || hasPrefix(caps, "github:")) return "github.write";
   if (hasAny(caps, ["browser:act", "tool:browser.automation"])) return "browser.automation";
   if (hasAny(caps, ["browser:snapshot", "tool:browser.snapshot"])) return "browser.snapshot";
+  if (
+    hasPrefix(caps, "secrets:") ||
+    hasPrefix(caps, "google:")
+  ) return "credential.access";
   if (hasAny(caps, ["settings:write"])) return "settings.write";
   if (hasAny(caps, ["shell:exec", "process:exec"])) return "tool.shell.exec";
   if (hasAny(caps, ["fs:delete", "file:delete"])) return "tool.file.delete";

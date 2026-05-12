@@ -7,6 +7,28 @@ import * as https from "node:https";
 import { BlockList, isIP, type LookupFunction } from "node:net";
 import * as path from "node:path";
 import { echoTool, type Tool } from "./registry.js";
+import {
+  gmailReadTool,
+  googleCalendarReadTool,
+  googleDriveReadTool,
+} from "./google_read.js";
+export {
+  buildGoogleDailyBriefContent,
+  gmailReadTool,
+  googleCalendarReadTool,
+  googleDriveReadTool,
+  invokeGmailRead,
+  invokeGoogleCalendarRead,
+  invokeGoogleDriveRead,
+  type GmailReadMessage,
+  type GoogleCalendarEvent,
+  type GoogleDailyBriefOptions,
+  type GoogleDriveFile,
+  type GoogleReadOptions,
+  type GoogleReadResponse,
+  type GoogleReadService,
+  type GoogleReadTarget,
+} from "./google_read.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -2018,6 +2040,9 @@ export function registerBuiltinTools(registry: {
   registry.register(webSearchTool);
   registry.register(githubReadTool);
   registry.register(githubWriteTool);
+  registry.register(gmailReadTool);
+  registry.register(googleCalendarReadTool);
+  registry.register(googleDriveReadTool);
   registry.register(browserReadTool);
   registry.register(browserSnapshotTool);
   registry.register(browserAutomationTool);

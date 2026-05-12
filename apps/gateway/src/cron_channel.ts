@@ -22,6 +22,7 @@ export interface CronSchedulerOptions {
   log?: (line: string) => void;
   now?: () => Date;
   onFire?: (task: CronTaskSnapshot) => void;
+  content_provider?: CronContentProvider;
 }
 
 export interface DailyBriefCronOptions {
@@ -53,6 +54,26 @@ export interface CronTaskSnapshot {
 }
 
 export type DailyBriefCronSnapshot = CronTaskSnapshot;
+
+export interface CronContentProviderTask {
+  id: string;
+  name: "daily_brief" | "scheduled_message";
+  origin: "boot" | "runtime";
+  channel: string;
+  target: string;
+  content: string;
+  time: string;
+  interval_ms?: number;
+}
+
+export interface CronContentProviderResult {
+  content: string;
+  metadata?: Record<string, string>;
+}
+
+export type CronContentProvider = (
+  task: CronContentProviderTask,
+) => Promise<CronContentProviderResult | string | null | undefined>;
 
 interface NormalizedCronTask {
   id: string;
@@ -90,11 +111,13 @@ export class CronSchedulerChannel implements InboundChannel {
   private readonly nowFn?: () => Date;
   private handler: InboundHandler | null = null;
   private readonly onFire?: (task: CronTaskSnapshot) => void;
+  private readonly contentProvider?: CronContentProvider;
 
   constructor(opts: CronSchedulerOptions) {
     this.logLine = opts.log;
     this.nowFn = opts.now;
     this.onFire = opts.onFire;
+    this.contentProvider = opts.content_provider;
     for (const task of normalizeCronTasks(opts.tasks)) {
       this.runtimes.set(task.id, createRuntime(task));
     }
@@ -194,12 +217,15 @@ export class CronSchedulerChannel implements InboundChannel {
   private async fire(runtime: CronTaskRuntime, handler: InboundHandler): Promise<void> {
     const task = runtime.task;
     runtime.lastFireAtMs = this.nowMs();
-    this.onFire?.(this.snapshotForRuntime(runtime));
+    const resolved = await this.resolveContent(task);
+    const resolvedMetadata = resolved.metadata ?? {};
+    const payloadHash = cronPayloadHash({ ...task, content: resolved.content });
+    this.onFire?.(this.snapshotForRuntime(runtime, payloadHash));
     const inbound: InboundRequest = {
       id: randomUUID(),
       channel: "cron",
       user: "blue-tanuki-cron",
-      content: task.content,
+      content: resolved.content,
       timestamp: runtime.lastFireAtMs,
       metadata: {
         "blue_tanuki.authority_context": "gateway_internal_v1",
@@ -208,10 +234,12 @@ export class CronSchedulerChannel implements InboundChannel {
         "blue_tanuki.process_kind": "cron",
         "blue_tanuki.cron.task_id": task.id,
         "blue_tanuki.cron.origin": task.origin,
-        "blue_tanuki.cron.payload_hash": task.payload_hash,
+        "blue_tanuki.cron.payload_hash": payloadHash,
+        "blue_tanuki.cron.content_source": resolvedMetadata["blue_tanuki.cron.content_source"] ?? "static",
         "blue_tanuki.channel_send.channel": task.channel,
         "blue_tanuki.channel_send.target": task.target,
-        "blue_tanuki.channel_send.content": task.content,
+        "blue_tanuki.channel_send.content": resolved.content,
+        ...resolvedMetadata,
       },
     };
     this.log(`[cron] firing task id=${task.id} channel=${task.channel} target=${task.target}`);
@@ -230,6 +258,50 @@ export class CronSchedulerChannel implements InboundChannel {
     return this.now().getTime();
   }
 
+  private async resolveContent(task: NormalizedCronTask): Promise<CronContentProviderResult> {
+    if (!this.contentProvider) {
+      return { content: task.content, metadata: { "blue_tanuki.cron.content_source": "static" } };
+    }
+    try {
+      const resolved = await this.contentProvider({
+        id: task.id,
+        name: task.name,
+        origin: task.origin,
+        channel: task.channel,
+        target: task.target,
+        content: task.content,
+        time: task.time,
+        interval_ms: task.interval_ms,
+      });
+      if (resolved === null || resolved === undefined) {
+        return { content: task.content, metadata: { "blue_tanuki.cron.content_source": "static" } };
+      }
+      if (typeof resolved === "string") {
+        return {
+          content: requireTrimmed(resolved, `cron task ${task.id} resolved content`),
+          metadata: { "blue_tanuki.cron.content_source": "dynamic" },
+        };
+      }
+      return {
+        content: requireTrimmed(resolved.content, `cron task ${task.id} resolved content`),
+        metadata: {
+          "blue_tanuki.cron.content_source": "dynamic",
+          ...(resolved.metadata ?? {}),
+        },
+      };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      this.log(`[cron] content provider failed id=${task.id} reason=${truncateMetadata(message)}`);
+      const label = task.name === "daily_brief" ? "Daily Brief" : "Scheduled message";
+      return {
+        content: `${label}: source unavailable; reason=${truncateMetadata(message)}; mutation_sent=false; safe_to_ignore=false`,
+        metadata: {
+          "blue_tanuki.cron.content_source": "provider_error",
+        },
+      };
+    }
+  }
+
   private stopRuntime(runtime: CronTaskRuntime): void {
     if (runtime.timer) clearTimeout(runtime.timer);
     runtime.timer = null;
@@ -237,7 +309,7 @@ export class CronSchedulerChannel implements InboundChannel {
     runtime.nextFireAtMs = null;
   }
 
-  private snapshotForRuntime(runtime: CronTaskRuntime): CronTaskSnapshot {
+  private snapshotForRuntime(runtime: CronTaskRuntime, payloadHash?: string): CronTaskSnapshot {
     return {
       id: runtime.task.id,
       name: runtime.task.name,
@@ -248,7 +320,7 @@ export class CronSchedulerChannel implements InboundChannel {
       target: runtime.task.target,
       time: runtime.task.time,
       interval_ms: runtime.task.interval_ms,
-      payload_hash: runtime.task.payload_hash,
+      payload_hash: payloadHash ?? runtime.task.payload_hash,
       next_fire_at_ms: runtime.nextFireAtMs,
       last_fire_at_ms: runtime.lastFireAtMs,
     };
@@ -435,6 +507,11 @@ function requireTrimmed(value: string, label: string): string {
   const trimmed = value.trim();
   if (!trimmed) throw new Error(`${label} must be non-empty`);
   return trimmed;
+}
+
+function truncateMetadata(value: string): string {
+  const compact = value.replace(/\s+/g, " ").trim();
+  return compact.length > 180 ? `${compact.slice(0, 177)}...` : compact;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -87,9 +87,13 @@ Declaration of expected runtime side effects. The format is `<scope>:<target>`. 
 | `tool:<name>`            | Executor tool capability used by `allowed_capabilities`.    |
 | `network:http`           | Generic HTTP client capability for gated tools.             |
 | `network:github.com`     | GitHub API capability fixed to `api.github.com`.            |
+| `network:googleapis.com` | Google API capability fixed to Google read hosts.           |
 | `github:issue.write`     | GitHub issue create/update capability.                      |
 | `github:pr.write`        | GitHub pull request create capability.                      |
 | `github:comment.write`   | GitHub issue/PR comment create capability.                  |
+| `google:gmail.read`      | Gmail read-only summary capability.                         |
+| `google:calendar.read`   | Google Calendar read-only summary capability.               |
+| `google:drive.read`      | Google Drive read-only metadata/search capability.          |
 | `shell:exec`             | Runs a bounded non-shell child process after Approval Gate. |
 | `channel:send`           | Sends through an outbound channel.                          |
 

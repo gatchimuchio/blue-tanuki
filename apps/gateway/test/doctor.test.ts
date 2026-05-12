@@ -149,6 +149,26 @@ describe("runDoctor — happy paths", () => {
     );
   });
 
+  it("accepts configured read-only Google Daily Brief source", async () => {
+    const r = await runDoctor({
+      env: {
+        ...baseEnv(),
+        BLUE_TANUKI_DAILY_BRIEF_ENABLED: "1",
+        BLUE_TANUKI_DAILY_BRIEF_TARGET: "local-user",
+        BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED: "1",
+        BLUE_TANUKI_DAILY_BRIEF_GOOGLE_SERVICES: "gmail,calendar,drive",
+        GOOGLE_ACCESS_TOKEN: "google-read-token",
+      },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.ok).toBe(true);
+    expect(r.checks.find((c) => c.id === "google_daily_brief_source")).toMatchObject({
+      level: "ok",
+      detail: "enabled services=gmail,calendar,drive token_status=present read_only=true",
+    });
+  });
+
   it("accepts a custom LLM backend registered by LLM_PROVIDERS_JSON", async () => {
     const r = await runDoctor({
       env: {
@@ -227,6 +247,26 @@ describe("runDoctor — error paths", () => {
     expect(
       r.checks.find((c) => c.id === "env:WEBCHAT_RESUME_TOKEN")?.level,
     ).toBe("error");
+  });
+
+  it("errors when Google Daily Brief source is enabled without read tokens", async () => {
+    const r = await runDoctor({
+      env: {
+        ...baseEnv(),
+        BLUE_TANUKI_DAILY_BRIEF_ENABLED: "1",
+        BLUE_TANUKI_DAILY_BRIEF_TARGET: "local-user",
+        BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED: "1",
+        BLUE_TANUKI_DAILY_BRIEF_GOOGLE_SERVICES: "gmail,drive",
+      },
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.ok).toBe(false);
+    expect(r.checks.find((c) => c.id === "google_daily_brief_source")).toMatchObject({
+      level: "error",
+      detail: "missing read token for gmail, drive; set service token or GOOGLE_ACCESS_TOKEN",
+    });
   });
 
   it("exit_code=2 when WebChat tokens are not separated", async () => {

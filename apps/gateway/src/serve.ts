@@ -34,6 +34,7 @@ import { approvalDeniedFeedback, approvalRequiredMessage, buildApprovalRuntime }
 import { loadPluginRuntime } from "./plugin_loader.js";
 import { createWebChatSettingsSurface } from "./settings_surface.js";
 import { CronSchedulerChannel, cronSchedulesFromEnv } from "./cron_channel.js";
+import { googleDailyBriefProviderFromEnv } from "./google_daily_brief.js";
 import {
   RuntimeScheduleManager,
   runtimeScheduleMutationCommand,
@@ -141,6 +142,7 @@ export async function serve(): Promise<ServeShutdown> {
   const cron = new CronSchedulerChannel({
     tasks: [...cronTasks, ...runtimeSchedules.activeCronTasks()],
     log: (line: string) => cronLog.info(line),
+    content_provider: googleDailyBriefProviderFromEnv(process.env),
     onFire: (task) => {
       hds.onScheduleLifecycle("schedule.lifecycle.fired", {
         schedule_id: task.id,

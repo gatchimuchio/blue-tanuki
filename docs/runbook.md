@@ -147,7 +147,7 @@ it needs before the gateway registers or configures it:
 
 | Surface | Required manifest permissions |
 | ------- | ----------------------------- |
-| Built-in tools | `tool:*`, `fs:read`, `fs:write`, `network:http`, `network:github.com` as required by each tool |
+| Built-in tools | `tool:*`, `fs:read`, `fs:write`, `network:http`, `network:github.com`, `network:googleapis.com`, and declared credential capabilities as required by each tool |
 | WebChat | `network:listen`, `secrets:WEBCHAT_TOKEN`, `secrets:WEBCHAT_RESUME_TOKEN` |
 | Slack | `network:slack.com`, `secrets:SLACK_BOT_TOKEN`, `secrets:SLACK_APP_TOKEN` |
 | Discord | `network:discord.com`, `secrets:DISCORD_BOT_TOKEN` |
@@ -239,6 +239,9 @@ Built-in tool capabilities:
 | `web.search` | `tool:web.search`, `network:http`     |
 | `github.read` | `tool:github.read`, `network:github.com` |
 | `github.write` | `tool:github.write`, `network:github.com`, `secrets:GITHUB_TOKEN`, `github:issue.write`, `github:pr.write`, `github:comment.write` |
+| `gmail.read` | `tool:gmail.read`, `network:googleapis.com`, `secrets:GMAIL_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:gmail.read` |
+| `google.calendar.read` | `tool:google.calendar.read`, `network:googleapis.com`, `secrets:GOOGLE_CALENDAR_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:calendar.read` |
+| `google.drive.read` | `tool:google.drive.read`, `network:googleapis.com`, `secrets:GOOGLE_DRIVE_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:drive.read` |
 | `browser.read` | `tool:browser.read`, `network:http` |
 | `shell.exec` | `tool:shell.exec`, `shell:exec` |
 
@@ -266,6 +269,11 @@ filenames, and key/certificate files are not read or written.
 `BLUE_TANUKI_GITHUB_REPOS`, and always L3 final-review. It supports initial
 issue/PR/comment write operations only. Token values are never returned in tool
 output.
+
+Google read tools are authenticated, read-only, fixed to Google API hosts, and
+mapped as credential access when OAuth token capabilities are present. Missing
+Google tokens fail before a request is sent. No Google write operation exists
+in this phase.
 
 `browser.read` is a lightweight no-JavaScript page reader. It is not the future
 headless Chromium automation backend; it fetches public pages through
@@ -296,6 +304,9 @@ tool:http.fetch url=https://example.com method=HEAD
 tool:web.search query="blue tanuki" max_results=5
 tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
 tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki title="Bug report" body="details"
+tool:gmail.read query="newer_than:1d" max_results=5
+tool:google.calendar.read calendar_id=primary days=1 max_results=5
+tool:google.drive.read query="trashed=false" max_results=5
 tool:browser.read url=https://example.com max_chars=4000
 tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
 /tool echo text="hello"

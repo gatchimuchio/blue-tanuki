@@ -400,6 +400,38 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit Google read requests to credential-scoped tool_call constraints", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound('tool:gmail.read query="newer_than:1d" max_results=3 max_bytes=8192'),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "gmail.read",
+        arguments: {
+          query: "newer_than:1d",
+          max_results: 3,
+          max_bytes: 8192,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["gmail.read"],
+      allowed_capabilities: [
+        "tool:gmail.read",
+        "network:googleapis.com",
+        "secrets:GMAIL_ACCESS_TOKEN",
+        "secrets:GOOGLE_ACCESS_TOKEN",
+        "google:gmail.read",
+      ],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("routes explicit browser.read requests to tool_call with HTTP network capability", () => {
     const c = new HDSUpperController();
     const { log, command } = c.decide(

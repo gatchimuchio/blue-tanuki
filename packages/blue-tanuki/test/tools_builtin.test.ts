@@ -10,6 +10,10 @@ import {
   invokeWebSearch,
   invokeGitHubRead,
   invokeGitHubWrite,
+  invokeGmailRead,
+  invokeGoogleCalendarRead,
+  invokeGoogleDriveRead,
+  buildGoogleDailyBriefContent,
   invokeBrowserRead,
   invokeBrowserSnapshot,
   invokeBrowserAutomation,
@@ -19,6 +23,7 @@ import {
   type FileSearchOptions,
   type GitHubReadOptions,
   type GitHubWriteOptions,
+  type GoogleReadOptions,
   type HttpFetchOptions,
 } from "../src/tools/builtin.js";
 import { ToolRegistry } from "../src/tools/registry.js";
@@ -41,6 +46,9 @@ describe("built-in tools", () => {
     expect(registry.get("web.search")).toBeDefined();
     expect(registry.get("github.read")).toBeDefined();
     expect(registry.get("github.write")).toBeDefined();
+    expect(registry.get("gmail.read")).toBeDefined();
+    expect(registry.get("google.calendar.read")).toBeDefined();
+    expect(registry.get("google.drive.read")).toBeDefined();
     expect(registry.get("browser.read")).toBeDefined();
     expect(registry.get("browser.snapshot")).toBeDefined();
     expect(registry.get("browser.automation")).toBeDefined();
@@ -53,9 +61,17 @@ describe("built-in tools", () => {
       "github:comment.write",
       "github:issue.write",
       "github:pr.write",
+      "google:calendar.read",
+      "google:drive.read",
+      "google:gmail.read",
       "network:github.com",
+      "network:googleapis.com",
       "network:http",
       "secrets:GITHUB_TOKEN",
+      "secrets:GMAIL_ACCESS_TOKEN",
+      "secrets:GOOGLE_ACCESS_TOKEN",
+      "secrets:GOOGLE_CALENDAR_ACCESS_TOKEN",
+      "secrets:GOOGLE_DRIVE_ACCESS_TOKEN",
       "shell:exec",
       "tool:browser.automation",
       "tool:browser.read",
@@ -66,6 +82,9 @@ describe("built-in tools", () => {
       "tool:file.write",
       "tool:github.read",
       "tool:github.write",
+      "tool:gmail.read",
+      "tool:google.calendar.read",
+      "tool:google.drive.read",
       "tool:http.fetch",
       "tool:shell.exec",
       "tool:web.search",
@@ -601,6 +620,146 @@ describe("built-in tools", () => {
     ).rejects.toThrow(/number/);
   });
 
+  it("Google read tools use fixed Google APIs and return bounded read-only summaries", async () => {
+    const seen: Array<{
+      service: string;
+      hostname: string;
+      path: string;
+      maxBytes: number;
+      token: string;
+    }> = [];
+    const opts = fakeGoogle(async (target) => {
+      seen.push({
+        service: target.service,
+        hostname: target.hostname,
+        path: target.path,
+        maxBytes: target.maxBytes,
+        token: target.token,
+      });
+      if (target.path.startsWith("/gmail/v1/users/me/messages?")) {
+        return googleJson({ messages: [{ id: "msg-1" }] });
+      }
+      if (target.path.startsWith("/gmail/v1/users/me/messages/msg-1?")) {
+        return googleJson({
+          id: "msg-1",
+          threadId: "thread-1",
+          snippet: "Hello from Gmail",
+          payload: {
+            headers: [
+              { name: "Subject", value: "Daily report" },
+              { name: "From", value: "ops@example.test" },
+              { name: "Date", value: "Tue, 12 May 2026 09:00:00 +0000" },
+            ],
+          },
+        });
+      }
+      if (target.path.startsWith("/calendar/v3/calendars/primary/events?")) {
+        return googleJson({
+          items: [
+            {
+              id: "event-1",
+              status: "confirmed",
+              summary: "Standup",
+              start: { dateTime: "2026-05-12T09:00:00Z" },
+              end: { dateTime: "2026-05-12T09:15:00Z" },
+              htmlLink: "https://calendar.google.com/event?eid=event-1",
+            },
+          ],
+        });
+      }
+      if (target.path.startsWith("/drive/v3/files?")) {
+        return googleJson({
+          files: [
+            {
+              id: "file-1",
+              name: "Spec notes",
+              mimeType: "application/vnd.google-apps.document",
+              modifiedTime: "2026-05-12T08:00:00Z",
+              webViewLink: "https://drive.google.com/file/d/file-1/view",
+            },
+          ],
+        });
+      }
+      throw new Error(`unexpected Google path: ${target.path}`);
+    });
+
+    const gmail = (await invokeGmailRead(
+      { query: "newer_than:1d", max_results: 1, max_bytes: 4096 },
+      opts,
+    )) as { service: string; mutation_sent: boolean; messages: Array<{ subject: string }> };
+    const calendar = (await invokeGoogleCalendarRead(
+      { calendar_id: "primary", days: 1, max_results: 1, max_bytes: 4096 },
+      opts,
+    )) as { service: string; events: Array<{ summary: string }> };
+    const drive = (await invokeGoogleDriveRead(
+      { query: "trashed=false", max_results: 1, max_bytes: 4096 },
+      opts,
+    )) as { service: string; files: Array<{ name: string }> };
+
+    expect(gmail).toMatchObject({
+      service: "gmail",
+      mutation_sent: false,
+      messages: [{ subject: "Daily report" }],
+    });
+    expect(calendar.events).toEqual([{ id: "event-1", status: "confirmed", summary: "Standup", start: "2026-05-12T09:00:00Z", end: "2026-05-12T09:15:00Z", html_link: "https://calendar.google.com/event?eid=event-1" }]);
+    expect(drive.files).toEqual([{ id: "file-1", name: "Spec notes", mime_type: "application/vnd.google-apps.document", modified_time: "2026-05-12T08:00:00Z", web_view_link: "https://drive.google.com/file/d/file-1/view" }]);
+    expect(seen.map((item) => item.hostname)).toEqual([
+      "gmail.googleapis.com",
+      "gmail.googleapis.com",
+      "www.googleapis.com",
+      "www.googleapis.com",
+    ]);
+    expect(seen.every((item) => item.maxBytes === 4096)).toBe(true);
+    expect(JSON.stringify({ gmail, calendar, drive })).not.toContain("google-token");
+  });
+
+  it("Google read tools fail closed before network when tokens are missing", async () => {
+    let called = false;
+    const opts = fakeGoogle(async () => {
+      called = true;
+      throw new Error("should not call network");
+    }, {});
+
+    await expect(
+      invokeGmailRead({ query: "newer_than:1d" }, opts),
+    ).rejects.toThrow(/GMAIL_ACCESS_TOKEN.*GOOGLE_ACCESS_TOKEN.*request_sent=false.*mutation_sent=false/);
+    await expect(
+      invokeGoogleCalendarRead({ calendar_id: "primary" }, opts),
+    ).rejects.toThrow(/GOOGLE_CALENDAR_ACCESS_TOKEN.*GOOGLE_ACCESS_TOKEN.*request_sent=false.*mutation_sent=false/);
+    await expect(
+      invokeGoogleDriveRead({ query: "trashed=false" }, opts),
+    ).rejects.toThrow(/GOOGLE_DRIVE_ACCESS_TOKEN.*GOOGLE_ACCESS_TOKEN.*request_sent=false.*mutation_sent=false/);
+    expect(called).toBe(false);
+  });
+
+  it("Google Daily Brief content composes read-only service summaries without exposing tokens", async () => {
+    const content = await buildGoogleDailyBriefContent({
+      ...fakeGoogle(async (target) => {
+        if (target.path.startsWith("/gmail/v1/users/me/messages?")) return googleJson({ messages: [{ id: "msg-1" }] });
+        if (target.path.startsWith("/gmail/v1/users/me/messages/msg-1?")) {
+          return googleJson({
+            id: "msg-1",
+            payload: { headers: [{ name: "Subject", value: "Inbox item" }, { name: "From", value: "ops@example.test" }] },
+          });
+        }
+        if (target.path.startsWith("/calendar/v3/calendars/primary/events?")) {
+          return googleJson({ items: [{ id: "event-1", summary: "Standup", start: { dateTime: "2026-05-12T09:00:00Z" } }] });
+        }
+        if (target.path.startsWith("/drive/v3/files?")) {
+          return googleJson({ files: [{ id: "file-1", name: "Spec notes", modifiedTime: "2026-05-12T08:00:00Z" }] });
+        }
+        throw new Error(`unexpected Google path: ${target.path}`);
+      }),
+      maxResults: 1,
+    });
+
+    expect(content).toContain("source=google_read read_only=true mutation_sent=false");
+    expect(content).toContain("Gmail: 1 message(s)");
+    expect(content).toContain("Calendar: 1 event(s)");
+    expect(content).toContain("Drive: 1 file(s)");
+    expect(content).not.toContain("google-token");
+  });
+
   it("github.write creates an issue only with token and allowlisted repo", async () => {
     const seen: Array<{
       method: string;
@@ -1067,6 +1226,30 @@ function fakeGitHubWrite(
   },
 ): GitHubWriteOptions {
   return { request, env };
+}
+
+function googleJson(body: unknown): Awaited<ReturnType<NonNullable<GoogleReadOptions["request"]>>> {
+  return {
+    status: 200,
+    ok: true,
+    content_type: "application/json",
+    body: JSON.stringify(body),
+    truncated: false,
+    request_id: "GOOGLE-REQ",
+  };
+}
+
+function fakeGoogle(
+  request: NonNullable<GoogleReadOptions["request"]> = async () => googleJson({}),
+  env: Record<string, string | undefined> = {
+    GOOGLE_ACCESS_TOKEN: "google-token",
+  },
+): GoogleReadOptions {
+  return {
+    env,
+    now: () => new Date("2026-05-12T00:00:00Z"),
+    request,
+  };
 }
 
 function fakeBrowserAutomation(opts: {

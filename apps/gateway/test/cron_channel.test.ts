@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   CronSchedulerChannel,
   DailyBriefCronChannel,
+  cronPayloadHash,
   cronSchedulesFromEnv,
   dailyBriefCronFromEnv,
 } from "../src/cron_channel.js";
@@ -160,6 +161,62 @@ describe("CronSchedulerChannel", () => {
         },
       });
       expect(ch.snapshot()[0]?.last_fire_at_ms).toBe(new Date(2026, 4, 9, 6, 30, 1, 0).getTime());
+    } finally {
+      await ch.stop();
+      vi.useRealTimers();
+    }
+  });
+
+  it("uses a dynamic content provider without exposing content in snapshots", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 9, 6, 30, 0, 0));
+    const received: unknown[] = [];
+    const fired: unknown[] = [];
+    const ch = new CronSchedulerChannel({
+      tasks: [
+        {
+          id: "daily_brief",
+          name: "daily_brief",
+          channel: "webchat",
+          target: "local-user",
+          content: "static fallback",
+          interval_ms: 1000,
+        },
+      ],
+      log: () => undefined,
+      content_provider: async () => ({
+        content: "dynamic google brief",
+        metadata: {
+          "blue_tanuki.cron.content_source": "google_read",
+          "blue_tanuki.google.read_only": "true",
+        },
+      }),
+      onFire: (task) => fired.push(task),
+    });
+
+    try {
+      await ch.start(async (req) => {
+        received.push(req);
+      });
+      await vi.advanceTimersByTimeAsync(1000);
+      const expectedHash = cronPayloadHash({
+        channel: "webchat",
+        target: "local-user",
+        content: "dynamic google brief",
+        interval_ms: 1000,
+      });
+      expect(received).toHaveLength(1);
+      expect(received[0]).toMatchObject({
+        content: "dynamic google brief",
+        metadata: {
+          "blue_tanuki.cron.payload_hash": expectedHash,
+          "blue_tanuki.cron.content_source": "google_read",
+          "blue_tanuki.google.read_only": "true",
+          "blue_tanuki.channel_send.content": "dynamic google brief",
+        },
+      });
+      expect(fired[0]).toMatchObject({ payload_hash: expectedHash });
+      expect(JSON.stringify(ch.snapshot())).not.toContain("dynamic google brief");
     } finally {
       await ch.stop();
       vi.useRealTimers();

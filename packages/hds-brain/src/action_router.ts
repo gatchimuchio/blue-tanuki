@@ -60,6 +60,36 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     ],
     timeout_ms: 15_000,
   },
+  "gmail.read": {
+    allowed_capabilities: [
+      "tool:gmail.read",
+      "network:googleapis.com",
+      "secrets:GMAIL_ACCESS_TOKEN",
+      "secrets:GOOGLE_ACCESS_TOKEN",
+      "google:gmail.read",
+    ],
+    timeout_ms: 15_000,
+  },
+  "google.calendar.read": {
+    allowed_capabilities: [
+      "tool:google.calendar.read",
+      "network:googleapis.com",
+      "secrets:GOOGLE_CALENDAR_ACCESS_TOKEN",
+      "secrets:GOOGLE_ACCESS_TOKEN",
+      "google:calendar.read",
+    ],
+    timeout_ms: 15_000,
+  },
+  "google.drive.read": {
+    allowed_capabilities: [
+      "tool:google.drive.read",
+      "network:googleapis.com",
+      "secrets:GOOGLE_DRIVE_ACCESS_TOKEN",
+      "secrets:GOOGLE_ACCESS_TOKEN",
+      "google:drive.read",
+    ],
+    timeout_ms: 15_000,
+  },
   "browser.read": {
     allowed_capabilities: ["tool:browser.read", "network:http"],
     timeout_ms: 15_000,
@@ -105,6 +135,9 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  *   - tool:web.search query="blue tanuki" max_results=5
  *   - tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
  *   - tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki title="hello" body="world"
+ *   - tool:gmail.read query="newer_than:1d" max_results=5
+ *   - tool:google.calendar.read calendar_id=primary days=1 max_results=5
+ *   - tool:google.drive.read query="trashed=false" max_results=5
  *   - tool:browser.read url=https://example.com max_chars=4000
  *   - tool:browser.snapshot url=https://example.com max_chars=4000
  *   - tool:browser.automation action=smoke
@@ -252,7 +285,10 @@ function coerceToolArgs(
   if (
     toolName === "file.search" ||
     toolName === "web.search" ||
-    toolName === "github.read"
+    toolName === "github.read" ||
+    toolName === "gmail.read" ||
+    toolName === "google.calendar.read" ||
+    toolName === "google.drive.read"
   ) {
     coercePositiveInt(next, "max_results");
   }
@@ -261,6 +297,9 @@ function coerceToolArgs(
     toolName === "web.search" ||
     toolName === "github.read" ||
     toolName === "github.write" ||
+    toolName === "gmail.read" ||
+    toolName === "google.calendar.read" ||
+    toolName === "google.drive.read" ||
     toolName === "browser.read" ||
     toolName === "browser.snapshot" ||
     toolName === "browser.automation" ||
@@ -287,6 +326,9 @@ function coerceToolArgs(
   }
   if (toolName === "github.read" || toolName === "github.write") {
     coercePositiveInt(next, "number");
+  }
+  if (toolName === "google.calendar.read") {
+    coercePositiveInt(next, "days");
   }
   if (toolName === "file.edit") {
     coercePositiveInt(next, "expected_replacements");

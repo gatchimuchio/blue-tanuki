@@ -262,7 +262,7 @@ Known gaps:
 
 - Slack / Discord remain preview until owner credentialed live smoke is run
 - browser automation is not implemented
-- Google integrations are not implemented
+- Google write integrations are not implemented
 - Teams / LINE are not implemented
 - resident native UX is not complete
 - v1.0 hardening is not complete
@@ -283,8 +283,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 8-S5 | C | Slack / Discord release polish + live smoke | P1 | completed |
 | 8-S6 | C | Browser automation preview | P2 | completed |
 | 9-S1 | D | F-reference audit integration | P1 | completed |
-| 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | current |
-| 9-S3 | D | Google write integration | P2 | 9-S2 |
+| 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | completed |
+| 9-S3 | D | Google write integration | P2 | current |
 | 9-S4 | D | Teams / LINE adapters | P2 | 8-S5 |
 | 10-S1 | E | Control Center approval UX polish | P1 | 8-S1, 8-S2b |
 | 10-S2 | E | Resident notification center | P2 | 10-S1 |
@@ -1375,6 +1375,13 @@ Add Google read integrations for Daily Brief and local assistant utility.
 - no Drive write
 - no autonomous cross-service action
 
+## Completion Notes
+
+- Added read-only `gmail.read`, `google.calendar.read`, and `google.drive.read` tool envelopes.
+- Added credential capability declarations and credential-access approval mapping for Google read tools.
+- Added optional read-only Google Daily Brief source with dynamic cron payload hashes.
+- Added doctor/docs/tests for missing-token fail-closed behavior and no Google writes.
+
 ---
 
 # Phase 9-S3 — Google Write Integration
@@ -1662,7 +1669,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 9-S2 - Gmail / Google Calendar / Drive Read Integration
+Phase 9-S3 - Google Write Integration
 ```
 
-Do not begin Google write integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 9-S2 is completed unless explicitly instructed.
+Do not begin Teams/LINE, resident UX, or release-hardening lanes before Phase 9-S3 is completed unless explicitly instructed.

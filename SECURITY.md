@@ -123,6 +123,20 @@ Rules:
 - Result output is bounded to safe ids/URLs plus `result_digest`; token values are never returned.
 - Executor feedback records the result digest in the hash-chain audit.
 
+## Google read boundary
+
+`gmail.read`, `google.calendar.read`, and `google.drive.read` are downstream read-only tools. Google metadata is never authority and cannot bypass HDS-BRAIN, Approval Gate, or audit closure.
+
+Rules:
+
+- Google read tools require OAuth access tokens supplied by the operator.
+- Token capabilities are mapped as credential access and require L3 final-review where credential access is in the approval context.
+- Requests are fixed to Google API hosts and return bounded summaries/metadata only.
+- Missing tokens fail before a request is sent.
+- No Gmail draft/send, Calendar write, Drive write/delete/share, or autonomous cross-service action exists in this phase.
+- Daily Brief Google source remains a cron input source; it does not move authority into Google services.
+- Tool output and audit feedback must not include token values.
+
 ## Runtime schedule boundary
 
 Runtime schedules are downstream automation. Creation, update, and delete are L3 final-review operations.

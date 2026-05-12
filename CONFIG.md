@@ -68,6 +68,24 @@ For smoke testing:
 BLUE_TANUKI_DAILY_BRIEF_INTERVAL_MS=60000
 ```
 
+Optional read-only Google source:
+
+```bash
+BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED=1
+BLUE_TANUKI_DAILY_BRIEF_GOOGLE_SERVICES=gmail,calendar,drive
+GOOGLE_ACCESS_TOKEN=<read-only-google-oauth-token>
+```
+
+If the generic token is not used, set service-specific tokens:
+
+```bash
+GMAIL_ACCESS_TOKEN=<gmail-read-token>
+GOOGLE_CALENDAR_ACCESS_TOKEN=<calendar-read-token>
+GOOGLE_DRIVE_ACCESS_TOKEN=<drive-read-token>
+```
+
+Daily Brief still enters HDS-BRAIN through the same trusted cron lane. Runtime snapshots expose timing metadata and payload hashes, not brief content.
+
 ## Generic scheduled messages
 
 ```bash
@@ -188,6 +206,45 @@ tool:github.write operation=issue.update owner=gatchimuchio repo=blue-tanuki num
 tool:github.write operation=pr.create owner=gatchimuchio repo=blue-tanuki title="Change" head=feature base=main draft=true
 tool:github.write operation=pr.comment.create owner=gatchimuchio repo=blue-tanuki number=1 body="review note"
 ```
+
+## Google read tools and Daily Brief source
+
+Google integrations in this phase are read-only:
+
+- `gmail.read` returns Gmail message metadata summaries.
+- `google.calendar.read` returns event metadata summaries.
+- `google.drive.read` returns Drive file metadata/search summaries.
+
+All requests are fixed to Google API hosts and require a read-only OAuth access token. `GOOGLE_ACCESS_TOKEN` can be used for all services, or service-specific tokens can narrow operator configuration:
+
+```bash
+GOOGLE_ACCESS_TOKEN=<read-only-google-oauth-token>
+GMAIL_ACCESS_TOKEN=<gmail-read-token>
+GOOGLE_CALENDAR_ACCESS_TOKEN=<calendar-read-token>
+GOOGLE_DRIVE_ACCESS_TOKEN=<drive-read-token>
+```
+
+Tool examples:
+
+```text
+tool:gmail.read query="newer_than:1d" max_results=5
+tool:google.calendar.read calendar_id=primary days=1 max_results=5
+tool:google.drive.read query="trashed=false" max_results=5
+```
+
+Daily Brief Google source:
+
+```bash
+BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED=1
+BLUE_TANUKI_DAILY_BRIEF_GOOGLE_SERVICES=gmail,calendar,drive
+BLUE_TANUKI_DAILY_BRIEF_GOOGLE_MAX_RESULTS=5
+BLUE_TANUKI_DAILY_BRIEF_GMAIL_QUERY="newer_than:1d"
+BLUE_TANUKI_DAILY_BRIEF_GOOGLE_CALENDAR_ID=primary
+BLUE_TANUKI_DAILY_BRIEF_GOOGLE_CALENDAR_DAYS=1
+BLUE_TANUKI_DAILY_BRIEF_DRIVE_QUERY="trashed=false"
+```
+
+No Google write operations are available here. Missing tokens fail closed before a request is sent. Doctor checks the Google Daily Brief source only when `BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED` is set.
 
 ## Browser read tool
 

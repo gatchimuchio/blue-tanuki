@@ -321,6 +321,44 @@ describe("approval policy", () => {
     expect(r.decision).toBe("ask");
     expect(r.reason).toContain("grant_matched_but_final_review_required");
   });
+
+  it("forces credential-backed Google read tools through L3 final-review", () => {
+    const cmd = toolCommand(
+      "gmail.read",
+      { query: "newer_than:1d" },
+      [
+        "tool:gmail.read",
+        "network:googleapis.com",
+        "secrets:GMAIL_ACCESS_TOKEN",
+        "secrets:GOOGLE_ACCESS_TOKEN",
+        "google:gmail.read",
+      ],
+    );
+    const grant = buildApprovalGrant({
+      mode: "remember_this_decision",
+      decision: "allow",
+      operation: "credential.access",
+      target_scope: "task_type",
+      target: "gmail.read:newer_than:1d",
+      risk: "high",
+      actor: "alice",
+      created_by: "alice",
+      expires_at: null,
+    });
+    const r = evaluateApproval(cmd, [grant], {
+      actor: "alice",
+      now: 1,
+      default_mode: "full_access",
+    });
+
+    expect(FINAL_REVIEW_OPERATIONS.has("credential.access")).toBe(true);
+    expect(r.context.operation).toBe("credential.access");
+    expect(r.context.risk).toBe("high");
+    expect(r.approval_level).toBe("L3_final_review");
+    expect(r.final_review_required).toBe(true);
+    expect(r.decision).toBe("ask");
+    expect(r.reason).toContain("grant_matched_but_final_review_required");
+  });
 });
 
 

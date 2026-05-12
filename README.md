@@ -20,14 +20,14 @@ BLUE-TANUKI is a local resident AI control plane.
 - hash-chain audit logs
 - Telegram Bot API channel
 - Slack / Discord adapters with silent fallback, retry/backoff, typed delivery errors, and credentialed live smoke path
-- Daily Brief and generic scheduled-message smoke via internal cron
+- Daily Brief and generic scheduled-message smoke via internal cron, with optional read-only Google source
 - Optional token-gated HTTP webhook ingress at `/webhook`
-- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `browser.read`, `browser.snapshot`, `browser.automation`, and `shell.exec` with sandbox / network / approval guards
+- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `gmail.read`, `google.calendar.read`, `google.drive.read`, `browser.read`, `browser.snapshot`, `browser.automation`, and `shell.exec` with sandbox / network / approval guards
 
 ## v0.1 explicit boundaries
 
 - WhatsApp is not a first-party core target. It is `reserved-third-party` and may only be approached through the generic adapter interface.
-- Gmail / Google Calendar / Drive are not read by v0.1 Daily Brief.
+- Google writes are not implemented. Gmail / Google Calendar / Drive support is read-only, credential-scoped, and downstream only.
 - Voice / Mobile / rich Canvas are deferred to v0.2+.
 - Public third-party Skill registry is intentionally excluded.
 
@@ -95,7 +95,16 @@ export BLUE_TANUKI_DAILY_BRIEF_CONTENT="Daily Brief: scheduled smoke from BLUE-T
 pnpm gateway:serve
 ```
 
-v0.1 Daily Brief is a scheduled `channel_send` smoke. Real Gmail/GCal/Drive-backed brief is v0.2+.
+By default, v0.1 Daily Brief is a scheduled `channel_send` smoke.
+To opt into read-only Gmail / Google Calendar / Drive summaries, configure read-only OAuth tokens and enable the Google source:
+
+```bash
+export BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED=1
+export BLUE_TANUKI_DAILY_BRIEF_GOOGLE_SERVICES="gmail,calendar,drive"
+export GOOGLE_ACCESS_TOKEN="<read-only-google-oauth-token>"
+```
+
+Service-specific tokens can be used instead: `GMAIL_ACCESS_TOKEN`, `GOOGLE_CALENDAR_ACCESS_TOKEN`, and `GOOGLE_DRIVE_ACCESS_TOKEN`.
 When enabled, the Control Center runtime snapshot shows the configured Daily Brief schedule and next fire time without exposing the brief content.
 
 ## Generic scheduled messages
@@ -201,6 +210,22 @@ tool:github.write operation=pr.comment.create owner=gatchimuchio repo=blue-tanuk
 ```
 
 `github.write` output returns safe GitHub ids/URLs and a `result_digest`; it never prints the token.
+
+## Google read tools
+
+Google tools are read-only and fixed to Google API hosts. They require operator-provided OAuth tokens and are treated as credential access, so L3 final-review is required where the approval gate sees the credential capability.
+
+```bash
+export GOOGLE_ACCESS_TOKEN="<read-only-google-oauth-token>"
+```
+
+```text
+tool:gmail.read query="newer_than:1d" max_results=5
+tool:google.calendar.read calendar_id=primary days=1 max_results=5
+tool:google.drive.read query="trashed=false" max_results=5
+```
+
+No Gmail send/draft, Calendar write, or Drive write/share/delete operation exists in this phase. Tool output is bounded summary/metadata plus `result_digest`; tokens are never returned.
 
 ## Browser read tool
 
@@ -309,6 +334,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase8-s5-slack-discord-polish.md](./docs/phase8-s5-slack-discord-polish.md) - Slack / Discord release-polished preview boundary
 - [docs/phase8-s6-browser-automation-preview.md](./docs/phase8-s6-browser-automation-preview.md) - browser automation preview boundary
 - [docs/phase9-s1-f-reference-audit.md](./docs/phase9-s1-f-reference-audit.md) - F-reference memory audit boundary
+- [docs/phase9-s2-google-read-integration.md](./docs/phase9-s2-google-read-integration.md) - Google read integration boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

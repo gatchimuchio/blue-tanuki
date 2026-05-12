@@ -45,12 +45,12 @@ The transparency claim is limited to BLUE-TANUKI's own authority path.
 - runtime snapshot
 - Telegram channel
 - Slack / Discord existing adapters with silent fallback
-- Daily Brief and generic scheduled-message smoke
+- Daily Brief and generic scheduled-message smoke with optional read-only Google source
 
 ## v0.1 Explicit Preview / Deferred
 
 - WhatsApp: reserved-third-party only. BLUE-TANUKI does not ship first-party WhatsApp core support, Baileys/WAHA/WhatsApp Web automation, Business API support, or Twilio WhatsApp support.
-- Gmail / Google Calendar / Drive: interface/docs only, real integration v0.2+
+- Gmail / Google Calendar / Drive: read-only summaries only; write operations are deferred
 - Voice / Mobile: interface/design only, real product quality v0.2+
 - Rich Canvas / A2UI: v0.2+
 - third-party Skill registry: intentionally excluded

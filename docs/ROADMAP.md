@@ -104,10 +104,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 8-S3 | B | OpenClaw Rejection Audit document | P0 | completed |
 | 8-S4 | C | GitHub write tool | P1 | completed |
 | 8-S5 | C | Slack / Discord release polish + live smoke | P1 | completed |
-| 8-S6 | C | Browser automation preview | P2 | current |
-| 9-S1 | D | F-reference audit integration | P1 | 8-S2b |
-| 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | 9-S1 |
-| 9-S3 | D | Google write integration | P2 | 9-S2 |
+| 8-S6 | C | Browser automation preview | P2 | completed |
+| 9-S1 | D | F-reference audit integration | P1 | completed |
+| 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | completed |
+| 9-S3 | D | Google write integration | P2 | current |
 | 9-S4 | D | Teams / LINE adapters | P2 | 8-S5 |
 | 10-S1 | E | Control Center approval UX polish | P1 | 8-S1, 8-S2b |
 | 10-S2 | E | Resident notification center | P2 | 10-S1 |
@@ -118,10 +118,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 8-S6 - Browser automation preview
+Phase 9-S3 - Google write integration
 ```
 
-Do not begin Google integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 8-S6 is completed unless explicitly instructed.
+Do not begin Teams/LINE, resident UX, or release-hardening lanes before Phase 9-S3 is completed unless explicitly instructed.
 
 ## 4. Completed Phase Summaries
 

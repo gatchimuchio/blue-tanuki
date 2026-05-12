@@ -14,7 +14,7 @@ BLUE-TANUKI の capability envelope は、downstream component が使える能�
 
 | Class | Examples | Rule |
 |---|---|---|
-| network | `network:api.telegram.org`, `network:github.com` | host / protocol scope を明示する |
+| network | `network:api.telegram.org`, `network:github.com`, `network:googleapis.com` | host / protocol scope を明示する |
 | filesystem | `fs:read:workspace`, `fs:write:adapter-data` | root / path prefix を明示する |
 | process | `process:shell`, `process:spawn` | Approval Gate と sandbox policy を通す |
 | credential | `secret:TELEGRAM_BOT_TOKEN` | env / secret 名を allowlist 化する |

@@ -16,6 +16,7 @@
 - Added Phase 8-S5: Slack / Discord release-polished preview with typed delivery errors, adapter retry/backoff, live smoke error detail, and updated readiness docs.
 - Added Phase 8-S6: disabled-by-default browser automation preview with `browser.snapshot`, guarded `browser.automation`, L2/L3 ApprovalLevel mapping, credential denial, network/resource limits, smoke skip path, and advanced the active execution lane to F-reference audit integration.
 - Added Phase 9-S1: `F:<id>` memory read/write references in audit and Control Center traces while preserving `memory_used_for_authority=false`.
+- Added Phase 9-S2: read-only `gmail.read`, `google.calendar.read`, and `google.drive.read` tools, credential-scoped Google Daily Brief source, doctor/docs coverage, and advanced the active execution lane to Google write.
 - Fixed root workspace script delegation so `pnpm run setup -- --yes` and `pnpm run doctor` do not collide with pnpm built-ins.
 
 ## 0.1.0 - 2026-05-06

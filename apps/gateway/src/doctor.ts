@@ -12,6 +12,7 @@ import {
   listConfiguredLLMProviders,
 } from "./llm_config.js";
 import { cronSchedulesFromEnv } from "./cron_channel.js";
+import { parseGoogleServices } from "./google_daily_brief.js";
 
 /**
  * doctor — environment diagnostic for blue-tanuki gateway.
@@ -32,6 +33,7 @@ import { cronSchedulesFromEnv } from "./cron_channel.js";
  *   - Optional env: SLACK_BOT_TOKEN, SLACK_APP_TOKEN, DISCORD_BOT_TOKEN,
  *                   ANTHROPIC_API_KEY, GITHUB_TOKEN,
  *                   BLUE_TANUKI_GITHUB_REPOS (presence only)
+ *   - Optional Google read source config for Daily Brief
  *   - WEBCHAT_PORT is bindable (probe by binding then closing)
  *   - BLUE_TANUKI_SESSION_DIR (if set) is writable / can be created
  *   - BLUE_TANUKI_AUDIT_DIR   (if set) is writable / can be created
@@ -592,6 +594,62 @@ function checkCronSchedules(env: NodeJS.ProcessEnv): CheckDraft {
   }
 }
 
+function checkGoogleDailyBriefSource(env: NodeJS.ProcessEnv): CheckDraft {
+  const sourceEnabled = truthyEnv(env.BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED);
+  if (!sourceEnabled) {
+    return {
+      id: "google_daily_brief_source",
+      level: "ok",
+      label: "Google Daily Brief source",
+      detail: "disabled",
+    };
+  }
+  if (!truthyEnv(env.BLUE_TANUKI_DAILY_BRIEF_ENABLED)) {
+    return {
+      id: "google_daily_brief_source",
+      level: "warn",
+      label: "Google Daily Brief source",
+      detail: "enabled but BLUE_TANUKI_DAILY_BRIEF_ENABLED is disabled",
+    };
+  }
+  let services: ReturnType<typeof parseGoogleServices>;
+  try {
+    services = parseGoogleServices(env.BLUE_TANUKI_DAILY_BRIEF_GOOGLE_SERVICES);
+  } catch (e) {
+    return {
+      id: "google_daily_brief_source",
+      level: "error",
+      label: "Google Daily Brief source",
+      detail: e instanceof Error ? e.message : String(e),
+    };
+  }
+  const missing = services.filter((service) => {
+    if (service === "gmail") return !env.GMAIL_ACCESS_TOKEN && !env.GOOGLE_ACCESS_TOKEN;
+    if (service === "calendar") return !env.GOOGLE_CALENDAR_ACCESS_TOKEN && !env.GOOGLE_ACCESS_TOKEN;
+    if (service === "drive") return !env.GOOGLE_DRIVE_ACCESS_TOKEN && !env.GOOGLE_ACCESS_TOKEN;
+    return true;
+  });
+  if (missing.length > 0) {
+    return {
+      id: "google_daily_brief_source",
+      level: "error",
+      label: "Google Daily Brief source",
+      detail: `missing read token for ${missing.join(", ")}; set service token or GOOGLE_ACCESS_TOKEN`,
+    };
+  }
+  return {
+    id: "google_daily_brief_source",
+    level: "ok",
+    label: "Google Daily Brief source",
+    detail: `enabled services=${services.join(",")} token_status=present read_only=true`,
+  };
+}
+
+function truthyEnv(value: string | undefined): boolean {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
 async function checkFileRoot(env: NodeJS.ProcessEnv): Promise<CheckDraft> {
   const dir = env.BLUE_TANUKI_FILE_ROOT;
   if (!dir) {
@@ -991,6 +1049,16 @@ function remediationFor(check: CheckDraft): Remediation {
     };
   }
 
+  if (check.id === "google_daily_brief_source") {
+    return {
+      cause: check.detail,
+      impact: "Daily Brief Google summaries may be unavailable; no Google write operation is attempted.",
+      next_action: "Leave BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED unset if unused, or set read-only Google OAuth tokens and rerun pnpm run doctor.",
+      doc_ref: "CONFIG.md#Google-read-tools-and-Daily-Brief-source",
+      safe_to_ignore: check.level === "warn",
+    };
+  }
+
   if (check.id === "session_dir") {
     return {
       cause: check.detail,
@@ -1087,6 +1155,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   draftChecks.push(checkLlmBackend(env));
   draftChecks.push(checkLlmCommandRoute(env));
   draftChecks.push(checkCronSchedules(env));
+  draftChecks.push(checkGoogleDailyBriefSource(env));
   draftChecks.push(await checkSessionDir(env));
   draftChecks.push(await checkAuditDir(env));
   draftChecks.push(await checkFileRoot(env));
