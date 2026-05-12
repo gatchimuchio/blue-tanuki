@@ -11,6 +11,7 @@ export function canonicalizeMemoryEntry(entry: MemoryEntryHashInput): string {
   return JSON.stringify({
     index: entry.index,
     request_id: entry.request_id,
+    f_reference: entry.f_reference,
     timestamp: entry.timestamp,
     closure: {
       x: [...entry.closure.x],
@@ -32,6 +33,7 @@ export function encodeMemoryEntry(entry: MemoryEntry): string {
   return JSON.stringify({
     index: entry.index,
     request_id: entry.request_id,
+    f_reference: entry.f_reference,
     timestamp: entry.timestamp,
     closure: {
       x: [...entry.closure.x],
@@ -68,6 +70,7 @@ function isMemoryEntry(value: unknown): value is MemoryEntry {
   if (!isRecord(value)) return false;
   if (!isNonNegativeInteger(value.index)) return false;
   if (typeof value.request_id !== "string") return false;
+  if (value.f_reference !== undefined && typeof value.f_reference !== "string") return false;
   if (typeof value.timestamp !== "number") return false;
   if (!isClosure(value.closure)) return false;
   if (typeof value.goal !== "string") return false;

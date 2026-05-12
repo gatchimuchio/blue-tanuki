@@ -31,6 +31,7 @@ export interface MemoryReadPolicy {
 export interface MemoryHit {
   source: MemorySource;
   memory_id: string;
+  f_reference: string;
   entry_hash: string;
   reason: MemoryRetrievalMode;
   matched_on?: string;
@@ -245,6 +246,21 @@ export interface ScheduleLifecycleLog {
   timestamp: number;
 }
 
+export interface MemoryReferenceLog {
+  kind: "memory_reference";
+  event: "memory.read" | "memory.write";
+  request_id: string | null;
+  memory_id: string;
+  f_reference: string;
+  entry_hash: string;
+  source: MemorySource;
+  used_for_authority: false;
+  reason: string;
+  matched_on?: string;
+  summary?: MemoryHit["summary"];
+  timestamp: number;
+}
+
 export type CommandLifecyclePhase =
   | "approval_pending"
   | "approval_approved"
@@ -268,6 +284,7 @@ export type AuditRecord =
   | ExecutorFeedbackLog
   | ApprovalGateLog
   | AuthorityEventLog
+  | MemoryReferenceLog
   | CommandLifecycleLog
   | ScheduleLifecycleLog;
 

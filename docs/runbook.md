@@ -29,7 +29,7 @@ Two long-running surfaces and three CLI subcommands share one entry point
 | Mode               | Invocation                        | Lifetime    |
 | ------------------ | --------------------------------- | ----------- |
 | `serve`            | `pnpm gateway:serve` / `--serve`  | long-running |
-| `setup`            | `pnpm setup` / `--setup`          | exits after writing local env |
+| `setup`            | `pnpm run setup` / `--setup`      | exits after writing local env |
 | CLI one-shot       | `pnpm gateway -- "your text"`     | exits after one F→M→C decision |
 | `doctor`           | `pnpm --filter @blue-tanuki/gateway run doctor` / `--doctor` | exits with code 0/1/2 |
 | `audit-dump`       | `--audit-dump [--json]`           | exits with code 0/1/2 |
@@ -41,7 +41,7 @@ compiled output. The `:dev` variants run via `tsx` for fast iteration.
 Setup can generate a private local env file:
 
 ```bash
-pnpm setup -- --yes
+pnpm run setup -- --yes
 pnpm gateway:serve:dev -- --env-file .blue-tanuki/blue-tanuki.env
 ```
 

@@ -31,6 +31,8 @@ export interface MemoryEntry {
   index: number;
   /** Source DecisionLog request_id. */
   request_id: string;
+  /** Public audit reference for this memory write/read target. */
+  f_reference?: string;
   /** Captured-at timestamp, copied from the source DecisionLog. */
   timestamp: number;
   /** TCP closure snapshot: the only judgment-relevant signal. */

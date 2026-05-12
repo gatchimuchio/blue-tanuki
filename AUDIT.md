@@ -121,9 +121,20 @@ Slack / Discord delivery failures are returned to executor feedback as typed dow
 
 These fields are audit evidence only. They never feed back into HDS-BRAIN as authority and never let channel metadata escalate permissions.
 
+## F-reference memory audit
+
+HDS long-term memory references are rendered as `F:<id>`.
+
+- Memory writes record a `memory_reference` audit event with `event=memory.write`.
+- Memory reads appear in `DecisionLog.frame.memory_trace.hits[]` with `f_reference`.
+- Control Center `/authority/trace` may display safe `memory_reference` items.
+- `used_for_authority` is always `false`.
+- F-references are trace labels only. They do not grant permission, owner consent, or privileged-action approval.
+
 ## What is not treated as authority
 
 - LLM output
 - session history
 - semantic memory summary
+- F-reference / HDS long-term memory hit
 - downstream executor feedback

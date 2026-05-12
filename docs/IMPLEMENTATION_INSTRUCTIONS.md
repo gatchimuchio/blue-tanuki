@@ -281,9 +281,9 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 8-S3 | B | OpenClaw Rejection Audit document | P0 | completed |
 | 8-S4 | C | GitHub write tool | P1 | completed |
 | 8-S5 | C | Slack / Discord release polish + live smoke | P1 | completed |
-| 8-S6 | C | Browser automation preview | P2 | current |
-| 9-S1 | D | F-reference audit integration | P1 | 8-S2b |
-| 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | 9-S1 |
+| 8-S6 | C | Browser automation preview | P2 | completed |
+| 9-S1 | D | F-reference audit integration | P1 | completed |
+| 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | current |
 | 9-S3 | D | Google write integration | P2 | 9-S2 |
 | 9-S4 | D | Teams / LINE adapters | P2 | 8-S5 |
 | 10-S1 | E | Control Center approval UX polish | P1 | 8-S1, 8-S2b |
@@ -688,17 +688,18 @@ docs/phase8-s1-approval-level-runtime-schedule.md
 ## Validation Commands
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 pnpm test
-pnpm smoke:serve
-pnpm smoke:resume
 pnpm smoke:live
 pnpm run doctor
 pnpm validate:packaging
 pnpm release:bundle -- --dry-run
 ```
+
+Do not run `pnpm smoke:serve` or `pnpm smoke:resume` unless the task explicitly targets root
+workspace resolution. See `docs/known-environment-failures.md`.
 
 ## Manual Smoke
 
@@ -950,7 +951,7 @@ CHANGELOG.md
 ## Validation Commands
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 pnpm test
@@ -1093,17 +1094,18 @@ CHANGELOG.md
 ## Validation Commands
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 pnpm test
-pnpm smoke:serve
-pnpm smoke:resume
 pnpm smoke:live
 pnpm run doctor
 pnpm validate:packaging
 pnpm release:bundle -- --dry-run
 ```
+
+Do not run `pnpm smoke:serve` or `pnpm smoke:resume` unless the task explicitly targets root
+workspace resolution. See `docs/known-environment-failures.md`.
 
 ## Manual Smoke
 
@@ -1587,18 +1589,30 @@ Prepare a v1.0 release candidate.
 
 Use this set after major phases:
 
+Package-manager preflight:
+
 ```bash
-pnpm install
+node --version
+corepack --version || true
+pnpm --version || true
+```
+
+If `pnpm` is unavailable, follow `docs/known-environment-failures.md` and report validation as
+environment-limited if recovery fails.
+
+```bash
+pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 pnpm test
-pnpm smoke:serve
-pnpm smoke:resume
 pnpm smoke:live
 pnpm run doctor
 pnpm validate:packaging
 pnpm release:bundle -- --dry-run
 ```
+
+Do not run `pnpm smoke:serve` or `pnpm smoke:resume` unless the task explicitly targets root
+workspace resolution. They are known environment failures for ordinary validation.
 
 For release phases also run:
 
@@ -1648,7 +1662,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 8-S6 — Browser Automation Preview
+Phase 9-S2 - Gmail / Google Calendar / Drive Read Integration
 ```
 
-Do not begin Google integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 8-S6 is completed unless explicitly instructed.
+Do not begin Google write integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 9-S2 is completed unless explicitly instructed.

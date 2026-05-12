@@ -183,7 +183,8 @@ export function formatAuditTextReport(report: AuditDumpReport): string {
       if ("commit" in e.log) {
         const reqId = e.log.request_id;
         const dec = e.log.commit.decision;
-        lines.push(`  [${String(e.index).padStart(4, "0")}] ${dec.padEnd(18)} ${hashShort}… request_id=${reqId}`);
+        const fRefs = memoryReferenceSummary(e.log.frame.memory_trace?.hits ?? []);
+        lines.push(`  [${String(e.index).padStart(4, "0")}] ${dec.padEnd(18)} ${hashShort}… request_id=${reqId}${fRefs}`);
       } else if (e.log.kind === "executor_feedback") {
         const status = `FEEDBACK:${e.log.feedback.status}`;
         const reqId = e.log.request_id ?? "(unknown)";
@@ -198,6 +199,10 @@ export function formatAuditTextReport(report: AuditDumpReport): string {
         const status = `AUTH:${e.log.event}`;
         const reqId = e.log.request_id ?? "(unknown)";
         lines.push(`  [${String(e.index).padStart(4, "0")}] ${status.padEnd(18)} ${hashShort}… request_id=${reqId} command_id=${e.log.command_id ?? "(none)"} grant_id=${e.log.grant_id ?? "(none)"} actor=${e.log.actor}`);
+      } else if (e.log.kind === "memory_reference") {
+        const status = `MEM:${e.log.event}`;
+        const reqId = e.log.request_id ?? "(unknown)";
+        lines.push(`  [${String(e.index).padStart(4, "0")}] ${status.padEnd(18)} ${hashShort}… request_id=${reqId} ref=${e.log.f_reference} used_for_authority=${e.log.used_for_authority}`);
       } else if (e.log.kind === "command_lifecycle") {
         const status = `COMMAND:${e.log.phase}`;
         const reqId = e.log.request_id ?? "(unknown)";
@@ -213,4 +218,13 @@ export function formatAuditTextReport(report: AuditDumpReport): string {
 /** Render the report as JSON with full chain data. */
 export function formatAuditJsonReport(report: AuditDumpReport): string {
   return JSON.stringify(report, null, 2);
+}
+
+function memoryReferenceSummary(
+  hits: Array<{ f_reference?: string; memory_id: string }>,
+): string {
+  const refs = hits
+    .map((hit) => hit.f_reference ?? `F:${hit.memory_id}`)
+    .filter((ref, index, all) => all.indexOf(ref) === index);
+  return refs.length === 0 ? "" : ` f_refs=${refs.join(",")}`;
 }

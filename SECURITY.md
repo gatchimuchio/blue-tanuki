@@ -73,7 +73,7 @@ The Runtime Invariants endpoint exposes the current values for the core containm
 |---|---|---|---|---|
 | L1 | observe gate | read-only/no-op/ordinary `llm.call` operations | auto-allow when policy permits; audit still records evaluation | `approvalLevelFromContext()` maps low-risk non-final-review operations to `L1_observe`. |
 | L2 | operate gate | ordinary state-changing operations outside final-review | reusable grants may apply | medium-risk non-final-review operations map to `L2_operate`; `ApprovalGrantStore` can match operation/scope/risk/actor/capability. |
-| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete / GitHub write | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
+| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete / GitHub write / browser automation action | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
 
 Operationally, HDS-BRAIN may ASSERT a command, but the executor must not run it until Approval Gate evaluation has completed. The Approval Gate result, `approval_level`, authority trace, and downstream lifecycle events are recorded into the same hash-chain audit log before executor feedback closes the loop.
 
@@ -91,8 +91,23 @@ These always require review regardless of full-access default:
 - schedule update
 - schedule delete
 - GitHub issue/PR/comment write
+- browser automation action
 
 `payment.charge` is a defensive placeholder. v0.1 has no payment feature, but any future payment-class operation is L3 from the moment it is introduced.
+
+## Browser automation preview boundary
+
+`browser.snapshot` and `browser.automation` are downstream preview tools. They do not create authority and cannot bypass Approval Gate.
+
+Rules:
+
+- The preview is disabled unless `BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW=1` is set.
+- `browser.snapshot` is read-only headless page access and maps to `L2_operate`.
+- `browser.automation` maps to `L3_final_review`; full access and reusable grants do not bypass owner confirmation.
+- Credential use, cookies, storage state, custom headers, uploads, and downloads are rejected in the preview.
+- Browser network requests must pass the same public-address and allowlist checks as `http.fetch`.
+- The browser context is ephemeral: no persistent profile, no credential reuse, and downloads disabled.
+- Preview output is bounded page metadata/text and contains no cookies, tokens, storage state, or screenshots.
 
 ## GitHub write boundary
 
@@ -156,6 +171,14 @@ There are four distinct stores:
 | Audit log | immutable evidence chain | evidence only |
 | Approval grant store | reusable owner grants | yes, via Approval Gate |
 | HDS long-term memory | structured past-decision snapshots | no in v0.1 |
+
+HDS long-term memory entries and hits use `F:<id>` audit references. The reference is a trace label only:
+
+- it may appear in memory JSONL, audit dump, and Control Center `/authority/trace`;
+- it cannot create owner consent;
+- it cannot match or widen an approval grant;
+- it cannot bypass L3 final-review;
+- it is always carried with `used_for_authority=false`.
 
 ## Skill registry boundary
 

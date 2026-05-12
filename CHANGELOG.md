@@ -14,6 +14,9 @@
 - Added Phase 8-S3: internal OpenClaw rejection audit document and advanced the active execution lane to GitHub write.
 - Added Phase 8-S4: authenticated `github.write` tool with repository allowlist, L3 final-review mapping, capability envelope, and audit-safe result digests.
 - Added Phase 8-S5: Slack / Discord release-polished preview with typed delivery errors, adapter retry/backoff, live smoke error detail, and updated readiness docs.
+- Added Phase 8-S6: disabled-by-default browser automation preview with `browser.snapshot`, guarded `browser.automation`, L2/L3 ApprovalLevel mapping, credential denial, network/resource limits, smoke skip path, and advanced the active execution lane to F-reference audit integration.
+- Added Phase 9-S1: `F:<id>` memory read/write references in audit and Control Center traces while preserving `memory_used_for_authority=false`.
+- Fixed root workspace script delegation so `pnpm run setup -- --yes` and `pnpm run doctor` do not collide with pnpm built-ins.
 
 ## 0.1.0 - 2026-05-06
 

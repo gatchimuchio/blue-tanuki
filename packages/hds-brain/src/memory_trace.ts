@@ -6,6 +6,12 @@ import type {
   MemoryTrace,
 } from "./types.js";
 import type { MemoryEntry } from "./long-term-memory/index.js";
+import {
+  fReferenceForId,
+  fReferencesFromText,
+  idFromFReference,
+  referenceIdFromInput,
+} from "./f_reference.js";
 
 export interface MemoryReaderPort {
   recent(n: number): readonly unknown[];
@@ -35,6 +41,7 @@ export function buildMemoryTrace(
     hits.push({
       source: "hds_ltm",
       memory_id: entry.request_id,
+      f_reference: fReferenceForId(entry.request_id),
       entry_hash: entry.entry_hash,
       reason,
       matched_on,
@@ -47,11 +54,14 @@ export function buildMemoryTrace(
   };
 
   if (policy.retrieval_modes.includes("exact")) {
-    for (const exact of exactKeys(req)) {
+    for (const ref of exactKeys(req)) {
+      const exact = referenceIdFromInput(ref);
       const direct = reader.findByRequestId?.(exact);
-      if (isMemoryEntry(direct)) add(direct, "exact", exact);
+      if (isMemoryEntry(direct)) add(direct, "exact", ref);
       for (const entry of candidates) {
-        if (entry.request_id === exact) add(entry, "exact", exact);
+        if (entry.request_id === exact || fReferenceForId(entry.request_id) === ref) {
+          add(entry, "exact", ref);
+        }
       }
     }
   }
@@ -99,12 +109,19 @@ function collectCandidates(reader: MemoryReaderPort, policy: MemoryReadPolicy): 
 
 function exactKeys(req: InboundRequest): string[] {
   const meta = req.metadata ?? {};
-  return [
+  const refs = new Set<string>();
+  for (const value of [
     stringField(meta, "request_id"),
     stringField(meta, "source_request_id"),
     stringField(meta, "reference_request_id"),
     stringField(meta, "blue_tanuki.reference_request_id"),
-  ].filter((v): v is string => Boolean(v));
+  ]) {
+    if (!value) continue;
+    const id = idFromFReference(value);
+    refs.add(id ? fReferenceForId(id) : value);
+  }
+  for (const ref of fReferencesFromText(req.content)) refs.add(ref);
+  return Array.from(refs);
 }
 
 function tagKeys(req: InboundRequest, process: HDSProcessDefinition): string[] {

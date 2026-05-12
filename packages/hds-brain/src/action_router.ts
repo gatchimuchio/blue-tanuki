@@ -64,6 +64,14 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     allowed_capabilities: ["tool:browser.read", "network:http"],
     timeout_ms: 15_000,
   },
+  "browser.snapshot": {
+    allowed_capabilities: ["tool:browser.snapshot", "browser:snapshot", "network:http"],
+    timeout_ms: 15_000,
+  },
+  "browser.automation": {
+    allowed_capabilities: ["tool:browser.automation", "browser:act", "network:http"],
+    timeout_ms: 15_000,
+  },
   "shell.exec": {
     allowed_capabilities: ["tool:shell.exec", "shell:exec"],
     timeout_ms: 15_000,
@@ -98,6 +106,9 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  *   - tool:github.read resource=issues owner=gatchimuchio repo=blue-tanuki max_results=5
  *   - tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki title="hello" body="world"
  *   - tool:browser.read url=https://example.com max_chars=4000
+ *   - tool:browser.snapshot url=https://example.com max_chars=4000
+ *   - tool:browser.automation action=smoke
+ *   - tool:browser.automation action=navigate url=https://example.com
  *   - tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
  *   - tool:schedule.list
  *   - tool:schedule.create channel=webchat target=local-user content="runtime smoke" interval_ms=120000
@@ -251,6 +262,8 @@ function coerceToolArgs(
     toolName === "github.read" ||
     toolName === "github.write" ||
     toolName === "browser.read" ||
+    toolName === "browser.snapshot" ||
+    toolName === "browser.automation" ||
     toolName === "file.write" ||
     toolName === "file.edit" ||
     toolName === "shell.exec" ||
@@ -262,8 +275,15 @@ function coerceToolArgs(
   if (toolName === "shell.exec") {
     coercePositiveInt(next, "timeout_ms");
   }
-  if (toolName === "browser.read") {
+  if (
+    toolName === "browser.read" ||
+    toolName === "browser.snapshot" ||
+    toolName === "browser.automation"
+  ) {
     coercePositiveInt(next, "max_chars");
+  }
+  if (toolName === "browser.snapshot" || toolName === "browser.automation") {
+    coercePositiveInt(next, "timeout_ms");
   }
   if (toolName === "github.read" || toolName === "github.write") {
     coercePositiveInt(next, "number");

@@ -907,7 +907,7 @@ function remediationFor(check: CheckDraft): Remediation {
     return {
       cause: check.detail,
       impact: "WebChat inbound and Control Center read APIs cannot be used safely.",
-      next_action: "Run pnpm setup -- --yes or set WEBCHAT_TOKEN to a distinct random value, then restart.",
+      next_action: "Run pnpm run setup -- --yes or set WEBCHAT_TOKEN to a distinct random value, then restart.",
       doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
       safe_to_ignore: false,
     };
@@ -917,7 +917,7 @@ function remediationFor(check: CheckDraft): Remediation {
     return {
       cause: check.detail,
       impact: "Approval and resume operations cannot be safely authorized.",
-      next_action: "Run pnpm setup -- --yes or set WEBCHAT_RESUME_TOKEN to a distinct random value, then restart.",
+      next_action: "Run pnpm run setup -- --yes or set WEBCHAT_RESUME_TOKEN to a distinct random value, then restart.",
       doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
       safe_to_ignore: false,
     };

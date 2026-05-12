@@ -11,8 +11,11 @@ import {
   invokeGitHubRead,
   invokeGitHubWrite,
   invokeBrowserRead,
+  invokeBrowserSnapshot,
+  invokeBrowserAutomation,
   invokeShellExec,
   registerBuiltinTools,
+  type BrowserAutomationOptions,
   type FileSearchOptions,
   type GitHubReadOptions,
   type GitHubWriteOptions,
@@ -39,8 +42,12 @@ describe("built-in tools", () => {
     expect(registry.get("github.read")).toBeDefined();
     expect(registry.get("github.write")).toBeDefined();
     expect(registry.get("browser.read")).toBeDefined();
+    expect(registry.get("browser.snapshot")).toBeDefined();
+    expect(registry.get("browser.automation")).toBeDefined();
     expect(registry.get("shell.exec")).toBeDefined();
     expect(registry.listCapabilities()).toEqual([
+      "browser:act",
+      "browser:snapshot",
       "fs:read",
       "fs:write",
       "github:comment.write",
@@ -50,7 +57,9 @@ describe("built-in tools", () => {
       "network:http",
       "secrets:GITHUB_TOKEN",
       "shell:exec",
+      "tool:browser.automation",
       "tool:browser.read",
+      "tool:browser.snapshot",
       "tool:echo",
       "tool:file.edit",
       "tool:file.search",
@@ -854,6 +863,99 @@ describe("built-in tools", () => {
     ).rejects.toThrow(/non-public address/);
   });
 
+  it("browser.snapshot is disabled by default", async () => {
+    await expect(
+      invokeBrowserSnapshot(
+        { url: "https://example.test/docs" },
+        fakeBrowserAutomation({ env: {} }),
+      ),
+    ).rejects.toThrow(/BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW=1/);
+  });
+
+  it("browser.snapshot enforces network policy and returns bounded preview metadata", async () => {
+    const seen: string[] = [];
+    const result = (await invokeBrowserSnapshot(
+      { url: "https://example.test/docs", max_chars: 12, timeout_ms: 5_000 },
+      fakeBrowserAutomation({
+        env: { BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW: "1" },
+        async runner(request) {
+          seen.push(`${request.action}:${request.url}:${request.target.hostname}`);
+          return {
+            engine: "fake-headless",
+            final_url: request.url,
+            title: "Preview",
+            text: "alpha beta gamma delta",
+            truncated: false,
+          };
+        },
+      }),
+    )) as {
+      action: string;
+      engine: string;
+      text: string;
+      truncated: boolean;
+      sandbox: { credential_reuse: boolean };
+      network_policy: { ssrf_guard: string };
+    };
+
+    expect(seen).toEqual(["snapshot:https://example.test/docs:example.test"]);
+    expect(result.action).toBe("snapshot");
+    expect(result.engine).toBe("fake-headless");
+    expect(result.text).toBe("alpha bet...");
+    expect(result.truncated).toBe(true);
+    expect(result.sandbox.credential_reuse).toBe(false);
+    expect(result.network_policy.ssrf_guard).toBe("public_address_required");
+  });
+
+  it("browser.snapshot inherits SSRF enforcement before the runner starts", async () => {
+    let called = false;
+    await expect(
+      invokeBrowserSnapshot(
+        { url: "http://metadata.test/" },
+        fakeBrowserAutomation({
+          env: { BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW: "1" },
+          records: { "metadata.test": { address: "169.254.169.254", family: 4 } },
+          async runner() {
+            called = true;
+            throw new Error("runner should not start");
+          },
+        }),
+      ),
+    ).rejects.toThrow(/non-public address/);
+    expect(called).toBe(false);
+  });
+
+  it("browser.automation has a disabled smoke skip path", async () => {
+    const result = (await invokeBrowserAutomation(
+      { action: "smoke" },
+      fakeBrowserAutomation({ env: {} }),
+    )) as {
+      status: string;
+      enabled: boolean;
+      safe_to_ignore: boolean;
+    };
+
+    expect(result.status).toBe("skipped");
+    expect(result.enabled).toBe(false);
+    expect(result.safe_to_ignore).toBe(true);
+  });
+
+  it("browser.automation denies credential use and quarantines side-effect actions", async () => {
+    await expect(
+      invokeBrowserAutomation(
+        { action: "navigate", url: "https://example.test/", use_credentials: true },
+        fakeBrowserAutomation({ env: { BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW: "1" } }),
+      ),
+    ).rejects.toThrow(/credential_usage=denied/);
+
+    await expect(
+      invokeBrowserAutomation(
+        { action: "click", url: "https://example.test/", selector: "#buy" },
+        fakeBrowserAutomation({ env: { BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW: "1" } }),
+      ),
+    ).rejects.toThrow(/preview-quarantined.*mutation_sent=false/);
+  });
+
   it("shell.exec runs a bounded non-shell command under BLUE_TANUKI_SHELL_ROOT", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-shell-"));
     try {
@@ -965,6 +1067,33 @@ function fakeGitHubWrite(
   },
 ): GitHubWriteOptions {
   return { request, env };
+}
+
+function fakeBrowserAutomation(opts: {
+  env?: Record<string, string | undefined>;
+  records?: Record<string, { address: string; family: 4 | 6 }>;
+  runner?: BrowserAutomationOptions["runner"];
+}): BrowserAutomationOptions {
+  const records = opts.records ?? {
+    "example.test": { address: "93.184.216.34", family: 4 },
+  };
+  return {
+    env: opts.env,
+    async resolveHost(hostname) {
+      const record = records[hostname];
+      if (!record) return [];
+      return [record];
+    },
+    runner:
+      opts.runner ??
+      (async (request) => ({
+        engine: "fake-headless",
+        final_url: request.url,
+        title: "Preview",
+        text: "ok",
+        truncated: false,
+      })),
+  };
 }
 
 function nextRedirectHost(hostname: string): string {

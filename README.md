@@ -22,7 +22,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Slack / Discord adapters with silent fallback, retry/backoff, typed delivery errors, and credentialed live smoke path
 - Daily Brief and generic scheduled-message smoke via internal cron
 - Optional token-gated HTTP webhook ingress at `/webhook`
-- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `browser.read`, and `shell.exec` with sandbox / network / approval guards
+- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `browser.read`, `browser.snapshot`, `browser.automation`, and `shell.exec` with sandbox / network / approval guards
 
 ## v0.1 explicit boundaries
 
@@ -210,6 +210,29 @@ tool:github.write operation=pr.comment.create owner=gatchimuchio repo=blue-tanuk
 tool:browser.read url=https://example.com max_chars=4000
 ```
 
+## Browser automation preview
+
+`browser.snapshot` and `browser.automation` are disabled-by-default preview tools. They require explicit operator opt-in:
+
+```bash
+export BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW=1
+```
+
+`browser.snapshot` captures a bounded headless page snapshot without credentials, persistent profile, downloads, custom headers, or storage state. It uses the same public-address / allowlist network policy as `http.fetch`.
+
+```text
+tool:browser.snapshot url=https://example.com max_chars=4000
+```
+
+`browser.automation` is reserved for guarded browser actions and maps to L3 final-review. The preview currently provides a smoke skip path and a guarded `navigate` path; side-effect actions such as click, form submit, upload, and download stay quarantined until they have release-quality containment.
+
+```text
+tool:browser.automation action=smoke
+tool:browser.automation action=navigate url=https://example.com
+```
+
+See [docs/phase8-s6-browser-automation-preview.md](./docs/phase8-s6-browser-automation-preview.md).
+
 ## Shell exec tool
 
 `shell.exec` runs a non-shell command (`cmd` + `args[]`) under `BLUE_TANUKI_SHELL_ROOT`. It is a final-review operation; full access and remembered grants do not bypass owner confirmation.
@@ -276,7 +299,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
   http://127.0.0.1:8787/authority/trace
 ```
 
-`/authority/trace` is read-only. It projects Approval Gate, authority event, and command lifecycle entries from the live hash-chain audit so Control Center can inspect authority decisions without creating a second authority path.
+`/authority/trace` is read-only. It projects Approval Gate, authority event, command lifecycle, and safe `F:<id>` memory-reference entries from the live hash-chain audit so Control Center can inspect authority decisions without creating a second authority path.
 
 ## Documents
 
@@ -284,6 +307,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/OPENCLAW_REJECTION_AUDIT.md](./docs/OPENCLAW_REJECTION_AUDIT.md) - internal OpenClaw rejection criteria
 - [docs/phase8-s4-github-write.md](./docs/phase8-s4-github-write.md) - GitHub write safety boundary
 - [docs/phase8-s5-slack-discord-polish.md](./docs/phase8-s5-slack-discord-polish.md) - Slack / Discord release-polished preview boundary
+- [docs/phase8-s6-browser-automation-preview.md](./docs/phase8-s6-browser-automation-preview.md) - browser automation preview boundary
+- [docs/phase9-s1-f-reference-audit.md](./docs/phase9-s1-f-reference-audit.md) - F-reference memory audit boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

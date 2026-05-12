@@ -2,6 +2,12 @@ export * from "./types.js";
 export { frame, type FrameConfig } from "./frame.js";
 export { resolveActor, resolveProcess } from "./process.js";
 export { buildMemoryTrace, type MemoryReaderPort } from "./memory_trace.js";
+export {
+  fReferenceForId,
+  idFromFReference,
+  referenceIdFromInput,
+  fReferencesFromText,
+} from "./f_reference.js";
 export { model } from "./model.js";
 export { commit } from "./commit.js";
 export {

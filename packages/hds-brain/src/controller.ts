@@ -13,6 +13,7 @@ import type {
   CommandLifecyclePhase,
   ControllerState,
   DecisionLog,
+  MemoryReferenceLog,
   PolicyConfig,
   ResumeAuditTrace,
   ResumeVerdict,
@@ -32,6 +33,7 @@ import {
 import { DEFAULT_POLICY } from "./policy.js";
 import { routeAction } from "./action_router.js";
 import type { ApprovalEvaluation } from "./approval_policy.js";
+import { fReferenceForId } from "./f_reference.js";
 
 interface LongTermMemoryPort {
   capture(log: DecisionLog): unknown;
@@ -39,6 +41,12 @@ interface LongTermMemoryPort {
   all?: () => readonly unknown[];
   size?: () => number;
   verify?: () => boolean;
+}
+
+interface CapturedMemoryReference {
+  request_id: string;
+  f_reference?: string;
+  entry_hash: string;
 }
 
 export interface HDSRuntimeSnapshot {
@@ -275,7 +283,7 @@ export class HDSUpperController {
     }
 
     this.audit.append(log);
-    this.memory?.capture(log);
+    this.captureMemoryReference(log);
 
     switch (c.decision) {
       case "ASSERT": {
@@ -377,7 +385,7 @@ export class HDSUpperController {
     };
     this.audit.append(resumeLog);
     if (verdict === "approve") {
-      this.memory?.capture(resumeLog);
+      this.captureMemoryReference(resumeLog);
     }
 
     this.suspended.delete(request_id);
@@ -480,6 +488,29 @@ export class HDSUpperController {
       timestamp: Date.now(),
     };
     this.audit.append(log);
+  }
+
+  private captureMemoryReference(log: DecisionLog): void {
+    const captured = this.memory?.capture(log);
+    if (!isCapturedMemoryReference(captured)) return;
+    const referenceLog: MemoryReferenceLog = {
+      kind: "memory_reference",
+      event: "memory.write",
+      request_id: log.request_id,
+      memory_id: captured.request_id,
+      f_reference: captured.f_reference ?? fReferenceForId(captured.request_id),
+      entry_hash: captured.entry_hash,
+      source: "hds_ltm",
+      used_for_authority: false,
+      reason: "hds_ltm_capture",
+      summary: {
+        goal: log.frame.goal,
+        problem_definition_id: log.frame.problem_definition_id,
+        abstraction: log.model.abstraction,
+      },
+      timestamp: Date.now(),
+    };
+    this.audit.append(referenceLog);
   }
 
   /**
@@ -634,4 +665,14 @@ export class HDSUpperController {
       upstream_decision,
     };
   }
+}
+
+function isCapturedMemoryReference(value: unknown): value is CapturedMemoryReference {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof (value as Partial<CapturedMemoryReference>).request_id === "string" &&
+    typeof (value as Partial<CapturedMemoryReference>).entry_hash === "string"
+  );
 }

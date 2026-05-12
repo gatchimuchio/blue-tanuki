@@ -203,6 +203,7 @@ describe("approval policy", () => {
       "schedule.create",
       "schedule.update",
       "schedule.delete",
+      "browser.automation",
       "payment.charge",
     ] as const) {
       expect(FINAL_REVIEW_OPERATIONS.has(operation)).toBe(true);
@@ -247,6 +248,37 @@ describe("approval policy", () => {
     expect(r.context.operation).toBe("tool.network.http");
     expect(r.context.risk).toBe("medium");
     expect(r.final_review_required).toBe(false);
+  });
+
+  it("maps browser snapshot to L2 and browser automation actions to L3", () => {
+    const snapshot = evaluateApproval(
+      toolCommand(
+        "browser.snapshot",
+        { url: "https://example.com" },
+        ["tool:browser.snapshot", "browser:snapshot", "network:http"],
+      ),
+      [],
+      { actor: "alice", now: 1, default_mode: "full_access" },
+    );
+    expect(snapshot.context.operation).toBe("browser.snapshot");
+    expect(snapshot.risk).toBe("medium");
+    expect(snapshot.approval_level).toBe("L2_operate");
+    expect(snapshot.final_review_required).toBe(false);
+
+    const action = evaluateApproval(
+      toolCommand(
+        "browser.automation",
+        { action: "click", url: "https://example.com", selector: "#go" },
+        ["tool:browser.automation", "browser:act", "network:http"],
+      ),
+      [],
+      { actor: "alice", now: 1, default_mode: "full_access" },
+    );
+    expect(action.context.operation).toBe("browser.automation");
+    expect(action.risk).toBe("high");
+    expect(action.approval_level).toBe("L3_final_review");
+    expect(action.final_review_required).toBe(true);
+    expect(action.decision).toBe("ask");
   });
 
   it("forces github.write through L3 final-review even in full-access mode", () => {

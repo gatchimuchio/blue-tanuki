@@ -5,6 +5,7 @@ import type { AuditEntry } from "../src/audit.js";
 import { DEFAULT_POLICY } from "../src/policy.js";
 import type { PolicyConfig } from "../src/types.js";
 import { LongTermMemoryStore } from "../src/long-term-memory/index.js";
+import { evaluateApproval } from "../src/approval_policy.js";
 
 
 function asDecisionLog(entry: AuditEntry) {
@@ -425,6 +426,59 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit browser.snapshot requests to preview snapshot capabilities", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound("tool:browser.snapshot url=https://example.com max_chars=4000 timeout_ms=5000"),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "browser.snapshot",
+        arguments: {
+          url: "https://example.com",
+          max_chars: 4000,
+          timeout_ms: 5000,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["browser.snapshot"],
+      allowed_capabilities: ["tool:browser.snapshot", "browser:snapshot", "network:http"],
+      timeout_ms: 15_000,
+    });
+  });
+
+  it("routes explicit browser.automation requests to L3-capable browser action constraints", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound("tool:browser.automation action=click url=https://example.com selector=#go timeout_ms=5000"),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "browser.automation",
+        arguments: {
+          action: "click",
+          url: "https://example.com",
+          selector: "#go",
+          timeout_ms: 5000,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["browser.automation"],
+      allowed_capabilities: ["tool:browser.automation", "browser:act", "network:http"],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("routes explicit shell.exec requests to final-review shell capability", () => {
     const c = new HDSUpperController();
     const { log, command } = c.decide(
@@ -727,6 +781,62 @@ describe("HDS process / memory closure", () => {
     expect(log.frame.process.process_id).toBe("chat.process");
     expect(log.frame.memory_trace.used_for_authority).toBe(false);
     expect(log.frame.memory_trace.hits.some((h) => h.memory_id === "hds-mem-1")).toBe(true);
+    expect(log.frame.memory_trace.hits.some((h) => h.f_reference === "F:hds-mem-1")).toBe(true);
+  });
+
+  it("records memory write and read references as F references without authority use", () => {
+    const memory = new LongTermMemoryStore();
+    const c = new HDSUpperController({ memory });
+
+    c.decide(inbound("hello alpha", "hds-f-write"));
+    const { log } = c.decide({
+      ...inbound("continue from F:hds-f-write", "hds-f-read"),
+      metadata: { reference_request_id: "F:hds-f-write" },
+    });
+
+    expect(memory.all()[0]!.f_reference).toBe("F:hds-f-write");
+    expect(log.frame.memory_trace.hits[0]).toMatchObject({
+      memory_id: "hds-f-write",
+      f_reference: "F:hds-f-write",
+    });
+    expect(log.frame.memory_trace.used_for_authority).toBe(false);
+
+    const memoryEvents = c.getAudit().list().filter((entry) => {
+      const record = entry.log;
+      return "kind" in record && record.kind === "memory_reference";
+    });
+    expect(memoryEvents.some((entry) => {
+      const record = entry.log;
+      return "kind" in record &&
+        record.kind === "memory_reference" &&
+        record.event === "memory.write" &&
+        record.f_reference === "F:hds-f-write" &&
+        record.used_for_authority === false;
+    })).toBe(true);
+    expect(c.getAudit().verify()).toBe(true);
+  });
+
+  it("does not let F-references bypass Approval Gate final review", () => {
+    const memory = new LongTermMemoryStore();
+    const c = new HDSUpperController({ memory });
+
+    c.decide(inbound("remember shell context", "hds-f-approval-seed"));
+    const { log, command } = c.decide({
+      ...inbound('tool:shell.exec {"cmd":"node","args":["-v"]}', "hds-f-approval-action"),
+      metadata: { reference_request_id: "F:hds-f-approval-seed" },
+    });
+
+    expect(log.frame.memory_trace.hits.some((hit) => hit.f_reference === "F:hds-f-approval-seed")).toBe(true);
+    expect(command?.type).toBe("tool_call");
+    const approval = evaluateApproval(command!, [], {
+      actor: "alice",
+      now: 1,
+      default_mode: "full_access",
+    });
+    expect(approval.context.operation).toBe("tool.shell.exec");
+    expect(approval.approval_level).toBe("L3_final_review");
+    expect(approval.final_review_required).toBe(true);
+    expect(approval.decision).toBe("ask");
   });
 
   it("routes explicit tool input into tool.process", () => {

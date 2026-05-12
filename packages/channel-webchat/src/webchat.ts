@@ -114,7 +114,12 @@ export interface WebChatAuditSurface {
 export interface WebChatAuthorityTraceItem {
   index: number;
   entry_hash: string;
-  kind: "approval_gate" | "authority_event" | "command_lifecycle" | "schedule_lifecycle";
+  kind:
+    | "approval_gate"
+    | "authority_event"
+    | "command_lifecycle"
+    | "schedule_lifecycle"
+    | "memory_reference";
   event: string;
   request_id: string | null;
   command_id?: string;
@@ -125,6 +130,13 @@ export interface WebChatAuthorityTraceItem {
   schedule_id?: string;
   payload_hash?: string;
   previous_payload_hash?: string;
+  memory_id?: string;
+  f_reference?: string;
+  memory_entry_hash?: string;
+  source?: string;
+  used_for_authority?: false;
+  matched_on?: string;
+  summary?: unknown;
   reason?: string;
   decision?: string;
   authority_trace?: unknown;

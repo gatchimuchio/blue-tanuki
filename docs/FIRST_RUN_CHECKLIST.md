@@ -18,13 +18,13 @@ v0.1 provides a guided first-run path, not a verified 5-minute beginner guarante
 
 ```bash
 pnpm install
-pnpm setup -- --yes
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm run setup -- --yes
 ```
 
-`pnpm setup -- --yes` はローカル env file を生成する。生成された secret は公開しない。既存 env file を上書きする場合、`.bak` backup が作られる。
+`pnpm run setup -- --yes` はローカル env file を生成する。生成された secret は公開しない。既存 env file を上書きする場合、`.bak` backup が作られる。
 
 手動 env で起動する場合:
 

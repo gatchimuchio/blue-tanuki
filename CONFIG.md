@@ -5,10 +5,10 @@
 ## Setup command
 
 ```bash
-pnpm setup -- --yes
+pnpm run setup -- --yes
 ```
 
-`pnpm setup` は local env file を生成し、既存 file を上書きする場合は `.bak` backup を残す。secret 値は公開しない。
+`pnpm run setup` は local env file を生成し、既存 file を上書きする場合は `.bak` backup を残す。secret 値は公開しない。
 
 ## Required for serve
 
@@ -198,6 +198,31 @@ automation backend. It fetches public pages through the same SSRF guard as
 ```text
 tool:browser.read url=https://example.com max_chars=4000
 ```
+
+## Browser automation preview
+
+Browser automation is a disabled-by-default preview. It must be explicitly
+enabled by the operator:
+
+```bash
+BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW=1
+```
+
+Preview tools:
+
+```text
+tool:browser.snapshot url=https://example.com max_chars=4000
+tool:browser.automation action=smoke
+tool:browser.automation action=navigate url=https://example.com
+```
+
+Policy:
+
+- `browser.snapshot` is read-only and maps to L2 because it performs networked headless page access.
+- `browser.automation` maps to L3 final-review.
+- Credentials, cookies, storage state, custom headers, uploads, and downloads are not supported in the preview.
+- Network targets must pass the same public-address and `BLUE_TANUKI_HTTP_ALLOWLIST` checks used by `http.fetch`.
+- The smoke path returns `skipped` when the preview env flag is absent.
 
 ## Shell exec tool
 

@@ -10,6 +10,7 @@ import {
 } from "./codec.js";
 import { shouldPersist } from "./guard.js";
 import type { MemoryEntry, MemoryStoreOptions } from "./types.js";
+import { fReferenceForId } from "../f_reference.js";
 
 const DEFAULT_MAX_ENTRIES = 10_000;
 
@@ -120,6 +121,7 @@ export class LongTermMemoryStore {
       const expected = this.computeHash({
         index: entry.index,
         request_id: entry.request_id,
+        f_reference: entry.f_reference,
         timestamp: entry.timestamp,
         closure: entry.closure,
         goal: entry.goal,
@@ -152,6 +154,7 @@ export class LongTermMemoryStore {
     const hashInput: MemoryEntryHashInput = {
       index,
       request_id: log.request_id,
+      f_reference: fReferenceForId(log.request_id),
       timestamp: log.timestamp,
       closure: {
         x: [...log.frame.world_closure.x],
@@ -210,6 +213,7 @@ export class LongTermMemoryStore {
 function entryContains(entry: MemoryEntry, needle: string): boolean {
   const hay = [
     entry.request_id,
+    entry.f_reference ?? "",
     entry.goal,
     entry.problem_definition_id,
     entry.abstraction,

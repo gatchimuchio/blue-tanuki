@@ -94,6 +94,42 @@ export interface GitHubWriteOptions {
 
 export interface BrowserReadOptions extends HttpFetchOptions {}
 
+export type BrowserAutomationAction =
+  | "smoke"
+  | "navigate"
+  | "click"
+  | "form_submit"
+  | "download"
+  | "upload";
+
+export interface BrowserAutomationRunRequest {
+  action: "snapshot" | "navigate";
+  url: string;
+  target: HttpFetchTarget;
+  timeout_ms: number;
+  max_chars: number;
+  env: Env;
+  resolveHost: (hostname: string) => Promise<ResolvedAddress[]>;
+}
+
+export interface BrowserAutomationRunResult {
+  engine: string;
+  final_url: string;
+  title: string | null;
+  text: string;
+  truncated: boolean;
+}
+
+export type BrowserAutomationRunner = (
+  request: BrowserAutomationRunRequest,
+) => Promise<BrowserAutomationRunResult>;
+
+export interface BrowserAutomationOptions extends HttpFetchOptions {
+  runner?: BrowserAutomationRunner;
+}
+
+export interface BrowserSnapshotOptions extends BrowserAutomationOptions {}
+
 export interface FileSearchOptions {
   env?: Env;
 }
@@ -108,6 +144,10 @@ export interface ShellExecOptions {
 
 const HTTP_REDIRECT_LIMIT = 3;
 const HTTP_FETCH_TIMEOUT_MS = 15_000;
+const BROWSER_AUTOMATION_ENABLE_ENV = "BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW";
+const BROWSER_AUTOMATION_TIMEOUT_MS = 15_000;
+const BROWSER_AUTOMATION_MAX_CHARS = 20_000;
+const BROWSER_AUTOMATION_VIEWPORT = { width: 1280, height: 720 } as const;
 const BLOCKED_IPS = new BlockList();
 const SECRET_DENY_COMPONENTS = new Set([
   ".aws",
@@ -498,6 +538,78 @@ function optionalString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0
     ? value.trim()
     : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function browserAutomationEnabled(env: Env): boolean {
+  return env[BROWSER_AUTOMATION_ENABLE_ENV] === "1";
+}
+
+function browserAutomationDisabledError(): Error {
+  return new Error(
+    `${BROWSER_AUTOMATION_ENABLE_ENV}=1 is required for browser automation preview; ` +
+      "preview_enabled=false; mutation_sent=false; safe_to_ignore=true",
+  );
+}
+
+function browserAutomationAction(args: Record<string, unknown>): BrowserAutomationAction {
+  const raw = (stringArg(args, "action", false) ?? "navigate").toLowerCase();
+  if (
+    raw === "smoke" ||
+    raw === "navigate" ||
+    raw === "click" ||
+    raw === "form_submit" ||
+    raw === "download" ||
+    raw === "upload"
+  ) {
+    return raw;
+  }
+  throw new Error("action must be smoke, navigate, click, form_submit, download, or upload");
+}
+
+function assertNoBrowserCredentialUse(args: Record<string, unknown>): void {
+  for (const key of [
+    "credentials",
+    "credential",
+    "cookies",
+    "headers",
+    "extra_headers",
+    "storage_state",
+  ]) {
+    if (args[key] !== undefined) {
+      throw new Error(
+        `browser automation preview does not accept ${key}; credential_usage=denied; mutation_sent=false`,
+      );
+    }
+  }
+  const useCredentials = args.use_credentials;
+  if (
+    useCredentials === true ||
+    (typeof useCredentials === "string" && useCredentials.toLowerCase() === "true")
+  ) {
+    throw new Error(
+      "browser automation preview does not support credential usage; credential_usage=denied; mutation_sent=false",
+    );
+  }
+}
+
+function browserAutomationSmoke(env: Env): unknown {
+  const enabled = browserAutomationEnabled(env);
+  return {
+    preview: "browser.automation",
+    enabled,
+    status: enabled ? "ready" : "skipped",
+    safe_to_ignore: !enabled,
+    reason: enabled
+      ? "browser automation preview is explicitly enabled"
+      : `${BROWSER_AUTOMATION_ENABLE_ENV}=1 is not set`,
+    next_action: enabled
+      ? "Run a targeted browser.snapshot or browser.automation request."
+      : `Set ${BROWSER_AUTOMATION_ENABLE_ENV}=1 only in an operator-controlled preview environment.`,
+  };
 }
 
 function webSearchEndpointUrl(
@@ -1364,6 +1476,220 @@ export async function invokeBrowserRead(
   };
 }
 
+interface PlaywrightLike {
+  chromium?: {
+    launch(options: Record<string, unknown>): Promise<BrowserLike>;
+  };
+}
+
+interface BrowserLike {
+  newContext(options: Record<string, unknown>): Promise<BrowserContextLike>;
+  close(): Promise<void>;
+}
+
+interface BrowserContextLike {
+  newPage(): Promise<PageLike>;
+  close(): Promise<void>;
+}
+
+interface PageLike {
+  route?(
+    pattern: string,
+    handler: (route: RouteLike, request: RequestLike) => Promise<void>,
+  ): Promise<void>;
+  goto(url: string, options: Record<string, unknown>): Promise<unknown>;
+  title(): Promise<string>;
+  evaluate(expression: string): Promise<unknown>;
+  url(): string;
+}
+
+interface RouteLike {
+  continue(): Promise<void>;
+  abort(): Promise<void>;
+}
+
+interface RequestLike {
+  url(): string;
+}
+
+async function importPlaywright(): Promise<PlaywrightLike> {
+  try {
+    const importer = new Function("specifier", "return import(specifier)") as (
+      specifier: string,
+    ) => Promise<unknown>;
+    const imported = await importer("playwright");
+    if (!isRecord(imported)) {
+      throw new Error("playwright module did not load as an object");
+    }
+    return imported as PlaywrightLike;
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    throw new Error(
+      "browser automation preview engine unavailable; mutation_sent=false; " +
+        "next_action=install Playwright in a preview environment or keep the preview disabled; " +
+        `reason=${reason}`,
+    );
+  }
+}
+
+async function defaultBrowserAutomationRunner(
+  request: BrowserAutomationRunRequest,
+): Promise<BrowserAutomationRunResult> {
+  const playwright = await importPlaywright();
+  if (!playwright.chromium?.launch) {
+    throw new Error("browser automation preview requires Playwright chromium; mutation_sent=false");
+  }
+
+  let browser: BrowserLike | null = null;
+  let context: BrowserContextLike | null = null;
+  try {
+    browser = await playwright.chromium.launch({
+      headless: true,
+      env: safeProcessEnv(),
+    });
+    context = await browser.newContext({
+      viewport: { ...BROWSER_AUTOMATION_VIEWPORT },
+      acceptDownloads: false,
+    });
+    const page = await context.newPage();
+    if (page.route) {
+      await page.route("**/*", async (route, browserRequest) => {
+        try {
+          const requestUrl = browserRequest.url();
+          await resolvePublicTarget(
+            parseHttpUrl(requestUrl),
+            request.env,
+            request.resolveHost,
+          );
+          await route.continue();
+        } catch {
+          await route.abort();
+        }
+      });
+    }
+    await page.goto(request.url, {
+      waitUntil: "domcontentloaded",
+      timeout: request.timeout_ms,
+    });
+    const finalUrl = page.url();
+    await resolvePublicTarget(
+      parseHttpUrl(finalUrl),
+      request.env,
+      request.resolveHost,
+    );
+    const title = await page.title();
+    const bodyText = await page.evaluate("document.body ? document.body.innerText : ''");
+    const text = typeof bodyText === "string" ? bodyText.replace(/\s+/g, " ").trim() : "";
+    return {
+      engine: "playwright.chromium",
+      final_url: finalUrl,
+      title: title.trim().length > 0 ? title : null,
+      text: truncateText(text, request.max_chars),
+      truncated: text.length > request.max_chars,
+    };
+  } finally {
+    await context?.close().catch(() => undefined);
+    await browser?.close().catch(() => undefined);
+  }
+}
+
+export async function invokeBrowserSnapshot(
+  args: Record<string, unknown>,
+  opts: BrowserSnapshotOptions = {},
+): Promise<unknown> {
+  const env = opts.env ?? process.env;
+  if (!browserAutomationEnabled(env)) {
+    throw browserAutomationDisabledError();
+  }
+  assertNoBrowserCredentialUse(args);
+
+  const url = parseHttpUrl(stringArg(args, "url")!);
+  const maxChars = positiveIntArg(
+    args,
+    "max_chars",
+    8_000,
+    BROWSER_AUTOMATION_MAX_CHARS,
+  );
+  const timeoutMs = positiveIntArg(
+    args,
+    "timeout_ms",
+    BROWSER_AUTOMATION_TIMEOUT_MS,
+    BROWSER_AUTOMATION_TIMEOUT_MS,
+  );
+  const resolveHost = opts.resolveHost ?? defaultResolveHost;
+  const target = await resolvePublicTarget(url, env, resolveHost);
+  const runner = opts.runner ?? defaultBrowserAutomationRunner;
+  const snapshot = await runner({
+    action: "snapshot",
+    url: url.href,
+    target,
+    timeout_ms: timeoutMs,
+    max_chars: maxChars,
+    env,
+    resolveHost,
+  });
+
+  return {
+    preview: "browser.automation",
+    enabled: true,
+    action: "snapshot",
+    engine: snapshot.engine,
+    url: url.href,
+    final_url: snapshot.final_url,
+    title: snapshot.title,
+    text: truncateText(snapshot.text, maxChars),
+    truncated: snapshot.truncated || snapshot.text.length > maxChars,
+    sandbox: {
+      persistent_profile: false,
+      downloads: "disabled",
+      credential_reuse: false,
+    },
+    network_policy: {
+      protocol: url.protocol.replace(":", ""),
+      host: target.hostname,
+      allowlist_configured: Boolean(env.BLUE_TANUKI_HTTP_ALLOWLIST?.trim()),
+      ssrf_guard: "public_address_required",
+    },
+    resource_limits: {
+      timeout_ms: timeoutMs,
+      max_chars: maxChars,
+      viewport: BROWSER_AUTOMATION_VIEWPORT,
+    },
+  };
+}
+
+export async function invokeBrowserAutomation(
+  args: Record<string, unknown>,
+  opts: BrowserAutomationOptions = {},
+): Promise<unknown> {
+  const env = opts.env ?? process.env;
+  const action = browserAutomationAction(args);
+  if (action === "smoke") {
+    return browserAutomationSmoke(env);
+  }
+  if (!browserAutomationEnabled(env)) {
+    throw browserAutomationDisabledError();
+  }
+  assertNoBrowserCredentialUse(args);
+
+  if (action !== "navigate") {
+    throw new Error(
+      `browser.automation action ${action} is preview-quarantined and not implemented; ` +
+        "approval_level=L3_final_review; mutation_sent=false",
+    );
+  }
+
+  const snapshot = await invokeBrowserSnapshot(args, opts);
+  if (isRecord(snapshot)) {
+    return {
+      ...snapshot,
+      action,
+      approval_level: "L3_final_review",
+    };
+  }
+  return snapshot;
+}
+
 export async function invokeFileSearch(
   args: Record<string, unknown>,
   opts: FileSearchOptions = {},
@@ -1654,6 +1980,24 @@ export const browserReadTool: Tool = {
   },
 };
 
+export const browserSnapshotTool: Tool = {
+  name: "browser.snapshot",
+  description: "Disabled-by-default preview: capture a bounded headless page snapshot without credentials.",
+  required_capabilities: ["tool:browser.snapshot", "browser:snapshot", "network:http"],
+  async invoke(args: Record<string, unknown>): Promise<unknown> {
+    return await invokeBrowserSnapshot(args);
+  },
+};
+
+export const browserAutomationTool: Tool = {
+  name: "browser.automation",
+  description: "Disabled-by-default preview for guarded headless browser actions.",
+  required_capabilities: ["tool:browser.automation", "browser:act", "network:http"],
+  async invoke(args: Record<string, unknown>): Promise<unknown> {
+    return await invokeBrowserAutomation(args);
+  },
+};
+
 export const shellExecTool: Tool = {
   name: "shell.exec",
   description: "Run a bounded non-shell command under BLUE_TANUKI_SHELL_ROOT.",
@@ -1675,5 +2019,7 @@ export function registerBuiltinTools(registry: {
   registry.register(githubReadTool);
   registry.register(githubWriteTool);
   registry.register(browserReadTool);
+  registry.register(browserSnapshotTool);
+  registry.register(browserAutomationTool);
   registry.register(shellExecTool);
 }

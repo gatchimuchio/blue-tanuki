@@ -127,6 +127,7 @@ describe("LongTermMemoryStore in-memory", () => {
     const invalid = store.capture(makeLog("r2", "SUSPEND"));
 
     expect(valid?.request_id).toBe("r1");
+    expect(valid?.f_reference).toBe("F:r1");
     expect(valid?.actor).toMatchObject({ actor_id: "u1", actor_kind: "user", trust_level: "limited" });
     expect(valid?.process).toMatchObject({ process_id: "chat.process", process_kind: "chat" });
     expect(valid?.commit).toMatchObject({ decision: "ASSERT", hash: "hash-r1-ASSERT" });

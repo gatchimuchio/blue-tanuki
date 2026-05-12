@@ -351,13 +351,31 @@ export async function serve(): Promise<ServeShutdown> {
     const items: WebChatAuthorityTraceItem[] = [];
     for (const entry of hds.getAudit().list()) {
       const log = entry.log;
-      if (!("kind" in log)) continue;
       const base = {
         index: entry.index,
         entry_hash: entry.entry_hash,
-        request_id: "request_id" in log ? log.request_id ?? null : null,
+        request_id: log.request_id ?? null,
         timestamp: log.timestamp,
       };
+
+      if (!("kind" in log)) {
+        for (const hit of log.frame.memory_trace.hits) {
+          items.push({
+            ...base,
+            kind: "memory_reference",
+            event: "memory.read",
+            memory_id: hit.memory_id,
+            f_reference: hit.f_reference,
+            memory_entry_hash: hit.entry_hash,
+            source: hit.source,
+            used_for_authority: log.frame.memory_trace.used_for_authority,
+            matched_on: hit.matched_on,
+            reason: hit.reason,
+            summary: hit.summary,
+          });
+        }
+        continue;
+      }
 
       if (log.kind === "approval_gate") {
         items.push({
@@ -386,6 +404,23 @@ export async function serve(): Promise<ServeShutdown> {
           risk: log.risk,
           reason: log.reason,
           authority_trace: log.authority_trace,
+        });
+        continue;
+      }
+
+      if (log.kind === "memory_reference") {
+        items.push({
+          ...base,
+          kind: "memory_reference",
+          event: log.event,
+          memory_id: log.memory_id,
+          f_reference: log.f_reference,
+          memory_entry_hash: log.entry_hash,
+          source: log.source,
+          used_for_authority: log.used_for_authority,
+          matched_on: log.matched_on,
+          reason: log.reason,
+          summary: log.summary,
         });
         continue;
       }

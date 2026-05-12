@@ -41,6 +41,25 @@ Do not optimize a local task in a way that makes a later completion phase harder
 
 ---
 
+## Git Operation Policy
+
+This repository uses a direct-main owner workflow.
+
+Default Codex workflow for this repository:
+
+1. Work on `main`.
+2. Do not create feature branches or pull requests unless the owner explicitly asks.
+3. Before committing a completed work block, create a timestamped backup branch from the current `main` HEAD.
+   - Branch name format: `codex/backup-main-before-<slug>-<yyyymmdd-hhmmss>`.
+   - Push the backup branch to `origin` when credentials allow it.
+4. Commit the completed work block directly on `main` after validation.
+5. Push `main` to `origin` when credentials allow it.
+6. If backup creation, commit, or push cannot be completed, report the exact failed command and reason.
+
+Do not stage local secret files, generated runtime state, or `.blue-tanuki/` data when applying this policy.
+
+---
+
 ## OpenClaw Rejection Posture
 
 OpenClaw is a **rejected design pattern**, not a neutral reference.
@@ -218,6 +237,53 @@ Additional invariants:
 - Dashboard/Control Center actions cannot become a second authority path.
 
 If a task appears to require violating these invariants, stop and report the conflict.
+
+---
+
+## Known Environment Failures
+
+The following failures are validation-environment failures, not product regressions, unless the task
+explicitly modifies package-manager setup, root workspace resolution, or the related smoke-test
+implementation.
+
+### pnpm unavailable on PATH
+
+`pnpm install` may fail because `pnpm` is not available on `PATH` in the current Codex/runtime
+environment.
+
+First inspect or recover the package manager:
+
+```bash
+node --version
+corepack --version || true
+corepack enable
+corepack prepare pnpm@latest --activate
+pnpm --version
+```
+
+If `pnpm` is still unavailable, report validation as environment-limited. Do not rewrite product code
+to fix missing `pnpm`.
+
+### Root workspace smoke resolution
+
+The following checks are excluded from ordinary validation:
+
+```bash
+pnpm smoke:serve
+pnpm smoke:resume
+smoke_serve
+smoke_resume
+```
+
+They currently fail because of the existing root workspace resolution issue. Do not debug these smoke
+checks unless the task explicitly asks to fix root workspace resolution. Prefer `pnpm typecheck`,
+`pnpm test`, and targeted package-level tests for normal validation.
+
+See also:
+
+```txt
+docs/known-environment-failures.md
+```
 
 ---
 
@@ -626,6 +692,7 @@ When updating architecture, roadmap, or instruction documents:
 - State implementation gaps as gaps, not as completed features.
 - Distinguish current implementation from target state.
 - Distinguish first-run UX from permanent-use UX.
+- Do not expand private HDS/source-philosophy material or sealed core details in public process docs.
 
 Important active files (currently existing):
 
@@ -674,7 +741,8 @@ Before editing:
 ```bash
 git status --short
 node --version
-pnpm --version
+corepack --version || true
+pnpm --version || true
 ```
 
 Read:
@@ -705,17 +773,20 @@ During implementation:
 After implementation, run available checks:
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 pnpm test
-pnpm smoke:serve
-pnpm smoke:resume
 pnpm smoke:live
 pnpm run doctor
 pnpm validate:packaging
 pnpm release:bundle -- --dry-run
 ```
+
+Do not run `pnpm smoke:serve` or `pnpm smoke:resume` for normal validation unless the task explicitly
+targets root workspace resolution. If `pnpm` remains unavailable after the Corepack recovery path in
+`docs/known-environment-failures.md`, stop pnpm-based validation and report it as an environment
+limitation.
 
 If a command is unavailable or fails, report:
 

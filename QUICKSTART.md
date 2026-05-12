@@ -18,7 +18,7 @@ pnpm build
 推奨:
 
 ```bash
-pnpm setup -- --yes
+pnpm run setup -- --yes
 pnpm gateway:serve -- --env-file .blue-tanuki/blue-tanuki.env
 ```
 

@@ -19,6 +19,8 @@ export type ApprovalOperation =
   | "tool.file.delete"
   | "tool.shell.exec"
   | "tool.network.http"
+  | "browser.snapshot"
+  | "browser.automation"
   | "channel.send"
   | "external.send"
   | "settings.write"
@@ -119,6 +121,7 @@ export const FINAL_REVIEW_OPERATIONS = new Set<ApprovalOperation>([
   "schedule.create",
   "schedule.update",
   "schedule.delete",
+  "browser.automation",
   "github.write",
   "payment.charge",
 ]);
@@ -155,6 +158,8 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
   if (hasAny(caps, ["schedule:update", "automation:update"])) return "schedule.update";
   if (hasAny(caps, ["schedule:delete", "automation:delete"])) return "schedule.delete";
   if (hasAny(caps, ["tool:github.write"]) || hasPrefix(caps, "github:")) return "github.write";
+  if (hasAny(caps, ["browser:act", "tool:browser.automation"])) return "browser.automation";
+  if (hasAny(caps, ["browser:snapshot", "tool:browser.snapshot"])) return "browser.snapshot";
   if (hasAny(caps, ["settings:write"])) return "settings.write";
   if (hasAny(caps, ["shell:exec", "process:exec"])) return "tool.shell.exec";
   if (hasAny(caps, ["fs:delete", "file:delete"])) return "tool.file.delete";
@@ -174,6 +179,8 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
     if (command.payload.tool_name === "schedule.delete") return "schedule.delete";
     if (command.payload.tool_name === "file.search") return "tool.file.search";
     if (command.payload.tool_name === "http.fetch") return "tool.network.http";
+    if (command.payload.tool_name === "browser.snapshot") return "browser.snapshot";
+    if (command.payload.tool_name === "browser.automation") return "browser.automation";
     return "tool.call";
   }
   return "unknown";
@@ -181,9 +188,9 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
 
 export function riskForOperation(op: ApprovalOperation, caps: readonly ToolCapability[] = []): ApprovalRisk {
   if (["credential.access", "payment.charge"].includes(op)) return "high";
-  if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create", "schedule.update", "schedule.delete", "github.write"].includes(op)) return "high";
+  if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create", "schedule.update", "schedule.delete", "browser.automation", "github.write"].includes(op)) return "high";
   if (
-    ["tool.file.write", "tool.network.http", "channel.send"].includes(op) ||
+    ["tool.file.write", "tool.network.http", "browser.snapshot", "channel.send"].includes(op) ||
     hasPrefix(caps, "network:")
   ) return "medium";
   return "low";
@@ -321,6 +328,13 @@ function scopeFromCommand(command: ExecuteCommand, op: ApprovalOperation): Pick<
       return {
         target_scope: "repo",
         target: ownerValue && repoValue ? `${ownerValue}/${repoValue}` : command.payload.tool_name,
+      };
+    }
+    if (op === "browser.snapshot" || op === "browser.automation") {
+      const urlValue = typeof args.url === "string" ? args.url : undefined;
+      return {
+        target_scope: "task_type",
+        target: urlValue ? `${op}:${urlValue}` : command.payload.tool_name,
       };
     }
     const pathValue = typeof args.path === "string" ? args.path : undefined;
