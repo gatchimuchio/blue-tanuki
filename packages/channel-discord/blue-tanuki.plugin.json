@@ -10,5 +10,5 @@
     "network:discord.com",
     "secrets:DISCORD_BOT_TOKEN"
   ],
-  "description": "Discord Gateway channel via discord.js v14. DM + mention reactions. Silent fallback when DISCORD_BOT_TOKEN is unset."
+  "description": "Discord Gateway channel via discord.js v14. DM + mention reactions. Silent fallback, adapter retry/backoff, and typed delivery errors."
 }

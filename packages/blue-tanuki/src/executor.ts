@@ -18,7 +18,15 @@ export interface ChannelDispatcher {
   dispatch(
     payload: ChannelSendPayload,
     meta: { command_id: string; upstream_commit_hash: string },
-  ): Promise<{ delivered: boolean; external_id?: string; error?: string }>;
+  ): Promise<{
+    delivered: boolean;
+    external_id?: string;
+    error?: string;
+    error_kind?: "recoverable" | "non_recoverable";
+    error_code?: string;
+    retry_after_ms?: number;
+    next_action?: string;
+  }>;
 }
 
 export interface ExecutorDeps {
@@ -241,6 +249,15 @@ export class Executor {
         command_id: id,
         status: "failed",
         error: r.error ?? "channel_dispatch_failed",
+        result: {
+          sent: false,
+          channel: payload.channel,
+          target: payload.target,
+          error_kind: r.error_kind,
+          error_code: r.error_code,
+          retry_after_ms: r.retry_after_ms,
+          next_action: r.next_action,
+        },
         metrics: { duration_ms: Date.now() - start },
       };
     }

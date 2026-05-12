@@ -110,6 +110,17 @@ Schedule audit records include safe metadata such as `schedule_id`, `origin`, `o
 
 The tool result includes `result_digest`, GitHub request metadata, and safe issue/PR/comment ids or URLs. `GITHUB_TOKEN` is never written to audit output or tool result output.
 
+## Channel delivery audit compatibility
+
+Slack / Discord delivery failures are returned to executor feedback as typed downstream results:
+
+- `error_kind`: `recoverable` or `non_recoverable`
+- `error_code`: bounded machine-readable error code
+- `retry_after_ms`: present when a rate-limit/backoff hint is known
+- `next_action`: owner-facing remediation text
+
+These fields are audit evidence only. They never feed back into HDS-BRAIN as authority and never let channel metadata escalate permissions.
+
 ## What is not treated as authority
 
 - LLM output

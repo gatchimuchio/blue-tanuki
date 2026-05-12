@@ -4,6 +4,8 @@ import type {
   ChannelSendPayload,
 } from "@blue-tanuki/protocol";
 import {
+  classifyChannelDeliveryError,
+  isRecoverableChannelDeliveryError,
   withRetryBackoff,
   type BackoffOptions,
   type InboundChannel,
@@ -68,6 +70,10 @@ interface SentRecord {
   external_id: string;
   ok: boolean;
   error?: string;
+  error_kind?: SendResult["error_kind"];
+  error_code?: string;
+  retry_after_ms?: number;
+  next_action?: string;
 }
 
 /**
@@ -94,7 +100,8 @@ interface SentRecord {
  *     does not consult metadata; it merely posts to the given target.
  *
  * Notes:
- *   - Rate limiting / backoff is deferred to Phase 4.
+ *   - Rate limiting / backoff is handled as adapter-level retry around
+ *     transport failures that still surface after Slack SDK handling.
  *   - Threaded replies require the caller to pass thread_ts; not yet
  *     surfaced through ChannelSendPayload (would require a protocol
  *     extension). Phase 3 posts to the channel root.
@@ -196,11 +203,22 @@ export class SlackChannel implements InboundChannel, OutboundChannel {
         external_id,
         ok: false,
         error: "silent_mode",
+        error_kind: "non_recoverable",
+        error_code: "slack_not_configured",
+        next_action:
+          "Set SLACK_BOT_TOKEN and SLACK_APP_TOKEN, or leave Slack intentionally disabled.",
       });
       this.log(
         `[slack:silent] would-send target=${payload.target} commit=${meta.upstream_commit_hash.slice(0, 8)}… content="${truncate(payload.content, 80)}"`,
       );
-      return { delivered: false, error: "silent_mode" };
+      return {
+        delivered: false,
+        error: "silent_mode",
+        error_kind: "non_recoverable",
+        error_code: "slack_not_configured",
+        next_action:
+          "Set SLACK_BOT_TOKEN and SLACK_APP_TOKEN, or leave Slack intentionally disabled.",
+      };
     }
 
     const transport = this.transport;
@@ -232,10 +250,11 @@ export class SlackChannel implements InboundChannel, OutboundChannel {
           }
           const v = signal.value;
           if (v.ok) return false;
-          // Only retry on rate-limit signals or explicit ratelimit error.
-          if (typeof v.retry_after_ms === "number" && v.retry_after_ms > 0) return true;
-          if (v.error && /rate.?limit|ratelimited|too_many/i.test(v.error)) return true;
-          return false;
+          // Only retry on recoverable delivery failures.
+          return isRecoverableChannelDeliveryError({
+            error: v.error,
+            retry_after_ms: v.retry_after_ms,
+          });
         },
         extract_retry_after_ms: (signal) =>
           signal.kind === "value" ? (signal.value.retry_after_ms ?? null) : null,
@@ -248,6 +267,12 @@ export class SlackChannel implements InboundChannel, OutboundChannel {
       r = await withRetryBackoff(callOnce, opts);
     }
 
+    const failureDetails = r.ok
+      ? null
+      : classifyChannelDeliveryError({
+          error: r.error ?? "post_failed",
+          retry_after_ms: r.retry_after_ms,
+        });
     const external_id = r.ts ?? `slack-${meta.command_id}-${this.counter}`;
     this.history.push({
       payload,
@@ -256,6 +281,10 @@ export class SlackChannel implements InboundChannel, OutboundChannel {
       external_id,
       ok: r.ok,
       error: r.error,
+      error_kind: r.error_kind ?? failureDetails?.error_kind,
+      error_code: r.error_code ?? failureDetails?.error_code,
+      retry_after_ms: r.retry_after_ms ?? failureDetails?.retry_after_ms,
+      next_action: r.ok ? undefined : slackNextAction(r),
     });
     if (r.ok) {
       this.log(
@@ -266,7 +295,19 @@ export class SlackChannel implements InboundChannel, OutboundChannel {
     this.log(
       `[slack] FAILED target=${payload.target} error=${r.error ?? "unknown"}`,
     );
-    return { delivered: false, error: r.error ?? "post_failed" };
+    const error = r.error ?? "post_failed";
+    const details = classifyChannelDeliveryError({
+      error,
+      retry_after_ms: r.retry_after_ms,
+    });
+    return {
+      delivered: false,
+      error,
+      error_kind: r.error_kind ?? details.error_kind,
+      error_code: r.error_code ?? details.error_code,
+      retry_after_ms: r.retry_after_ms ?? details.retry_after_ms,
+      next_action: slackNextAction(r),
+    };
   }
 
   /** Inspect what was sent (or attempted). Test/diagnostic only. */
@@ -285,4 +326,26 @@ export class SlackChannel implements InboundChannel, OutboundChannel {
 
 function truncate(s: string, n: number): string {
   return s.length <= n ? s : s.slice(0, n - 1) + "…";
+}
+
+function slackNextAction(result: SlackPostResult): string {
+  const error = result.error ?? "post_failed";
+  const details = classifyChannelDeliveryError({
+    error,
+    retry_after_ms: result.retry_after_ms,
+  });
+  if (details.error_kind === "recoverable") {
+    const wait =
+      details.retry_after_ms !== undefined
+        ? ` after about ${details.retry_after_ms}ms`
+        : "";
+    return `Slack delivery is recoverable; retry${wait} or rerun live smoke after the service recovers.`;
+  }
+  if (/channel_not_found|not_in_channel|missing_access/i.test(error)) {
+    return "Check SLACK_LIVE_TARGET and invite the bot to the target channel before retrying.";
+  }
+  if (/invalid_auth|token_revoked|account_inactive|not_authed/i.test(error)) {
+    return "Rotate SLACK_BOT_TOKEN/SLACK_APP_TOKEN and restart the gateway.";
+  }
+  return "Inspect Slack app permissions and channel configuration before retrying.";
 }

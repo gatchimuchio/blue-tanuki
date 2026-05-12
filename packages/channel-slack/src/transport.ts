@@ -7,6 +7,8 @@
  * exercised without a real Slack workspace.
  */
 
+import type { ChannelDeliveryErrorKind } from "@blue-tanuki/channel-base";
+
 export interface SlackInboundMessage {
   /** Slack channel id, e.g. "C12345" or "D12345" (DM). */
   channel_id: string;
@@ -33,6 +35,8 @@ export interface SlackPostResult {
   /** Native Slack message ts on success. */
   ts?: string;
   error?: string;
+  error_kind?: ChannelDeliveryErrorKind;
+  error_code?: string;
   /**
    * If the underlying transport recognized a rate-limit signal (e.g. an
    * HTTP 429 with a `Retry-After` header), it MAY surface that here in

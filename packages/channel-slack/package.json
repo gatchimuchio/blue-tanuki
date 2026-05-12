@@ -3,7 +3,7 @@
   "version": "0.0.2",
   "private": true,
   "license": "MIT",
-  "description": "Slack channel adapter (Phase 3: Bolt + Socket Mode)",
+  "description": "Slack channel adapter (Bolt + Socket Mode, typed delivery errors)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

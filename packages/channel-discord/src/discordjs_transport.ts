@@ -3,6 +3,7 @@ import type {
   DiscordPostResult,
   DiscordTransport,
 } from "./transport.js";
+import { classifyChannelDeliveryError } from "@blue-tanuki/channel-base";
 
 /**
  * DiscordJsTransport — production transport using `discord.js` v14.
@@ -151,16 +152,31 @@ export class DiscordJsTransport implements DiscordTransport {
         } | null>;
       };
     } | null;
-    if (!c) return { ok: false, error: "not_started" };
+    if (!c) {
+      const error = "not_started";
+      return {
+        ok: false,
+        error,
+        ...classifyChannelDeliveryError({ error }),
+      };
+    }
     try {
       const ch = await c.channels.fetch(args.channel);
       if (!ch || !ch.isTextBased()) {
-        return { ok: false, error: "channel_not_text_based" };
+        const error = "channel_not_text_based";
+        return {
+          ok: false,
+          error,
+          ...classifyChannelDeliveryError({ error }),
+        };
       }
       const sent = await ch.send(args.text);
       return { ok: true, message_id: sent.id };
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+      const error = discordErrorMessage(e);
+      const retry_after_ms = retryAfterMs(e);
+      const details = classifyChannelDeliveryError({ error, retry_after_ms });
+      return { ok: false, error, ...details };
     }
   }
 
@@ -181,4 +197,53 @@ interface DiscordRawMessage {
   content?: string;
   author?: { id?: string; bot?: boolean; username?: string };
   member?: { displayName?: string };
+}
+
+function discordErrorMessage(error: unknown): string {
+  const record = asRecord(error);
+  const raw = asRecord(record?.rawError);
+  const candidate =
+    readString(raw?.message) ??
+    readString(record?.message) ??
+    readString(record?.code) ??
+    (error instanceof Error ? error.message : undefined) ??
+    String(error);
+  return candidate || "discord_post_failed";
+}
+
+function retryAfterMs(error: unknown): number | undefined {
+  const record = asRecord(error);
+  const raw = asRecord(record?.rawError);
+  return (
+    positiveMs(record?.retry_after_ms) ??
+    secondsToMs(record?.retry_after) ??
+    positiveMs(raw?.retry_after_ms) ??
+    secondsToMs(raw?.retry_after)
+  );
+}
+
+function secondsToMs(value: unknown): number | undefined {
+  const n =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim() !== ""
+      ? Number(value)
+      : NaN;
+  return Number.isFinite(n) && n > 0 ? Math.ceil(n * 1000) : undefined;
+}
+
+function positiveMs(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.ceil(value)
+    : undefined;
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
 }

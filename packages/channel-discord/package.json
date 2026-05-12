@@ -3,7 +3,7 @@
   "version": "0.0.2",
   "private": true,
   "license": "MIT",
-  "description": "Discord channel adapter (Phase 3: discord.js v14 Gateway)",
+  "description": "Discord channel adapter (discord.js v14 Gateway, typed delivery errors)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

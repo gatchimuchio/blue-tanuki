@@ -13,6 +13,7 @@
 - Added Phase 8-S2b: actionable doctor remediation fields and safe runtime first-run status fields.
 - Added Phase 8-S3: internal OpenClaw rejection audit document and advanced the active execution lane to GitHub write.
 - Added Phase 8-S4: authenticated `github.write` tool with repository allowlist, L3 final-review mapping, capability envelope, and audit-safe result digests.
+- Added Phase 8-S5: Slack / Discord release-polished preview with typed delivery errors, adapter retry/backoff, live smoke error detail, and updated readiness docs.
 
 ## 0.1.0 - 2026-05-06
 

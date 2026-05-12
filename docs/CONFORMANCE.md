@@ -11,6 +11,10 @@
   - canonical `InboundRequest` / `ChannelSendPayload` の利用
   - channel metadata が authority metadata を持ち込まないこと
   - credential / transport 不在時に silent failure しないこと
+- `packages/channel-slack/test/slack.test.ts` / `packages/channel-discord/test/discord.test.ts`
+  - adapter-level retry/backoff
+  - typed recoverable / non-recoverable delivery errors
+  - credential missing, rate limit, and permission failure handling
 - `apps/gateway/test/compatibility_matrix.test.ts`
   - `docs/compatibility-matrix.json` と first-party / preview channel manifest の整合
   - WhatsApp が `reserved-third-party` のまま維持されること

@@ -3,6 +3,7 @@ import type { InboundRequest, ChannelSendPayload } from "@blue-tanuki/protocol";
 import {
   InboundRouter,
   OutboundDispatcher,
+  classifyChannelDeliveryError,
   type InboundChannel,
   type InboundHandler,
   type OutboundChannel,
@@ -51,6 +52,27 @@ const baseMeta: SendMeta = { command_id: "cmd-1", upstream_commit_hash: "h0" };
 function inbound(channel: string, content: string, id = "r1"): InboundRequest {
   return { id, channel, user: "u1", content, timestamp: Date.now() };
 }
+
+describe("channel delivery error classification", () => {
+  it("classifies rate limits as recoverable and permission/config errors as non-recoverable", () => {
+    expect(
+      classifyChannelDeliveryError({
+        error: "ratelimited",
+        retry_after_ms: 250,
+      }),
+    ).toMatchObject({
+      error_kind: "recoverable",
+      error_code: "rate_limited",
+      retry_after_ms: 250,
+    });
+    expect(
+      classifyChannelDeliveryError({ error: "missing_access" }),
+    ).toMatchObject({
+      error_kind: "non_recoverable",
+      error_code: "missing_access",
+    });
+  });
+});
 
 describe("InboundRouter", () => {
   it("multiplexes channels into a single handler", async () => {
@@ -137,6 +159,9 @@ describe("OutboundDispatcher", () => {
     );
     expect(r.delivered).toBe(false);
     expect(r.error).toMatch(/no_channel_registered/);
+    expect(r.error_kind).toBe("non_recoverable");
+    expect(r.error_code).toBe("no_channel_registered");
+    expect(r.next_action).toContain("telegram");
   });
 
   it("captures channel exceptions as failure result", async () => {
@@ -151,6 +176,9 @@ describe("OutboundDispatcher", () => {
     );
     expect(r.delivered).toBe(false);
     expect(r.error).toBe("boom");
+    expect(r.error_kind).toBe("non_recoverable");
+    expect(r.error_code).toBe("boom");
+    expect(r.next_action).toContain("Inspect");
   });
 
   it("rejects duplicate registration", () => {

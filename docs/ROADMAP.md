@@ -55,7 +55,6 @@ Remaining primary work:
 Goal:
 
 - GitHub write downstream tool
-- Slack / Discord release polish
 - browser automation preview
 - stronger live smoke
 - conformance test expansion
@@ -104,8 +103,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 8-S2b | B | Doctor Actionable Output + Control Center First-Run Status | P0 | completed |
 | 8-S3 | B | OpenClaw Rejection Audit document | P0 | completed |
 | 8-S4 | C | GitHub write tool | P1 | completed |
-| 8-S5 | C | Slack / Discord release polish + live smoke | P1 | current |
-| 8-S6 | C | Browser automation preview | P2 | 8-S1 |
+| 8-S5 | C | Slack / Discord release polish + live smoke | P1 | completed |
+| 8-S6 | C | Browser automation preview | P2 | current |
 | 9-S1 | D | F-reference audit integration | P1 | 8-S2b |
 | 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | 9-S1 |
 | 9-S3 | D | Google write integration | P2 | 9-S2 |
@@ -119,10 +118,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 8-S5 - Slack / Discord release polish + live smoke
+Phase 8-S6 - Browser automation preview
 ```
 
-Do not begin browser automation, onboarding/daemon work, Google integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 8-S5 is completed unless explicitly instructed.
+Do not begin Google integrations, Teams/LINE, resident UX, or release-hardening lanes before Phase 8-S6 is completed unless explicitly instructed.
 
 ## 4. Completed Phase Summaries
 
@@ -168,6 +167,14 @@ Do not begin browser automation, onboarding/daemon work, Google integrations, Te
 - Audit-safe result digest and bounded output
 - Active execution lane advanced to Phase 8-S5 Slack / Discord release polish
 
+### Phase 8-S5
+
+- Slack / Discord adapter-level retry/backoff confirmed and documented
+- Typed recoverable / non-recoverable delivery errors added to downstream send results
+- Live smoke failure output now includes typed delivery detail and owner next action
+- Compatibility matrix keeps Slack / Discord as release-polished preview until owner credentialed live smoke
+- Active execution lane advanced to Phase 8-S6 browser automation preview
+
 ## 5. Non-Goals
 
 Do not add:
@@ -189,6 +196,7 @@ Do not add:
 - [Active Implementation Instructions](IMPLEMENTATION_INSTRUCTIONS.md)
 - [OpenClaw Rejection Audit](OPENCLAW_REJECTION_AUDIT.md)
 - [Phase 8-S4 GitHub Write](phase8-s4-github-write.md)
+- [Phase 8-S5 Slack / Discord Polish](phase8-s5-slack-discord-polish.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)
 - [Channel Readiness Matrix](CHANNEL_READINESS_MATRIX.md)

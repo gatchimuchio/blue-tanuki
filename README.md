@@ -19,7 +19,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Approval Gate with final-review boundary
 - hash-chain audit logs
 - Telegram Bot API channel
-- Slack / Discord adapters with silent fallback when credentials are absent
+- Slack / Discord adapters with silent fallback, retry/backoff, typed delivery errors, and credentialed live smoke path
 - Daily Brief and generic scheduled-message smoke via internal cron
 - Optional token-gated HTTP webhook ingress at `/webhook`
 - Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `browser.read`, and `shell.exec` with sandbox / network / approval guards
@@ -283,6 +283,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/ROADMAP.md](./docs/ROADMAP.md) - internal roadmap v9 and Sacred Constraints
 - [docs/OPENCLAW_REJECTION_AUDIT.md](./docs/OPENCLAW_REJECTION_AUDIT.md) - internal OpenClaw rejection criteria
 - [docs/phase8-s4-github-write.md](./docs/phase8-s4-github-write.md) - GitHub write safety boundary
+- [docs/phase8-s5-slack-discord-polish.md](./docs/phase8-s5-slack-discord-polish.md) - Slack / Discord release-polished preview boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

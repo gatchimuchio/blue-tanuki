@@ -4,6 +4,7 @@
  * Production wraps `discord.js` Client. Tests inject a fake.
  * Mirror of the Slack pattern; see packages/channel-slack/src/transport.ts.
  */
+import type { ChannelDeliveryErrorKind } from "@blue-tanuki/channel-base";
 
 export interface DiscordInboundMessage {
   /** Discord channel snowflake. */
@@ -31,6 +32,8 @@ export interface DiscordPostResult {
   /** Native message snowflake on success. */
   message_id?: string;
   error?: string;
+  error_kind?: ChannelDeliveryErrorKind;
+  error_code?: string;
   /**
    * If the underlying transport recognized a rate-limit signal (HTTP 429
    * with `retry_after`), it MAY surface that here in milliseconds. The

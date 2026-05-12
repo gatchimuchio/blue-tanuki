@@ -3,6 +3,7 @@ import type {
   SlackPostResult,
   SlackTransport,
 } from "./transport.js";
+import { classifyChannelDeliveryError } from "@blue-tanuki/channel-base";
 
 /**
  * BoltTransport — production Slack transport using `@slack/bolt` with
@@ -141,9 +142,14 @@ export class BoltTransport implements SlackTransport {
         thread_ts: args.thread_ts,
       })) as { ok?: boolean; ts?: string; error?: string };
       if (r.ok) return { ok: true, ts: r.ts };
-      return { ok: false, error: r.error ?? "unknown_error" };
+      const error = r.error ?? "unknown_error";
+      const details = classifyChannelDeliveryError({ error });
+      return { ok: false, error, ...details };
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+      const error = slackErrorMessage(e);
+      const retry_after_ms = retryAfterMs(e);
+      const details = classifyChannelDeliveryError({ error, retry_after_ms });
+      return { ok: false, error, ...details };
     }
   }
 
@@ -175,4 +181,59 @@ interface SlackRawAppMention {
   channel?: string;
   ts?: string;
   thread_ts?: string;
+}
+
+function slackErrorMessage(error: unknown): string {
+  const record = asRecord(error);
+  const data = asRecord(record?.data);
+  const candidate =
+    readString(data?.error) ??
+    readString(record?.code) ??
+    (error instanceof Error ? error.message : undefined) ??
+    String(error);
+  return candidate || "slack_post_failed";
+}
+
+function retryAfterMs(error: unknown): number | undefined {
+  const record = asRecord(error);
+  const data = asRecord(record?.data);
+  const headers = asRecord(record?.headers);
+  return (
+    positiveMs(record?.retry_after_ms) ??
+    secondsToMs(record?.retryAfter) ??
+    secondsToMs(data?.retry_after) ??
+    positiveMs(data?.retry_after_ms) ??
+    headerRetryAfterMs(headers)
+  );
+}
+
+function headerRetryAfterMs(headers: Record<string, unknown> | undefined): number | undefined {
+  if (!headers) return undefined;
+  return secondsToMs(headers["retry-after"] ?? headers["Retry-After"]);
+}
+
+function secondsToMs(value: unknown): number | undefined {
+  const n =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim() !== ""
+      ? Number(value)
+      : NaN;
+  return Number.isFinite(n) && n > 0 ? Math.ceil(n * 1000) : undefined;
+}
+
+function positiveMs(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.ceil(value)
+    : undefined;
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
 }

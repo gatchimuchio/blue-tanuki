@@ -141,16 +141,14 @@ OpenClaw と同様のチャネル多様性を、**LLM 結合なし**で再実装
 - セッションは in-memory (`Map<user, Set<WebSocket>>`)。プロセス再起動で切断
 - HTTP body の hard cap 1MB
 
-#### Slack / Discord (`channel-slack`, `channel-discord`) — Phase 2 スタブ
+#### Slack / Discord (`channel-slack`, `channel-discord`) — release-polished preview
 
-Phase 2 では:
-- token 未設定 → 警告ログ + `silent` モードで `start()` を成功させる (クラッシュさせない)
-- token 設定 → `[slack] stub started` ログのみ。実 SDK 統合は **Phase 3**
-- `send()` は in-memory queue に積み、`[slack:STUB]` 形式でログ。返り値は delivered=true + 合成 external_id
-
-将来 Phase 3 で:
-- Slack: `@slack/web-api` の `chat.postMessage` で送信、Bolt or Socket Mode で events 受信
-- Discord: `discord.js` で REST + Gateway WS 接続
+現行実装:
+- token 未設定 → 警告ログ + `silent` モードで `start()` を成功させ、send は fail-closed typed result を返す
+- Slack: `@slack/bolt` Socket Mode + `chat.postMessage`
+- Discord: `discord.js` v14 Gateway + channel send
+- adapter-level retry/backoff と typed `recoverable` / `non_recoverable` delivery error
+- first-party 昇格は owner-run credentialed live smoke 完走後に判断する
 
 ## 連結プロトコル (`packages/protocol`)
 

@@ -552,9 +552,17 @@ that was lost has an audit entry on disk explaining what happened.
 
 Symptom: `[slack] WARN SLACK_BOT_TOKEN/SLACK_APP_TOKEN not both set`.
 
-This is the Phase 3 silent-stub mode. Outbound dispatch returns
-`delivered: false`. Recovery: set both tokens and restart. Doctor reports
-optional-env presence so deploy CI can check this without booting.
+This is the fail-closed silent mode. Outbound dispatch returns `delivered:
+false` with typed delivery fields:
+
+- `error_kind=recoverable`: rate limit or transient transport failure; retry
+  after `retry_after_ms` when present.
+- `error_kind=non_recoverable`: token, target, app permission, channel
+  membership, or channel type must be fixed before retry.
+
+Recovery: set the required token(s), verify the live target is a test channel,
+restart, then run live smoke. Doctor reports optional-env presence so deploy CI
+can check this without booting.
 
 ---
 

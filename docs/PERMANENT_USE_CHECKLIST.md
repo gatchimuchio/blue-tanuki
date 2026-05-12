@@ -55,7 +55,7 @@
 
 - [ ] WebChat は必須 local console として動いている
 - [ ] Telegram は必要なら live token で確認した
-- [ ] Slack/Discord は preview 扱いとして failure mode を理解している
+- [ ] Slack/Discord は release-polished preview 扱いとして typed error / live smoke / failure mode を理解している
 - [ ] WhatsApp は first-party core ではないことを理解している
 - [ ] [CHANNEL_READINESS_MATRIX.md](./CHANNEL_READINESS_MATRIX.md) と互換 matrix が矛盾していない
 
@@ -92,6 +92,6 @@
 - v0.1 は signed native installer ではない
 - v0.1 は automatic updater を持たない
 - v0.1 Daily Brief は scheduled message smoke であり Gmail/GCal/Drive 統合ではない
-- Slack/Discord は preview-level
+- Slack/Discord は release-polished preview-level。実 token / test target での live smoke 完走後に first-party 昇格判断を行う
 - Browser automation、Google integrations、Teams、LINE は後続 phase
 - WhatsApp は first-party core から除外

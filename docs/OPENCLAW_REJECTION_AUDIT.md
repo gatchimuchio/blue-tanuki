@@ -201,7 +201,7 @@ Policy:
 This audit fixes the roadmap consequences:
 
 - v0.1 remains a Safety Demonstration Release focused on WebChat, Telegram, Approval Gate, Runtime Invariants, hash-chain audit, and guided local operation.
-- Slack and Discord remain preview until release polish, conformance, live smoke, and permanent-use failure modes are complete.
+- Slack and Discord are release-polished preview channels after Phase 8-S5; first-party promotion still waits on owner-run credentialed live smoke.
 - GitHub write, browser automation, Google integrations, Teams, and LINE are downstream features that must enter through ApprovalLevel, capability envelope, audit, and conformance gates.
 - WhatsApp remains `reserved-third-party` and is not a v0.1, v1.0, or first-party completion requirement.
 - Browser automation is preview-only until sandbox, credential, network, resource-limit, ApprovalLevel, and audit requirements are closed.

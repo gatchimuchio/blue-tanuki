@@ -8,3 +8,9 @@ export {
   type TokenBucketOptions,
   type BackoffOptions,
 } from "./rate_limit.js";
+export {
+  classifyChannelDeliveryError,
+  isRecoverableChannelDeliveryError,
+  type ChannelDeliveryErrorDetails,
+  type ChannelDeliveryErrorKind,
+} from "./delivery_error.js";

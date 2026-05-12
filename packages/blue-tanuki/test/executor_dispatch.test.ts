@@ -57,7 +57,13 @@ describe("Executor.executeChannelSend — dispatcher path", () => {
   it("returns failed when dispatcher reports undelivered", async () => {
     const dispatcher: ChannelDispatcher = {
       async dispatch() {
-        return { delivered: false, error: "no_channel_registered:slack" };
+        return {
+          delivered: false,
+          error: "no_channel_registered:slack",
+          error_kind: "non_recoverable",
+          error_code: "no_channel_registered",
+          next_action: "Register Slack before retrying.",
+        };
       },
     };
     const exec = new Executor({
@@ -68,6 +74,13 @@ describe("Executor.executeChannelSend — dispatcher path", () => {
     const fb = await exec.execute(channelSendCmd("slack"));
     expect(fb.status).toBe("failed");
     expect(fb.error).toMatch(/no_channel_registered:slack/);
+    expect(fb.result).toMatchObject({
+      sent: false,
+      channel: "slack",
+      error_kind: "non_recoverable",
+      error_code: "no_channel_registered",
+      next_action: "Register Slack before retrying.",
+    });
   });
 
   it("falls back to console.log when no dispatcher (backward compat)", async () => {

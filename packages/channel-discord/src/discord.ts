@@ -4,6 +4,8 @@ import type {
   ChannelSendPayload,
 } from "@blue-tanuki/protocol";
 import {
+  classifyChannelDeliveryError,
+  isRecoverableChannelDeliveryError,
   withRetryBackoff,
   type BackoffOptions,
   type InboundChannel,
@@ -54,6 +56,10 @@ interface SentRecord {
   external_id: string;
   ok: boolean;
   error?: string;
+  error_kind?: SendResult["error_kind"];
+  error_code?: string;
+  retry_after_ms?: number;
+  next_action?: string;
 }
 
 /**
@@ -165,11 +171,22 @@ export class DiscordChannel implements InboundChannel, OutboundChannel {
         external_id,
         ok: false,
         error: "silent_mode",
+        error_kind: "non_recoverable",
+        error_code: "discord_not_configured",
+        next_action:
+          "Set DISCORD_BOT_TOKEN, or leave Discord intentionally disabled.",
       });
       this.log(
         `[discord:silent] would-send target=${payload.target} commit=${meta.upstream_commit_hash.slice(0, 8)}… content="${truncate(payload.content, 80)}"`,
       );
-      return { delivered: false, error: "silent_mode" };
+      return {
+        delivered: false,
+        error: "silent_mode",
+        error_kind: "non_recoverable",
+        error_code: "discord_not_configured",
+        next_action:
+          "Set DISCORD_BOT_TOKEN, or leave Discord intentionally disabled.",
+      };
     }
 
     const transport = this.transport;
@@ -196,9 +213,10 @@ export class DiscordChannel implements InboundChannel, OutboundChannel {
           if (signal.kind === "throw") return true;
           const v = signal.value;
           if (v.ok) return false;
-          if (typeof v.retry_after_ms === "number" && v.retry_after_ms > 0) return true;
-          if (v.error && /rate.?limit|ratelimited|429|too_many/i.test(v.error)) return true;
-          return false;
+          return isRecoverableChannelDeliveryError({
+            error: v.error,
+            retry_after_ms: v.retry_after_ms,
+          });
         },
         extract_retry_after_ms: (signal) =>
           signal.kind === "value" ? (signal.value.retry_after_ms ?? null) : null,
@@ -211,6 +229,12 @@ export class DiscordChannel implements InboundChannel, OutboundChannel {
       r = await withRetryBackoff(callOnce, opts);
     }
 
+    const failureDetails = r.ok
+      ? null
+      : classifyChannelDeliveryError({
+          error: r.error ?? "post_failed",
+          retry_after_ms: r.retry_after_ms,
+        });
     const external_id = r.message_id ?? `discord-${meta.command_id}-${this.counter}`;
     this.history.push({
       payload,
@@ -219,6 +243,10 @@ export class DiscordChannel implements InboundChannel, OutboundChannel {
       external_id,
       ok: r.ok,
       error: r.error,
+      error_kind: r.error_kind ?? failureDetails?.error_kind,
+      error_code: r.error_code ?? failureDetails?.error_code,
+      retry_after_ms: r.retry_after_ms ?? failureDetails?.retry_after_ms,
+      next_action: r.ok ? undefined : discordNextAction(r),
     });
     if (r.ok) {
       this.log(
@@ -229,7 +257,19 @@ export class DiscordChannel implements InboundChannel, OutboundChannel {
     this.log(
       `[discord] FAILED target=${payload.target} error=${r.error ?? "unknown"}`,
     );
-    return { delivered: false, error: r.error ?? "post_failed" };
+    const error = r.error ?? "post_failed";
+    const details = classifyChannelDeliveryError({
+      error,
+      retry_after_ms: r.retry_after_ms,
+    });
+    return {
+      delivered: false,
+      error,
+      error_kind: r.error_kind ?? details.error_kind,
+      error_code: r.error_code ?? details.error_code,
+      retry_after_ms: r.retry_after_ms ?? details.retry_after_ms,
+      next_action: discordNextAction(r),
+    };
   }
 
   getHistory(): readonly SentRecord[] {
@@ -247,4 +287,26 @@ export class DiscordChannel implements InboundChannel, OutboundChannel {
 
 function truncate(s: string, n: number): string {
   return s.length <= n ? s : s.slice(0, n - 1) + "…";
+}
+
+function discordNextAction(result: DiscordPostResult): string {
+  const error = result.error ?? "post_failed";
+  const details = classifyChannelDeliveryError({
+    error,
+    retry_after_ms: result.retry_after_ms,
+  });
+  if (details.error_kind === "recoverable") {
+    const wait =
+      details.retry_after_ms !== undefined
+        ? ` after about ${details.retry_after_ms}ms`
+        : "";
+    return `Discord delivery is recoverable; retry${wait} or rerun live smoke after the service recovers.`;
+  }
+  if (/missing_access|channel_not_text_based|unknown.?channel|forbidden/i.test(error)) {
+    return "Check DISCORD_LIVE_TARGET, bot channel permissions, and target channel type before retrying.";
+  }
+  if (/token|unauthorized|invalid/i.test(error)) {
+    return "Rotate DISCORD_BOT_TOKEN and restart the gateway.";
+  }
+  return "Inspect Discord bot permissions and channel configuration before retrying.";
 }

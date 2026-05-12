@@ -104,13 +104,15 @@ If WebChat works, Telegram failure is channel readiness, not HDS authority failu
 
 ## Slack / Discord does not deliver
 
-Slack and Discord are preview-level in v0.1.
+Slack and Discord are release-polished preview channels in v0.1. They have typed delivery errors, adapter retry/backoff, and credentialed live smoke paths, but remain preview until the owner runs live credentials against a test target.
 
 Check:
 
 - Slack: `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_LIVE_TARGET`
 - Discord: `DISCORD_BOT_TOKEN`, `DISCORD_LIVE_TARGET`
 - live smoke skip path is acceptable when credentials are intentionally absent
+- `error_kind=recoverable` means retry after the indicated backoff or after provider recovery
+- `error_kind=non_recoverable` means fix token, target, app permission, or channel membership before retrying
 
 See [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md).
 

@@ -67,6 +67,9 @@ describe("DiscordChannel — silent mode", () => {
     );
     expect(r.delivered).toBe(false);
     expect(r.error).toBe("silent_mode");
+    expect(r.error_kind).toBe("non_recoverable");
+    expect(r.error_code).toBe("discord_not_configured");
+    expect(r.next_action).toContain("DISCORD_BOT_TOKEN");
     await ch.stop();
   });
 });
@@ -125,6 +128,9 @@ describe("DiscordChannel — active mode (fake transport)", () => {
     );
     expect(r.delivered).toBe(false);
     expect(r.error).toBe("missing_access");
+    expect(r.error_kind).toBe("non_recoverable");
+    expect(r.error_code).toBe("missing_access");
+    expect(r.next_action).toContain("DISCORD_LIVE_TARGET");
     await ch.stop();
   });
 
@@ -209,6 +215,8 @@ describe("DiscordChannel — retry / backoff", () => {
     );
     expect(r.delivered).toBe(false);
     expect(calls).toBe(1);
+    expect(r.error_kind).toBe("non_recoverable");
+    expect(r.error_code).toBe("missing_access");
     await ch.stop();
   });
 
@@ -227,6 +235,10 @@ describe("DiscordChannel — retry / backoff", () => {
     );
     expect(r.delivered).toBe(false);
     expect(calls).toBe(1);
+    expect(r.error_kind).toBe("recoverable");
+    expect(r.error_code).toBe("rate_limited");
+    expect(r.retry_after_ms).toBe(50);
+    expect(r.next_action).toContain("recoverable");
     await ch.stop();
   });
 });

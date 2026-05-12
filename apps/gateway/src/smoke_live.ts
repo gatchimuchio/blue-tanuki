@@ -140,7 +140,7 @@ async function smokeSlack(plugins: PluginRuntime): Promise<string | null> {
       TIMEOUT_MS,
     );
     if (!result.delivered) {
-      throw new Error(result.error ?? "send_not_delivered");
+      throw new Error(formatDeliveryFailure(result));
     }
     return `target=${target} external_id=${result.external_id ?? "unknown"}`;
   } finally {
@@ -187,7 +187,7 @@ async function smokeDiscord(plugins: PluginRuntime): Promise<string | null> {
       TIMEOUT_MS,
     );
     if (!result.delivered) {
-      throw new Error(result.error ?? "send_not_delivered");
+      throw new Error(formatDeliveryFailure(result));
     }
     return `target=${target} external_id=${result.external_id ?? "unknown"}`;
   } finally {
@@ -217,6 +217,23 @@ function parsePositiveInt(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback;
   const n = parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function formatDeliveryFailure(result: {
+  error?: string;
+  error_kind?: string;
+  error_code?: string;
+  retry_after_ms?: number;
+  next_action?: string;
+}): string {
+  const parts = [
+    result.error ?? "send_not_delivered",
+    result.error_kind ? `kind=${result.error_kind}` : null,
+    result.error_code ? `code=${result.error_code}` : null,
+    result.retry_after_ms ? `retry_after_ms=${result.retry_after_ms}` : null,
+    result.next_action ? `next_action=${result.next_action}` : null,
+  ].filter((part): part is string => Boolean(part));
+  return parts.join(" ");
 }
 
 main().catch((e) => {

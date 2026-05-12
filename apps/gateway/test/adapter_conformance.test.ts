@@ -303,7 +303,12 @@ describe("adapter conformance: fail closed on unavailable transport", () => {
         { channel: "slack", target: "C123", content: "x" },
         SEND_META,
       );
-      expect(result).toEqual({ delivered: false, error: "silent_mode" });
+      expect(result).toMatchObject({
+        delivered: false,
+        error: "silent_mode",
+        error_kind: "non_recoverable",
+        error_code: "slack_not_configured",
+      });
     } finally {
       await channel.stop();
     }
@@ -317,7 +322,12 @@ describe("adapter conformance: fail closed on unavailable transport", () => {
         { channel: "discord", target: "D123", content: "x" },
         SEND_META,
       );
-      expect(result).toEqual({ delivered: false, error: "silent_mode" });
+      expect(result).toMatchObject({
+        delivered: false,
+        error: "silent_mode",
+        error_kind: "non_recoverable",
+        error_code: "discord_not_configured",
+      });
     } finally {
       await channel.stop();
     }

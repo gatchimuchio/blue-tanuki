@@ -11,5 +11,5 @@
     "secrets:SLACK_BOT_TOKEN",
     "secrets:SLACK_APP_TOKEN"
   ],
-  "description": "Slack Socket Mode channel via @slack/bolt. DM all + mention reactions. Silent fallback when tokens are unset."
+  "description": "Slack Socket Mode channel via @slack/bolt. DM all + mention reactions. Silent fallback, adapter retry/backoff, and typed delivery errors."
 }

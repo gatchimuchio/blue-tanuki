@@ -78,6 +78,9 @@ describe("SlackChannel — silent mode (no token, no transport)", () => {
     );
     expect(r.delivered).toBe(false);
     expect(r.error).toBe("silent_mode");
+    expect(r.error_kind).toBe("non_recoverable");
+    expect(r.error_code).toBe("slack_not_configured");
+    expect(r.next_action).toContain("SLACK_BOT_TOKEN");
     await ch.stop();
   });
 
@@ -153,11 +156,15 @@ describe("SlackChannel — active mode (fake transport)", () => {
     );
     expect(r.delivered).toBe(false);
     expect(r.error).toBe("channel_not_found");
+    expect(r.error_kind).toBe("non_recoverable");
+    expect(r.error_code).toBe("channel_not_found");
+    expect(r.next_action).toContain("SLACK_LIVE_TARGET");
 
     const hist = ch.getHistory();
     expect(hist).toHaveLength(1);
     expect(hist[0]!.ok).toBe(false);
     expect(hist[0]!.error).toBe("channel_not_found");
+    expect(hist[0]!.error_kind).toBe("non_recoverable");
     await ch.stop();
   });
 
@@ -335,6 +342,8 @@ describe("SlackChannel — retry/backoff on rate limits", () => {
     );
     expect(r.delivered).toBe(false);
     expect(r.error).toBe("ratelimited");
+    expect(r.error_kind).toBe("recoverable");
+    expect(r.error_code).toBe("ratelimited");
     await ch.stop();
   });
 
@@ -359,6 +368,10 @@ describe("SlackChannel — retry/backoff on rate limits", () => {
     );
     expect(r.delivered).toBe(false);
     expect(r.error).toBe("ratelimited");
+    expect(r.error_kind).toBe("recoverable");
+    expect(r.error_code).toBe("rate_limited");
+    expect(r.retry_after_ms).toBe(5);
+    expect(r.next_action).toContain("recoverable");
     await ch.stop();
   });
 });

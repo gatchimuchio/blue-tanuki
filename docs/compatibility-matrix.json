@@ -10,11 +10,13 @@
     },
     "discord": {
       "status": "first-party-preview",
-      "target_release": "v0.1-preview"
+      "target_release": "v0.1-preview",
+      "notes": "Release-polished adapter with conformance tests, retry/backoff, typed delivery errors, and credentialed live smoke path. Remains preview until owner-run live credentials are verified."
     },
     "slack": {
       "status": "first-party-preview",
-      "target_release": "v0.1-preview"
+      "target_release": "v0.1-preview",
+      "notes": "Release-polished adapter with conformance tests, retry/backoff, typed delivery errors, and credentialed live smoke path. Remains preview until owner-run live credentials are verified."
     },
     "teams": {
       "status": "first-party",

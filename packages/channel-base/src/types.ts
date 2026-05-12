@@ -2,6 +2,7 @@ import type {
   InboundRequest,
   ChannelSendPayload,
 } from "@blue-tanuki/protocol";
+import type { ChannelDeliveryErrorKind } from "./delivery_error.js";
 
 /**
  * Handler called by an InboundChannel when a normalized request arrives.
@@ -47,6 +48,10 @@ export interface SendResult {
   /** Native message identifier (e.g. Slack ts, Discord message id). */
   external_id?: string;
   error?: string;
+  error_kind?: ChannelDeliveryErrorKind;
+  error_code?: string;
+  retry_after_ms?: number;
+  next_action?: string;
 }
 
 /**

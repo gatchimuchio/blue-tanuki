@@ -1,5 +1,6 @@
 import type { ChannelSendPayload } from "@blue-tanuki/protocol";
 import type { OutboundChannel, SendMeta, SendResult } from "./types.js";
+import { classifyChannelDeliveryError } from "./delivery_error.js";
 
 /**
  * OutboundDispatcher — routes ChannelSendPayload to the matching OutboundChannel.
@@ -27,14 +28,24 @@ export class OutboundDispatcher {
       return {
         delivered: false,
         error: `no_channel_registered:${payload.channel}`,
+        error_kind: "non_recoverable",
+        error_code: "no_channel_registered",
+        next_action: `Register or enable the ${payload.channel} channel before retrying this send.`,
       };
     }
     try {
       return await ch.send(payload, meta);
     } catch (e) {
+      const error = e instanceof Error ? e.message : String(e);
+      const details = classifyChannelDeliveryError({ error });
       return {
         delivered: false,
-        error: e instanceof Error ? e.message : String(e),
+        error,
+        ...details,
+        next_action:
+          details.error_kind === "recoverable"
+            ? "Retry after the channel transport recovers."
+            : "Inspect the channel configuration before retrying.",
       };
     }
   }
