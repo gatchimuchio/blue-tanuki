@@ -94,6 +94,11 @@ Declaration of expected runtime side effects. The format is `<scope>:<target>`. 
 | `google:gmail.read`      | Gmail read-only summary capability.                         |
 | `google:calendar.read`   | Google Calendar read-only summary capability.               |
 | `google:drive.read`      | Google Drive read-only metadata/search capability.          |
+| `google:gmail.write`     | Gmail draft/send capability.                                |
+| `google:calendar.write`  | Google Calendar event write capability.                     |
+| `google:drive.write`     | Google Drive file create/update capability.                 |
+| `external:send`          | Sends content to an external party.                         |
+| `email:send`             | Email send capability.                                      |
 | `shell:exec`             | Runs a bounded non-shell child process after Approval Gate. |
 | `channel:send`           | Sends through an outbound channel.                          |
 

@@ -262,7 +262,7 @@ Known gaps:
 
 - Slack / Discord remain preview until owner credentialed live smoke is run
 - browser automation is not implemented
-- Google write integrations are not implemented
+- Google write integrations are implemented as bounded L3 downstream tools
 - Teams / LINE are not implemented
 - resident native UX is not complete
 - v1.0 hardening is not complete
@@ -284,8 +284,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 8-S6 | C | Browser automation preview | P2 | completed |
 | 9-S1 | D | F-reference audit integration | P1 | completed |
 | 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | completed |
-| 9-S3 | D | Google write integration | P2 | current |
-| 9-S4 | D | Teams / LINE adapters | P2 | 8-S5 |
+| 9-S3 | D | Google write integration | P2 | completed |
+| 9-S4 | D | Teams / LINE adapters | P2 | current |
 | 10-S1 | E | Control Center approval UX polish | P1 | 8-S1, 8-S2b |
 | 10-S2 | E | Resident notification center | P2 | 10-S1 |
 | 10-S3 | E | Distribution UX hardening | P1 | 8-S2a, 8-S2b |
@@ -1404,7 +1404,8 @@ Potential operations:
 - drafts: L2 or L3 depending external visibility
 - send email: L3
 - calendar create/update/delete: L3
-- Drive write/delete/share: L3
+- Drive create/update: L3
+- Drive delete/share: deferred and must be L3 if added later
 
 ## Requirements
 
@@ -1413,6 +1414,13 @@ Potential operations:
 - no metadata authority
 - credential capability declarations
 - safe failure modes
+
+## Completion Notes
+
+- Added `gmail.write`, `google.calendar.write`, and `google.drive.write`.
+- Mapped Google writes to `google.write`, high risk, and `L3_final_review`.
+- Added bounded Gmail draft/send, Calendar event create/update/delete with `sendUpdates=none`, and Drive file create/update.
+- Added capability declarations, docs, and tests for fail-closed token/argument handling.
 
 ---
 
@@ -1669,7 +1677,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 9-S3 - Google Write Integration
+Phase 9-S4 - Teams / LINE Adapters
 ```
 
-Do not begin Teams/LINE, resident UX, or release-hardening lanes before Phase 9-S3 is completed unless explicitly instructed.
+Do not begin resident UX or release-hardening lanes before Phase 9-S4 is completed unless explicitly instructed.

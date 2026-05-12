@@ -121,6 +121,17 @@ The tool result includes `result_digest`, GitHub request metadata, and safe issu
 
 OAuth access tokens are never written to audit output, runtime snapshots, schedule snapshots, or tool result output.
 
+## Google write audit
+
+`gmail.write`, `google.calendar.write`, and `google.drive.write` are audited through the normal Approval Gate and executor feedback chain:
+
+- `approval_gate` / `authority_event` records `operation=google.write`, `approval_level=L3_final_review`, risk, actor, and authority trace.
+- `command_lifecycle` records pending/approved/rejected transitions.
+- `executor_feedback` records status, error if any, metrics, and a digest of the bounded result object.
+- Tool results include Google ids/URLs where returned, mutation status, request metadata, and `result_digest`.
+
+OAuth access tokens and full request bodies are never written to audit output or tool result output. Calendar writes force `sendUpdates=none`; attendee invites, Drive delete/share, and autonomous cross-service actions are outside this phase.
+
 ## Channel delivery audit compatibility
 
 Slack / Discord delivery failures are returned to executor feedback as typed downstream results:

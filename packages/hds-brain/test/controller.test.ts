@@ -432,6 +432,41 @@ describe("HDSUpperController.decide()", () => {
     });
   });
 
+  it("routes explicit Google write requests to L3-capable tool_call constraints", () => {
+    const c = new HDSUpperController();
+    const { log, command } = c.decide(
+      inbound('tool:google.calendar.write operation=event.create calendar_id=primary summary="Standup" start=2026-05-12T09:00:00Z end=2026-05-12T09:15:00Z max_bytes=8192'),
+    );
+
+    expect(log.frame.process.process_id).toBe("tool.process");
+    expect(command).not.toBeNull();
+    expect(command!.type).toBe("tool_call");
+    if (command!.type === "tool_call") {
+      expect(command!.payload).toEqual({
+        tool_name: "google.calendar.write",
+        arguments: {
+          operation: "event.create",
+          calendar_id: "primary",
+          summary: "Standup",
+          start: "2026-05-12T09:00:00Z",
+          end: "2026-05-12T09:15:00Z",
+          max_bytes: 8192,
+        },
+      });
+    }
+    expect(command!.constraints).toEqual({
+      allowed_tools: ["google.calendar.write"],
+      allowed_capabilities: [
+        "tool:google.calendar.write",
+        "network:googleapis.com",
+        "secrets:GOOGLE_CALENDAR_ACCESS_TOKEN",
+        "secrets:GOOGLE_ACCESS_TOKEN",
+        "google:calendar.write",
+      ],
+      timeout_ms: 15_000,
+    });
+  });
+
   it("routes explicit browser.read requests to tool_call with HTTP network capability", () => {
     const c = new HDSUpperController();
     const { log, command } = c.decide(

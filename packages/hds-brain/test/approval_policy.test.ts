@@ -359,6 +359,44 @@ describe("approval policy", () => {
     expect(r.decision).toBe("ask");
     expect(r.reason).toContain("grant_matched_but_final_review_required");
   });
+
+  it("forces Google write tools through L3 final-review even with reusable grants", () => {
+    const cmd = toolCommand(
+      "google.calendar.write",
+      { operation: "event.create", calendar_id: "primary", summary: "Standup" },
+      [
+        "tool:google.calendar.write",
+        "network:googleapis.com",
+        "secrets:GOOGLE_CALENDAR_ACCESS_TOKEN",
+        "secrets:GOOGLE_ACCESS_TOKEN",
+        "google:calendar.write",
+      ],
+    );
+    const grant = buildApprovalGrant({
+      mode: "remember_this_decision",
+      decision: "allow",
+      operation: "google.write",
+      target_scope: "task_type",
+      target: "google.calendar.write:event.create:primary",
+      risk: "high",
+      actor: "alice",
+      created_by: "alice",
+      expires_at: null,
+    });
+    const r = evaluateApproval(cmd, [grant], {
+      actor: "alice",
+      now: 1,
+      default_mode: "full_access",
+    });
+
+    expect(FINAL_REVIEW_OPERATIONS.has("google.write")).toBe(true);
+    expect(r.context.operation).toBe("google.write");
+    expect(r.context.risk).toBe("high");
+    expect(r.approval_level).toBe("L3_final_review");
+    expect(r.final_review_required).toBe(true);
+    expect(r.decision).toBe("ask");
+    expect(r.reason).toContain("grant_matched_but_final_review_required");
+  });
 });
 
 

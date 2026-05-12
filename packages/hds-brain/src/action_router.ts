@@ -90,6 +90,38 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
     ],
     timeout_ms: 15_000,
   },
+  "gmail.write": {
+    allowed_capabilities: [
+      "tool:gmail.write",
+      "network:googleapis.com",
+      "secrets:GMAIL_ACCESS_TOKEN",
+      "secrets:GOOGLE_ACCESS_TOKEN",
+      "google:gmail.write",
+      "external:send",
+      "email:send",
+    ],
+    timeout_ms: 15_000,
+  },
+  "google.calendar.write": {
+    allowed_capabilities: [
+      "tool:google.calendar.write",
+      "network:googleapis.com",
+      "secrets:GOOGLE_CALENDAR_ACCESS_TOKEN",
+      "secrets:GOOGLE_ACCESS_TOKEN",
+      "google:calendar.write",
+    ],
+    timeout_ms: 15_000,
+  },
+  "google.drive.write": {
+    allowed_capabilities: [
+      "tool:google.drive.write",
+      "network:googleapis.com",
+      "secrets:GOOGLE_DRIVE_ACCESS_TOKEN",
+      "secrets:GOOGLE_ACCESS_TOKEN",
+      "google:drive.write",
+    ],
+    timeout_ms: 15_000,
+  },
   "browser.read": {
     allowed_capabilities: ["tool:browser.read", "network:http"],
     timeout_ms: 15_000,
@@ -138,6 +170,9 @@ const TOOL_SPECS: Record<string, ToolSpec> = {
  *   - tool:gmail.read query="newer_than:1d" max_results=5
  *   - tool:google.calendar.read calendar_id=primary days=1 max_results=5
  *   - tool:google.drive.read query="trashed=false" max_results=5
+ *   - tool:gmail.write operation=draft.create to=owner@example.com subject="hello" body_text="draft"
+ *   - tool:google.calendar.write operation=event.create calendar_id=primary summary="Standup" start=2026-05-12T09:00:00Z end=2026-05-12T09:15:00Z
+ *   - tool:google.drive.write operation=file.create name=notes.txt content="hello"
  *   - tool:browser.read url=https://example.com max_chars=4000
  *   - tool:browser.snapshot url=https://example.com max_chars=4000
  *   - tool:browser.automation action=smoke
@@ -300,6 +335,9 @@ function coerceToolArgs(
     toolName === "gmail.read" ||
     toolName === "google.calendar.read" ||
     toolName === "google.drive.read" ||
+    toolName === "gmail.write" ||
+    toolName === "google.calendar.write" ||
+    toolName === "google.drive.write" ||
     toolName === "browser.read" ||
     toolName === "browser.snapshot" ||
     toolName === "browser.automation" ||
@@ -329,6 +367,9 @@ function coerceToolArgs(
   }
   if (toolName === "google.calendar.read") {
     coercePositiveInt(next, "days");
+  }
+  if (toolName === "google.drive.write") {
+    coercePositiveInt(next, "max_content_bytes");
   }
   if (toolName === "file.edit") {
     coercePositiveInt(next, "expected_replacements");

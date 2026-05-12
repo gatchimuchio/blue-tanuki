@@ -207,18 +207,24 @@ tool:github.write operation=pr.create owner=gatchimuchio repo=blue-tanuki title=
 tool:github.write operation=pr.comment.create owner=gatchimuchio repo=blue-tanuki number=1 body="review note"
 ```
 
-## Google read tools and Daily Brief source
+## Google tools and Daily Brief source
 
-Google integrations in this phase are read-only:
+Google read integrations:
 
 - `gmail.read` returns Gmail message metadata summaries.
 - `google.calendar.read` returns event metadata summaries.
 - `google.drive.read` returns Drive file metadata/search summaries.
 
-All requests are fixed to Google API hosts and require a read-only OAuth access token. `GOOGLE_ACCESS_TOKEN` can be used for all services, or service-specific tokens can narrow operator configuration:
+Google write integrations:
+
+- `gmail.write` creates Gmail drafts, sends Gmail messages, or sends an existing draft.
+- `google.calendar.write` creates, updates, or deletes Calendar events with `sendUpdates=none`.
+- `google.drive.write` creates or updates bounded text/media files.
+
+All requests are fixed to Google API hosts and require OAuth access tokens. `GOOGLE_ACCESS_TOKEN` can be used for all services, or service-specific tokens can narrow operator configuration:
 
 ```bash
-GOOGLE_ACCESS_TOKEN=<read-only-google-oauth-token>
+GOOGLE_ACCESS_TOKEN=<google-oauth-token>
 GMAIL_ACCESS_TOKEN=<gmail-read-token>
 GOOGLE_CALENDAR_ACCESS_TOKEN=<calendar-read-token>
 GOOGLE_DRIVE_ACCESS_TOKEN=<drive-read-token>
@@ -230,6 +236,19 @@ Tool examples:
 tool:gmail.read query="newer_than:1d" max_results=5
 tool:google.calendar.read calendar_id=primary days=1 max_results=5
 tool:google.drive.read query="trashed=false" max_results=5
+```
+
+Write examples:
+
+```text
+tool:gmail.write operation=draft.create to=owner@example.com subject="Draft" body_text="hello"
+tool:gmail.write operation=message.send to=owner@example.com subject="Notice" body_text="hello"
+tool:gmail.write operation=draft.send draft_id=<draft-id>
+tool:google.calendar.write operation=event.create calendar_id=primary summary="Standup" start=2026-05-12T09:00:00Z end=2026-05-12T09:15:00Z
+tool:google.calendar.write operation=event.update calendar_id=primary event_id=<event-id> summary="Updated"
+tool:google.calendar.write operation=event.delete calendar_id=primary event_id=<event-id>
+tool:google.drive.write operation=file.create name=notes.txt content="hello" mime_type=text/plain
+tool:google.drive.write operation=file.update file_id=<file-id> content="updated"
 ```
 
 Daily Brief Google source:
@@ -244,7 +263,7 @@ BLUE_TANUKI_DAILY_BRIEF_GOOGLE_CALENDAR_DAYS=1
 BLUE_TANUKI_DAILY_BRIEF_DRIVE_QUERY="trashed=false"
 ```
 
-No Google write operations are available here. Missing tokens fail closed before a request is sent. Doctor checks the Google Daily Brief source only when `BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED` is set.
+Calendar attendee invites, Drive delete/share, autonomous cross-service actions, and unbounded file writes are not available here. Missing tokens fail closed before a request is sent. Doctor checks the Google Daily Brief source only when `BLUE_TANUKI_DAILY_BRIEF_GOOGLE_ENABLED` is set.
 
 ## Browser read tool
 

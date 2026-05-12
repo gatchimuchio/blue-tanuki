@@ -12,6 +12,11 @@ import {
   googleCalendarReadTool,
   googleDriveReadTool,
 } from "./google_read.js";
+import {
+  gmailWriteTool,
+  googleCalendarWriteTool,
+  googleDriveWriteTool,
+} from "./google_write.js";
 export {
   buildGoogleDailyBriefContent,
   gmailReadTool,
@@ -29,6 +34,19 @@ export {
   type GoogleReadService,
   type GoogleReadTarget,
 } from "./google_read.js";
+export {
+  gmailWriteTool,
+  googleCalendarWriteTool,
+  googleDriveWriteTool,
+  invokeGmailWrite,
+  invokeGoogleCalendarWrite,
+  invokeGoogleDriveWrite,
+  type GoogleWriteMethod,
+  type GoogleWriteOptions,
+  type GoogleWriteResponse,
+  type GoogleWriteService,
+  type GoogleWriteTarget,
+} from "./google_write.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -2043,6 +2061,9 @@ export function registerBuiltinTools(registry: {
   registry.register(gmailReadTool);
   registry.register(googleCalendarReadTool);
   registry.register(googleDriveReadTool);
+  registry.register(gmailWriteTool);
+  registry.register(googleCalendarWriteTool);
+  registry.register(googleDriveWriteTool);
   registry.register(browserReadTool);
   registry.register(browserSnapshotTool);
   registry.register(browserAutomationTool);

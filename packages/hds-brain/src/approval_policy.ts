@@ -30,6 +30,7 @@ export type ApprovalOperation =
   | "schedule.update"
   | "schedule.delete"
   | "github.write"
+  | "google.write"
   | "payment.charge"
   | "unknown";
 export type ApprovalScopeKind = "command" | "file" | "folder" | "repo" | "channel" | "task_type" | "global";
@@ -123,6 +124,7 @@ export const FINAL_REVIEW_OPERATIONS = new Set<ApprovalOperation>([
   "schedule.delete",
   "browser.automation",
   "github.write",
+  "google.write",
   "payment.charge",
 ]);
 
@@ -158,6 +160,10 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
   if (hasAny(caps, ["schedule:update", "automation:update"])) return "schedule.update";
   if (hasAny(caps, ["schedule:delete", "automation:delete"])) return "schedule.delete";
   if (hasAny(caps, ["tool:github.write"]) || hasPrefix(caps, "github:")) return "github.write";
+  if (
+    hasAny(caps, ["tool:gmail.write", "tool:google.calendar.write", "tool:google.drive.write"]) ||
+    hasAny(caps, ["google:gmail.write", "google:calendar.write", "google:drive.write"])
+  ) return "google.write";
   if (hasAny(caps, ["browser:act", "tool:browser.automation"])) return "browser.automation";
   if (hasAny(caps, ["browser:snapshot", "tool:browser.snapshot"])) return "browser.snapshot";
   if (
@@ -192,7 +198,7 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
 
 export function riskForOperation(op: ApprovalOperation, caps: readonly ToolCapability[] = []): ApprovalRisk {
   if (["credential.access", "payment.charge"].includes(op)) return "high";
-  if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create", "schedule.update", "schedule.delete", "browser.automation", "github.write"].includes(op)) return "high";
+  if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create", "schedule.update", "schedule.delete", "browser.automation", "github.write", "google.write"].includes(op)) return "high";
   if (
     ["tool.file.write", "tool.network.http", "browser.snapshot", "channel.send"].includes(op) ||
     hasPrefix(caps, "network:")
@@ -332,6 +338,26 @@ function scopeFromCommand(command: ExecuteCommand, op: ApprovalOperation): Pick<
       return {
         target_scope: "repo",
         target: ownerValue && repoValue ? `${ownerValue}/${repoValue}` : command.payload.tool_name,
+      };
+    }
+    if (op === "google.write") {
+      const operationValue = typeof args.operation === "string" ? args.operation : undefined;
+      const calendarId = typeof args.calendar_id === "string" ? args.calendar_id : undefined;
+      const eventId = typeof args.event_id === "string" ? args.event_id : undefined;
+      const fileId = typeof args.file_id === "string" ? args.file_id : undefined;
+      const name = typeof args.name === "string" ? args.name : undefined;
+      const to = typeof args.to === "string" ? args.to : undefined;
+      return {
+        target_scope: "task_type",
+        target: [
+          command.payload.tool_name,
+          operationValue,
+          calendarId,
+          eventId,
+          fileId,
+          name,
+          to,
+        ].filter(Boolean).join(":") || command.payload.tool_name,
       };
     }
     if (op === "browser.snapshot" || op === "browser.automation") {

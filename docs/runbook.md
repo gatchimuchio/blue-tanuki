@@ -242,6 +242,9 @@ Built-in tool capabilities:
 | `gmail.read` | `tool:gmail.read`, `network:googleapis.com`, `secrets:GMAIL_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:gmail.read` |
 | `google.calendar.read` | `tool:google.calendar.read`, `network:googleapis.com`, `secrets:GOOGLE_CALENDAR_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:calendar.read` |
 | `google.drive.read` | `tool:google.drive.read`, `network:googleapis.com`, `secrets:GOOGLE_DRIVE_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:drive.read` |
+| `gmail.write` | `tool:gmail.write`, `network:googleapis.com`, `secrets:GMAIL_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:gmail.write`, `external:send`, `email:send` |
+| `google.calendar.write` | `tool:google.calendar.write`, `network:googleapis.com`, `secrets:GOOGLE_CALENDAR_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:calendar.write` |
+| `google.drive.write` | `tool:google.drive.write`, `network:googleapis.com`, `secrets:GOOGLE_DRIVE_ACCESS_TOKEN`, `secrets:GOOGLE_ACCESS_TOKEN`, `google:drive.write` |
 | `browser.read` | `tool:browser.read`, `network:http` |
 | `shell.exec` | `tool:shell.exec`, `shell:exec` |
 
@@ -271,9 +274,9 @@ issue/PR/comment write operations only. Token values are never returned in tool
 output.
 
 Google read tools are authenticated, read-only, fixed to Google API hosts, and
-mapped as credential access when OAuth token capabilities are present. Missing
-Google tokens fail before a request is sent. No Google write operation exists
-in this phase.
+mapped as credential access when OAuth token capabilities are present. Google
+write tools are fixed to Google API hosts and always L3 final-review. Missing
+Google tokens fail before a request is sent.
 
 `browser.read` is a lightweight no-JavaScript page reader. It is not the future
 headless Chromium automation backend; it fetches public pages through
@@ -307,6 +310,9 @@ tool:github.write operation=issue.create owner=gatchimuchio repo=blue-tanuki tit
 tool:gmail.read query="newer_than:1d" max_results=5
 tool:google.calendar.read calendar_id=primary days=1 max_results=5
 tool:google.drive.read query="trashed=false" max_results=5
+tool:gmail.write operation=draft.create to=owner@example.com subject="Draft" body_text="hello"
+tool:google.calendar.write operation=event.create calendar_id=primary summary="Standup" start=2026-05-12T09:00:00Z end=2026-05-12T09:15:00Z
+tool:google.drive.write operation=file.create name=notes.txt content="hello"
 tool:browser.read url=https://example.com max_chars=4000
 tool:shell.exec {"cmd":"git","args":["status","-sb"],"cwd":"."}
 /tool echo text="hello"

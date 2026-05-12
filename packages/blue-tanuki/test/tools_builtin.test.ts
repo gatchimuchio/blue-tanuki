@@ -14,6 +14,9 @@ import {
   invokeGoogleCalendarRead,
   invokeGoogleDriveRead,
   buildGoogleDailyBriefContent,
+  invokeGmailWrite,
+  invokeGoogleCalendarWrite,
+  invokeGoogleDriveWrite,
   invokeBrowserRead,
   invokeBrowserSnapshot,
   invokeBrowserAutomation,
@@ -24,6 +27,7 @@ import {
   type GitHubReadOptions,
   type GitHubWriteOptions,
   type GoogleReadOptions,
+  type GoogleWriteOptions,
   type HttpFetchOptions,
 } from "../src/tools/builtin.js";
 import { ToolRegistry } from "../src/tools/registry.js";
@@ -49,6 +53,9 @@ describe("built-in tools", () => {
     expect(registry.get("gmail.read")).toBeDefined();
     expect(registry.get("google.calendar.read")).toBeDefined();
     expect(registry.get("google.drive.read")).toBeDefined();
+    expect(registry.get("gmail.write")).toBeDefined();
+    expect(registry.get("google.calendar.write")).toBeDefined();
+    expect(registry.get("google.drive.write")).toBeDefined();
     expect(registry.get("browser.read")).toBeDefined();
     expect(registry.get("browser.snapshot")).toBeDefined();
     expect(registry.get("browser.automation")).toBeDefined();
@@ -56,14 +63,19 @@ describe("built-in tools", () => {
     expect(registry.listCapabilities()).toEqual([
       "browser:act",
       "browser:snapshot",
+      "email:send",
+      "external:send",
       "fs:read",
       "fs:write",
       "github:comment.write",
       "github:issue.write",
       "github:pr.write",
       "google:calendar.read",
+      "google:calendar.write",
       "google:drive.read",
+      "google:drive.write",
       "google:gmail.read",
+      "google:gmail.write",
       "network:github.com",
       "network:googleapis.com",
       "network:http",
@@ -83,8 +95,11 @@ describe("built-in tools", () => {
       "tool:github.read",
       "tool:github.write",
       "tool:gmail.read",
+      "tool:gmail.write",
       "tool:google.calendar.read",
+      "tool:google.calendar.write",
       "tool:google.drive.read",
+      "tool:google.drive.write",
       "tool:http.fetch",
       "tool:shell.exec",
       "tool:web.search",
@@ -760,6 +775,128 @@ describe("built-in tools", () => {
     expect(content).not.toContain("google-token");
   });
 
+  it("Google write tools use fixed Google APIs and return audit-safe mutation summaries", async () => {
+    const seen: Array<{
+      service: string;
+      hostname: string;
+      path: string;
+      method: string;
+      token: string;
+      body?: string;
+      contentType?: string;
+    }> = [];
+    const opts = fakeGoogleWrite(async (target) => {
+      seen.push({
+        service: target.service,
+        hostname: target.hostname,
+        path: target.path,
+        method: target.method,
+        token: target.token,
+        body: target.body,
+        contentType: target.contentType,
+      });
+      if (target.path === "/gmail/v1/users/me/drafts") {
+        return googleWriteJson({ id: "draft-1", message: { id: "msg-1", threadId: "thread-1" } }, 200);
+      }
+      if (target.path.startsWith("/calendar/v3/calendars/primary/events?")) {
+        return googleWriteJson({
+          id: "event-1",
+          status: "confirmed",
+          summary: "Standup",
+          htmlLink: "https://calendar.google.com/event?eid=event-1",
+        }, 200);
+      }
+      if (target.path.startsWith("/upload/drive/v3/files?uploadType=multipart")) {
+        return googleWriteJson({
+          id: "file-1",
+          name: "notes.txt",
+          mimeType: "text/plain",
+          webViewLink: "https://drive.google.com/file/d/file-1/view",
+        }, 200);
+      }
+      throw new Error(`unexpected Google write path: ${target.path}`);
+    });
+
+    const gmail = (await invokeGmailWrite(
+      {
+        operation: "draft.create",
+        to: "owner@example.test",
+        subject: "Draft subject",
+        body_text: "draft body",
+        max_bytes: 4096,
+      },
+      opts,
+    )) as { mutation_sent: boolean; mutation_status: string; result: Record<string, unknown> };
+    const calendar = (await invokeGoogleCalendarWrite(
+      {
+        operation: "event.create",
+        calendar_id: "primary",
+        summary: "Standup",
+        start: "2026-05-12T09:00:00Z",
+        end: "2026-05-12T09:15:00Z",
+        max_bytes: 4096,
+      },
+      opts,
+    )) as { result: Record<string, unknown> };
+    const drive = (await invokeGoogleDriveWrite(
+      {
+        operation: "file.create",
+        name: "notes.txt",
+        content: "hello",
+        mime_type: "text/plain",
+        max_bytes: 4096,
+      },
+      opts,
+    )) as { result: Record<string, unknown> };
+
+    expect(gmail).toMatchObject({
+      mutation_sent: true,
+      mutation_status: "confirmed",
+      result: { id: "draft-1", message_id: "msg-1", message_thread_id: "thread-1" },
+    });
+    expect(calendar.result).toMatchObject({ id: "event-1", status: "confirmed", summary: "Standup" });
+    expect(drive.result).toMatchObject({ id: "file-1", name: "notes.txt", mimeType: "text/plain" });
+    expect(seen.map((item) => [item.service, item.hostname, item.method])).toEqual([
+      ["gmail", "gmail.googleapis.com", "POST"],
+      ["calendar", "www.googleapis.com", "POST"],
+      ["drive", "www.googleapis.com", "POST"],
+    ]);
+    expect(seen[0]!.body).toContain("raw");
+    expect(seen[1]!.path).toContain("sendUpdates=none");
+    expect(seen[1]!.body).not.toContain("attendees");
+    expect(seen[2]!.contentType).toContain("multipart/related");
+    expect(JSON.stringify({ gmail, calendar, drive })).not.toContain("google-write-token");
+  });
+
+  it("Google write tools fail closed before network when tokens or required args are missing", async () => {
+    let called = false;
+    const opts = fakeGoogleWrite(async () => {
+      called = true;
+      throw new Error("should not call network");
+    }, {});
+
+    await expect(
+      invokeGmailWrite({ operation: "message.send", to: "owner@example.test", subject: "hi", body_text: "hello" }, opts),
+    ).rejects.toThrow(/GMAIL_ACCESS_TOKEN.*GOOGLE_ACCESS_TOKEN.*request_sent=false.*mutation_sent=false/);
+    await expect(
+      invokeGoogleCalendarWrite({ operation: "event.create", summary: "Standup", start: "2026-05-12T09:00:00Z", end: "2026-05-12T09:15:00Z" }, opts),
+    ).rejects.toThrow(/GOOGLE_CALENDAR_ACCESS_TOKEN.*GOOGLE_ACCESS_TOKEN.*request_sent=false.*mutation_sent=false/);
+    await expect(
+      invokeGoogleDriveWrite({ operation: "file.create", name: "notes.txt", content: "hello" }, opts),
+    ).rejects.toThrow(/GOOGLE_DRIVE_ACCESS_TOKEN.*GOOGLE_ACCESS_TOKEN.*request_sent=false.*mutation_sent=false/);
+
+    await expect(
+      invokeGoogleCalendarWrite(
+        { operation: "event.create", summary: "Standup", start: "2026-05-12T09:00:00Z", end: "2026-05-12T09:15:00Z", attendees: "owner@example.test" },
+        fakeGoogleWrite(async () => {
+          called = true;
+          throw new Error("should not call network");
+        }),
+      ),
+    ).rejects.toThrow(/attendees.*mutation_sent=false/);
+    expect(called).toBe(false);
+  });
+
   it("github.write creates an issue only with token and allowlisted repo", async () => {
     const seen: Array<{
       method: string;
@@ -1248,6 +1385,32 @@ function fakeGoogle(
   return {
     env,
     now: () => new Date("2026-05-12T00:00:00Z"),
+    request,
+  };
+}
+
+function googleWriteJson(
+  body: unknown,
+  status = 200,
+): Awaited<ReturnType<NonNullable<GoogleWriteOptions["request"]>>> {
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    content_type: "application/json",
+    body: JSON.stringify(body),
+    truncated: false,
+    request_id: "GOOGLE-WRITE-REQ",
+  };
+}
+
+function fakeGoogleWrite(
+  request: NonNullable<GoogleWriteOptions["request"]> = async () => googleWriteJson({}),
+  env: Record<string, string | undefined> = {
+    GOOGLE_ACCESS_TOKEN: "google-write-token",
+  },
+): GoogleWriteOptions {
+  return {
+    env,
     request,
   };
 }

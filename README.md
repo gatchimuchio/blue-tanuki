@@ -22,12 +22,12 @@ BLUE-TANUKI is a local resident AI control plane.
 - Slack / Discord adapters with silent fallback, retry/backoff, typed delivery errors, and credentialed live smoke path
 - Daily Brief and generic scheduled-message smoke via internal cron, with optional read-only Google source
 - Optional token-gated HTTP webhook ingress at `/webhook`
-- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `gmail.read`, `google.calendar.read`, `google.drive.read`, `browser.read`, `browser.snapshot`, `browser.automation`, and `shell.exec` with sandbox / network / approval guards
+- Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `gmail.read`, `gmail.write`, `google.calendar.read`, `google.calendar.write`, `google.drive.read`, `google.drive.write`, `browser.read`, `browser.snapshot`, `browser.automation`, and `shell.exec` with sandbox / network / approval guards
 
 ## v0.1 explicit boundaries
 
 - WhatsApp is not a first-party core target. It is `reserved-third-party` and may only be approached through the generic adapter interface.
-- Google writes are not implemented. Gmail / Google Calendar / Drive support is read-only, credential-scoped, and downstream only.
+- Google integrations are credential-scoped downstream tools. Reads are summary/metadata only; writes are bounded and always final-review.
 - Voice / Mobile / rich Canvas are deferred to v0.2+.
 - Public third-party Skill registry is intentionally excluded.
 
@@ -211,12 +211,12 @@ tool:github.write operation=pr.comment.create owner=gatchimuchio repo=blue-tanuk
 
 `github.write` output returns safe GitHub ids/URLs and a `result_digest`; it never prints the token.
 
-## Google read tools
+## Google tools
 
-Google tools are read-only and fixed to Google API hosts. They require operator-provided OAuth tokens and are treated as credential access, so L3 final-review is required where the approval gate sees the credential capability.
+Google tools are fixed to Google API hosts. They require operator-provided OAuth tokens. Read tools return bounded summaries; write tools are downstream mutations and always L3 final-review.
 
 ```bash
-export GOOGLE_ACCESS_TOKEN="<read-only-google-oauth-token>"
+export GOOGLE_ACCESS_TOKEN="<google-oauth-token>"
 ```
 
 ```text
@@ -225,7 +225,19 @@ tool:google.calendar.read calendar_id=primary days=1 max_results=5
 tool:google.drive.read query="trashed=false" max_results=5
 ```
 
-No Gmail send/draft, Calendar write, or Drive write/share/delete operation exists in this phase. Tool output is bounded summary/metadata plus `result_digest`; tokens are never returned.
+Write examples:
+
+```text
+tool:gmail.write operation=draft.create to=owner@example.com subject="Draft" body_text="hello"
+tool:gmail.write operation=message.send to=owner@example.com subject="Notice" body_text="hello"
+tool:google.calendar.write operation=event.create calendar_id=primary summary="Standup" start=2026-05-12T09:00:00Z end=2026-05-12T09:15:00Z
+tool:google.calendar.write operation=event.update calendar_id=primary event_id=<event-id> summary="Updated"
+tool:google.calendar.write operation=event.delete calendar_id=primary event_id=<event-id>
+tool:google.drive.write operation=file.create name=notes.txt content="hello"
+tool:google.drive.write operation=file.update file_id=<file-id> content="updated"
+```
+
+Calendar attendee invites, Drive delete/share, autonomous cross-service actions, and unbounded file writes are not implemented. Tool output is bounded summary/metadata plus `result_digest`; tokens are never returned.
 
 ## Browser read tool
 
@@ -335,6 +347,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase8-s6-browser-automation-preview.md](./docs/phase8-s6-browser-automation-preview.md) - browser automation preview boundary
 - [docs/phase9-s1-f-reference-audit.md](./docs/phase9-s1-f-reference-audit.md) - F-reference memory audit boundary
 - [docs/phase9-s2-google-read-integration.md](./docs/phase9-s2-google-read-integration.md) - Google read integration boundary
+- [docs/phase9-s3-google-write-integration.md](./docs/phase9-s3-google-write-integration.md) - Google write integration boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status
