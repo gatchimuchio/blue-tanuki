@@ -326,6 +326,8 @@ If a section is too broad to implement directly, convert it into a bounded imple
 
 Do not run multiple implementation tracks in parallel. This includes documentation-only tracks.
 
+Default work style is end-to-end execution. Do not split a single requested phase or feature block into unnecessary user-facing subtasks, separate handoffs, feature branches, or pull requests. Internally decompose the work as needed, but carry the coherent work block through inspection, implementation, cleanup, validation, backup, direct-main commit, push, and final report unless a real blocker or phase boundary is reached.
+
 Default sequence:
 
 1. Read active instruction file.
@@ -340,6 +342,21 @@ Default sequence:
 Each Phase is a single Codex invocation lane. Within a Phase, all sub-tasks (code + tests + docs + changelog + phase report) run continuously to completion. Across Phases, the work must stop at the Phase boundary for audit before the next Phase begins.
 
 If Codex receives instructions appearing to authorize parallel work, stop and verify with the operator.
+
+---
+
+## Section Hygiene Rule
+
+For every coherent section of work, cleanup and review are mandatory implementation work, not optional polish.
+
+At each natural section boundary, Codex must:
+
+1. Clean up local implementation debris, dead code, stale wording, duplicated logic, and obsolete TODOs introduced by the section.
+2. Slim the change to the smallest maintainable shape that satisfies the phase, removing opportunistic expansion and unrelated churn.
+3. Reflect on whether the section preserved HDS authority, Approval Gate boundaries, audit closure, runtime invariants, and operator usability.
+4. Re-review the touched files for consistency with repo conventions, docs, tests, error messages, and phase non-goals.
+
+This rule applies to code, tests, docs, manifests, scripts, and operational instructions. A section is not complete until this hygiene pass is done.
 
 ---
 
@@ -762,7 +779,7 @@ Then run the grep commands required by the active phase.
 
 During implementation:
 
-- keep one PR to one feature block,
+- keep one direct-main work block to one coherent feature or phase,
 - do not opportunistically refactor unrelated areas,
 - do not silently change public behavior,
 - do not silently change environment variable semantics,
