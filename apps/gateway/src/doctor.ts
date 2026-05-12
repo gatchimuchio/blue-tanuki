@@ -31,6 +31,7 @@ import { parseGoogleServices } from "./google_daily_brief.js";
  *     (length-only; never log values)
  *   - Optional env: WEBHOOK_TOKEN separation when /webhook is enabled
  *   - Optional env: SLACK_BOT_TOKEN, SLACK_APP_TOKEN, DISCORD_BOT_TOKEN,
+ *                   MICROSOFT_GRAPH_ACCESS_TOKEN, LINE_CHANNEL_ACCESS_TOKEN,
  *                   ANTHROPIC_API_KEY, GITHUB_TOKEN,
  *                   BLUE_TANUKI_GITHUB_REPOS (presence only)
  *   - Optional Google read source config for Daily Brief
@@ -116,6 +117,8 @@ const EXPECTED_MANIFEST_PACKAGES = [
   "packages/channel-slack",
   "packages/channel-discord",
   "packages/channel-telegram",
+  "packages/channel-teams",
+  "packages/channel-line",
 ] as const;
 
 interface ChannelCompatibility {
@@ -876,17 +879,25 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDra
     }
   }
 
-  for (const channel of ["discord", "slack"]) {
+  const previewTargets: Record<string, string> = {
+    discord: "v0.1-preview",
+    slack: "v0.1-preview",
+    teams: "v0.2-preview",
+    line: "v0.2-preview",
+  };
+  for (const [channel, targetRelease] of Object.entries(previewTargets)) {
     const entry = channels[channel];
     if (
       entry?.status !== "first-party-preview" ||
-      entry?.target_release !== "v0.1-preview"
+      entry?.target_release !== targetRelease
     ) {
-      failures.push(`${channel} must remain first-party-preview target_release=v0.1-preview`);
+      failures.push(
+        `${channel} must remain first-party-preview target_release=${targetRelease}`,
+      );
     }
   }
 
-  for (const channel of ["webchat", "telegram", "discord", "slack"]) {
+  for (const channel of ["webchat", "telegram", "discord", "slack", "teams", "line"]) {
     try {
       const manifest = await readManifest(
         manifestPathFor(path.join(root, "packages", `channel-${channel}`)),
@@ -1015,6 +1026,8 @@ function remediationFor(check: CheckDraft): Remediation {
     check.id === "env:SLACK_BOT_TOKEN" ||
     check.id === "env:SLACK_APP_TOKEN" ||
     check.id === "env:DISCORD_BOT_TOKEN" ||
+    check.id === "env:MICROSOFT_GRAPH_ACCESS_TOKEN" ||
+    check.id === "env:LINE_CHANNEL_ACCESS_TOKEN" ||
     check.id === "env:ANTHROPIC_API_KEY" ||
     check.id === "env:GITHUB_TOKEN" ||
     check.id === "env:BLUE_TANUKI_GITHUB_REPOS"
@@ -1149,6 +1162,8 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   draftChecks.push(checkOptionalEnv(env, "SLACK_BOT_TOKEN"));
   draftChecks.push(checkOptionalEnv(env, "SLACK_APP_TOKEN"));
   draftChecks.push(checkOptionalEnv(env, "DISCORD_BOT_TOKEN"));
+  draftChecks.push(checkOptionalEnv(env, "MICROSOFT_GRAPH_ACCESS_TOKEN"));
+  draftChecks.push(checkOptionalEnv(env, "LINE_CHANNEL_ACCESS_TOKEN"));
   draftChecks.push(checkOptionalEnv(env, "ANTHROPIC_API_KEY"));
   draftChecks.push(checkOptionalEnv(env, "GITHUB_TOKEN"));
   draftChecks.push(checkOptionalEnv(env, "BLUE_TANUKI_GITHUB_REPOS"));

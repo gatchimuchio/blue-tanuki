@@ -20,6 +20,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - hash-chain audit logs
 - Telegram Bot API channel
 - Slack / Discord adapters with silent fallback, retry/backoff, typed delivery errors, and credentialed live smoke path
+- Teams / LINE preview adapters with silent fallback, retry/backoff, typed delivery errors, and credentialed live smoke skip path
 - Daily Brief and generic scheduled-message smoke via internal cron, with optional read-only Google source
 - Optional token-gated HTTP webhook ingress at `/webhook`
 - Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `gmail.read`, `gmail.write`, `google.calendar.read`, `google.calendar.write`, `google.drive.read`, `google.drive.write`, `browser.read`, `browser.snapshot`, `browser.automation`, and `shell.exec` with sandbox / network / approval guards
@@ -28,6 +29,7 @@ BLUE-TANUKI is a local resident AI control plane.
 
 - WhatsApp is not a first-party core target. It is `reserved-third-party` and may only be approached through the generic adapter interface.
 - Google integrations are credential-scoped downstream tools. Reads are summary/metadata only; writes are bounded and always final-review.
+- Teams / LINE are preview channel adapters until owner-run credentialed live smoke and permanent-use recovery are verified.
 - Voice / Mobile / rich Canvas are deferred to v0.2+.
 - Public third-party Skill registry is intentionally excluded.
 
@@ -83,6 +85,20 @@ See [QUICKSTART.md](./QUICKSTART.md).
 export TELEGRAM_BOT_TOKEN="123456:telegram-bot-token"
 pnpm gateway:serve
 ```
+
+## Preview channels
+
+Slack, Discord, Teams, and LINE are downstream preview channels. Missing credentials are safe: adapters stay in silent fail-closed mode and `pnpm smoke:live` reports SKIP unless credentials and live targets are set.
+
+```bash
+export MICROSOFT_GRAPH_ACCESS_TOKEN="<graph-oauth-token>"
+export TEAMS_LIVE_TARGET="channel/<urlencoded-team-id>/<urlencoded-channel-id>"
+
+export LINE_CHANNEL_ACCESS_TOKEN="<line-channel-token>"
+export LINE_LIVE_TARGET="<line-user-or-group-or-room-id>"
+```
+
+Teams target forms are `channel/...`, `reply/...`, or `chat/...`. LINE targets are reachable userId, groupId, or roomId values. Channel metadata and delivery results never grant authority.
 
 ## Daily Brief smoke
 
@@ -348,6 +364,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase9-s1-f-reference-audit.md](./docs/phase9-s1-f-reference-audit.md) - F-reference memory audit boundary
 - [docs/phase9-s2-google-read-integration.md](./docs/phase9-s2-google-read-integration.md) - Google read integration boundary
 - [docs/phase9-s3-google-write-integration.md](./docs/phase9-s3-google-write-integration.md) - Google write integration boundary
+- [docs/phase9-s4-teams-line-adapters.md](./docs/phase9-s4-teams-line-adapters.md) - Teams / LINE preview adapter boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status
@@ -382,6 +399,8 @@ Source packages live under `packages/`; runtime apps live under `apps/`. Root fi
 | `packages/channel-telegram` | `@blue-tanuki/channel-telegram` | Telegram Bot API channel |
 | `packages/channel-slack` | `@blue-tanuki/channel-slack` | Slack channel adapter |
 | `packages/channel-discord` | `@blue-tanuki/channel-discord` | Discord channel adapter |
+| `packages/channel-teams` | `@blue-tanuki/channel-teams` | Microsoft Teams preview channel adapter |
+| `packages/channel-line` | `@blue-tanuki/channel-line` | LINE preview channel adapter |
 | `apps/gateway` | `@blue-tanuki/gateway` | runtime wiring |
 
 ## Release boundary

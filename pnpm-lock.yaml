@@ -29,9 +29,15 @@ importers:
       '@blue-tanuki/channel-discord':
         specifier: workspace:*
         version: link:../../packages/channel-discord
+      '@blue-tanuki/channel-line':
+        specifier: workspace:*
+        version: link:../../packages/channel-line
       '@blue-tanuki/channel-slack':
         specifier: workspace:*
         version: link:../../packages/channel-slack
+      '@blue-tanuki/channel-teams':
+        specifier: workspace:*
+        version: link:../../packages/channel-teams
       '@blue-tanuki/channel-telegram':
         specifier: workspace:*
         version: link:../../packages/channel-telegram
@@ -72,6 +78,15 @@ importers:
         specifier: ^14.16.0
         version: 14.26.3
 
+  packages/channel-line:
+    dependencies:
+      '@blue-tanuki/channel-base':
+        specifier: workspace:*
+        version: link:../channel-base
+      '@blue-tanuki/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
   packages/channel-slack:
     dependencies:
       '@blue-tanuki/channel-base':
@@ -83,6 +98,15 @@ importers:
       '@slack/bolt':
         specifier: ^3.22.0
         version: 3.22.0
+
+  packages/channel-teams:
+    dependencies:
+      '@blue-tanuki/channel-base':
+        specifier: workspace:*
+        version: link:../channel-base
+      '@blue-tanuki/protocol':
+        specifier: workspace:*
+        version: link:../protocol
 
   packages/channel-telegram:
     dependencies:

@@ -15,6 +15,8 @@ export default defineConfig({
       { find: "@blue-tanuki/channel-slack", replacement: resolve(root, "packages/channel-slack/src/index.ts") },
       { find: "@blue-tanuki/channel-discord", replacement: resolve(root, "packages/channel-discord/src/index.ts") },
       { find: "@blue-tanuki/channel-telegram", replacement: resolve(root, "packages/channel-telegram/src/index.ts") },
+      { find: "@blue-tanuki/channel-teams", replacement: resolve(root, "packages/channel-teams/src/index.ts") },
+      { find: "@blue-tanuki/channel-line", replacement: resolve(root, "packages/channel-line/src/index.ts") },
     ],
   },
 });

@@ -49,7 +49,7 @@ import { buildRuntimeStatusSnapshot } from "./runtime_status.js";
 /**
  * Gateway serve mode.
  *
- * Wires HDS-BRAIN, the executor, WebChat, Slack, and Discord. HDS-BRAIN
+ * Wires HDS-BRAIN, the executor, WebChat, Slack, Discord, Teams, and LINE. HDS-BRAIN
  * remains the upstream state owner; LLM calls stay downstream.
  */
 
@@ -63,6 +63,8 @@ const coreLog = createLogger({ scope: "blue-tanuki" });
 const auditLog = createLogger({ scope: "audit" });
 const slackLog = createLogger({ scope: "slack" });
 const discordLog = createLogger({ scope: "discord" });
+const teamsLog = createLogger({ scope: "teams" });
+const lineLog = createLogger({ scope: "line" });
 const telegramLog = createLogger({ scope: "telegram" });
 const cronLog = createLogger({ scope: "cron" });
 
@@ -518,17 +520,57 @@ export async function serve(): Promise<ServeShutdown> {
       log: (line: string) => discordLog.info(line),
     }],
   });
+  const teamsPermissions = [
+    "network:graph.microsoft.com",
+    "secrets:MICROSOFT_GRAPH_ACCESS_TOKEN",
+  ] as const;
+  plugins.requirePermissions(
+    "@blue-tanuki/channel-teams",
+    teamsPermissions,
+    "read/register teams channel",
+  );
+  const teams = plugins.createChannel<InboundChannel & OutboundChannel>({
+    package_name: "@blue-tanuki/channel-teams",
+    required_permissions: teamsPermissions,
+    action: "register teams channel",
+    constructor_args: [{
+      access_token: process.env.MICROSOFT_GRAPH_ACCESS_TOKEN,
+      log: (line: string) => teamsLog.info(line),
+    }],
+  });
+  const linePermissions = [
+    "network:api.line.me",
+    "secrets:LINE_CHANNEL_ACCESS_TOKEN",
+  ] as const;
+  plugins.requirePermissions(
+    "@blue-tanuki/channel-line",
+    linePermissions,
+    "read/register line channel",
+  );
+  const line = plugins.createChannel<InboundChannel & OutboundChannel>({
+    package_name: "@blue-tanuki/channel-line",
+    required_permissions: linePermissions,
+    action: "register line channel",
+    constructor_args: [{
+      channel_access_token: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+      log: (lineText: string) => lineLog.info(lineText),
+    }],
+  });
 
   router.register(webchat);
   router.register(telegram);
   router.register(slack);
   router.register(discord);
+  router.register(teams);
+  router.register(line);
   router.register(cron);
 
   dispatcher.register(webchat);
   dispatcher.register(telegram);
   dispatcher.register(slack);
   dispatcher.register(discord);
+  dispatcher.register(teams);
+  dispatcher.register(line);
 
   executor = new Executor({
     llm,

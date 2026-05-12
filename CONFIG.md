@@ -35,9 +35,9 @@ TELEGRAM_POLL_INTERVAL_MS=1500
 TELEGRAM_POLL_TIMEOUT_SEC=25
 ```
 
-## Slack / Discord preview channels
+## Slack / Discord / Teams / LINE preview channels
 
-Slack / Discord are release-polished preview adapters in v0.1. Missing credentials keep the adapters in silent fail-closed mode. Credentialed live smoke uses a test target and reports typed delivery errors.
+Slack, Discord, Teams, and LINE are preview adapters. Missing credentials keep the adapters in silent fail-closed mode. Credentialed live smoke uses a test target and reports typed delivery errors.
 
 ```bash
 SLACK_BOT_TOKEN=...
@@ -47,8 +47,16 @@ SLACK_LIVE_TARGET=C0123456789
 DISCORD_BOT_TOKEN=...
 DISCORD_LIVE_TARGET=123456789012345678
 
+MICROSOFT_GRAPH_ACCESS_TOKEN=...
+TEAMS_LIVE_TARGET=channel/<urlencoded-team-id>/<urlencoded-channel-id>
+
+LINE_CHANNEL_ACCESS_TOKEN=...
+LINE_LIVE_TARGET=<line-user-or-group-or-room-id>
+
 BLUE_TANUKI_LIVE_TIMEOUT_MS=30000
 ```
+
+Teams target forms are `channel/<team_id>/<channel_id>`, `reply/<team_id>/<channel_id>/<message_id>`, or `chat/<chat_id>` with URL-encoded ids. LINE targets are LINE userId, groupId, or roomId values reachable by the bot. Teams and LINE inbound webhook/subscription listeners are not release-complete yet; injected transports cover adapter conformance and future listener work.
 
 Delivery failures include `error_kind` (`recoverable` / `non_recoverable`), `error_code`, optional `retry_after_ms`, and `next_action`. `recoverable` normally means provider rate limit or transient transport failure; `non_recoverable` means token, target, permission, or app configuration must be fixed before retry.
 

@@ -65,16 +65,22 @@ describe("compatibility matrix conformance", () => {
 
   it("keeps preview channels explicitly quarantined", async () => {
     const matrix = await readMatrix();
-    for (const channel of ["discord", "slack"]) {
+    const previewTargets: Record<string, string> = {
+      discord: "v0.1-preview",
+      slack: "v0.1-preview",
+      teams: "v0.2-preview",
+      line: "v0.2-preview",
+    };
+    for (const [channel, targetRelease] of Object.entries(previewTargets)) {
       expect(matrix.channels[channel]).toMatchObject({
         status: "first-party-preview",
-        target_release: "v0.1-preview",
+        target_release: targetRelease,
       });
     }
   });
 
   it("rejects wildcard capabilities in bundled first-party channel manifests", async () => {
-    for (const channel of ["webchat", "telegram", "discord", "slack"]) {
+    for (const channel of ["webchat", "telegram", "discord", "slack", "teams", "line"]) {
       const manifest = await readManifest(manifestPathFor(channelPackageDir(channel)));
       expect(manifest.permissions).not.toContain("*");
       for (const permission of manifest.permissions) {

@@ -1,0 +1,14 @@
+{
+  "name": "@blue-tanuki/channel-teams",
+  "version": "0.0.1",
+  "kind": "channel",
+  "entry": "./dist/index.js",
+  "exports": {
+    "channel": "TeamsChannel"
+  },
+  "permissions": [
+    "network:graph.microsoft.com",
+    "secrets:MICROSOFT_GRAPH_ACCESS_TOKEN"
+  ],
+  "description": "Microsoft Teams preview channel via Microsoft Graph chatMessage send. Silent fallback, adapter retry/backoff, and typed delivery errors."
+}

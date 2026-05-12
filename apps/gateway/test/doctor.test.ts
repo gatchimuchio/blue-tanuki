@@ -44,6 +44,8 @@ const manifestPackages = [
   ["packages/channel-slack", "@blue-tanuki/channel-slack"],
   ["packages/channel-discord", "@blue-tanuki/channel-discord"],
   ["packages/channel-telegram", "@blue-tanuki/channel-telegram"],
+  ["packages/channel-teams", "@blue-tanuki/channel-teams"],
+  ["packages/channel-line", "@blue-tanuki/channel-line"],
 ] as const;
 
 async function writeManifestFixture(root: string): Promise<void> {
@@ -82,6 +84,8 @@ async function writeManifestFixture(root: string): Promise<void> {
         telegram: { status: "first-party", target_release: "v0.1" },
         discord: { status: "first-party-preview", target_release: "v0.1-preview" },
         slack: { status: "first-party-preview", target_release: "v0.1-preview" },
+        teams: { status: "first-party-preview", target_release: "v0.2-preview" },
+        line: { status: "first-party-preview", target_release: "v0.2-preview" },
         whatsapp: {
           status: "reserved-third-party",
           target_release: null,
@@ -119,6 +123,8 @@ describe("runDoctor — happy paths", () => {
         SLACK_BOT_TOKEN: "xoxb-aaa-bbb",
         SLACK_APP_TOKEN: "xapp-aaa-bbb",
         DISCORD_BOT_TOKEN: "discord-bot-token",
+        MICROSOFT_GRAPH_ACCESS_TOKEN: "microsoft-graph-token",
+        LINE_CHANNEL_ACCESS_TOKEN: "line-channel-token",
         ANTHROPIC_API_KEY: "sk-ant-abcdefghijkl",
         GITHUB_TOKEN: "ghp-doctor-token",
         BLUE_TANUKI_GITHUB_REPOS: "gatchimuchio/blue-tanuki",
@@ -145,6 +151,8 @@ describe("runDoctor — happy paths", () => {
       expect.arrayContaining([
         "env:SLACK_BOT_TOKEN",
         "env:DISCORD_BOT_TOKEN",
+        "env:MICROSOFT_GRAPH_ACCESS_TOKEN",
+        "env:LINE_CHANNEL_ACCESS_TOKEN",
       ]),
     );
   });
@@ -634,7 +642,7 @@ describe("runDoctor — bundled manifests", () => {
     });
     const c = r.checks.find((x) => x.id === "manifests");
     expect(c?.level).toBe("ok");
-    expect(c?.detail).toContain("8 manifests valid");
+    expect(c?.detail).toContain("10 manifests valid");
   });
 
   it("validates manifest schemas from an explicit root", async () => {
@@ -739,6 +747,8 @@ describe("runDoctor — compatibility matrix gate", () => {
             telegram: { status: "first-party", target_release: "v0.1" },
             discord: { status: "first-party-preview", target_release: "v0.1-preview" },
             slack: { status: "first-party-preview", target_release: "v0.1-preview" },
+            teams: { status: "first-party-preview", target_release: "v0.2-preview" },
+            line: { status: "first-party-preview", target_release: "v0.2-preview" },
             whatsapp: {
               status: "first-party",
               target_release: "v0.1",

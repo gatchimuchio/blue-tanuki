@@ -7,6 +7,8 @@ const LIVE_REQUIRED = process.env.BLUE_TANUKI_LIVE_REQUIRED === "1";
 const TIMEOUT_MS = parsePositiveInt(process.env.BLUE_TANUKI_LIVE_TIMEOUT_MS, 30_000);
 const SLACK_PACKAGE = "@blue-tanuki/channel-slack";
 const DISCORD_PACKAGE = "@blue-tanuki/channel-discord";
+const TEAMS_PACKAGE = "@blue-tanuki/channel-teams";
+const LINE_PACKAGE = "@blue-tanuki/channel-line";
 const SLACK_LIVE_PERMISSIONS = [
   "network:slack.com",
   "secrets:SLACK_BOT_TOKEN",
@@ -15,6 +17,14 @@ const SLACK_LIVE_PERMISSIONS = [
 const DISCORD_LIVE_PERMISSIONS = [
   "network:discord.com",
   "secrets:DISCORD_BOT_TOKEN",
+] as const;
+const TEAMS_LIVE_PERMISSIONS = [
+  "network:graph.microsoft.com",
+  "secrets:MICROSOFT_GRAPH_ACCESS_TOKEN",
+] as const;
+const LINE_LIVE_PERMISSIONS = [
+  "network:api.line.me",
+  "secrets:LINE_CHANNEL_ACCESS_TOKEN",
 ] as const;
 
 interface SmokeResult {
@@ -30,6 +40,8 @@ async function main(): Promise<void> {
   results.push(await runSmoke("llm", () => smokeLLM(plugins)));
   results.push(await runSmoke("slack", () => smokeSlack(plugins)));
   results.push(await runSmoke("discord", () => smokeDiscord(plugins)));
+  results.push(await runSmoke("teams", () => smokeTeams(plugins)));
+  results.push(await runSmoke("line", () => smokeLine(plugins)));
 
   for (const r of results) {
     console.log(`[live:${r.name}] ${r.status.toUpperCase()} ${r.detail}`);
@@ -192,6 +204,100 @@ async function smokeDiscord(plugins: PluginRuntime): Promise<string | null> {
     return `target=${target} external_id=${result.external_id ?? "unknown"}`;
   } finally {
     await discord.stop();
+  }
+}
+
+async function smokeTeams(plugins: PluginRuntime): Promise<string | null> {
+  const target = process.env.TEAMS_LIVE_TARGET;
+  if (!target) return null;
+
+  plugins.requirePermissions(
+    TEAMS_PACKAGE,
+    TEAMS_LIVE_PERMISSIONS,
+    "live smoke teams",
+  );
+  const accessToken = process.env.MICROSOFT_GRAPH_ACCESS_TOKEN;
+  if (!accessToken || !target) return null;
+
+  const teams = plugins.createChannel<InboundChannel & OutboundChannel>({
+    package_name: TEAMS_PACKAGE,
+    required_permissions: TEAMS_LIVE_PERMISSIONS,
+    action: "live smoke teams",
+    constructor_args: [{
+      access_token: accessToken,
+      log: (line: string) => console.log(`[live:teams:transport] ${line}`),
+    }],
+  });
+  try {
+    await withTimeout("teams start", teams.start(async () => undefined), TIMEOUT_MS);
+    const result = await withTimeout(
+      "teams send",
+      teams.send(
+        {
+          channel: "teams",
+          target,
+          content: `BLUE-TANUKI live smoke ${new Date().toISOString()}`,
+        },
+        {
+          command_id: `live-${randomUUID()}`,
+          upstream_commit_hash: "live-smoke",
+        },
+      ),
+      TIMEOUT_MS,
+    );
+    if (!result.delivered) {
+      throw new Error(formatDeliveryFailure(result));
+    }
+    return `target=${target} external_id=${result.external_id ?? "unknown"}`;
+  } finally {
+    await teams.stop();
+  }
+}
+
+async function smokeLine(plugins: PluginRuntime): Promise<string | null> {
+  const target = process.env.LINE_LIVE_TARGET;
+  if (!target) return null;
+
+  plugins.requirePermissions(
+    LINE_PACKAGE,
+    LINE_LIVE_PERMISSIONS,
+    "live smoke line",
+  );
+  const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  if (!channelAccessToken || !target) return null;
+
+  const line = plugins.createChannel<InboundChannel & OutboundChannel>({
+    package_name: LINE_PACKAGE,
+    required_permissions: LINE_LIVE_PERMISSIONS,
+    action: "live smoke line",
+    constructor_args: [{
+      channel_access_token: channelAccessToken,
+      log: (lineText: string) => console.log(`[live:line:transport] ${lineText}`),
+    }],
+  });
+  try {
+    await withTimeout("line start", line.start(async () => undefined), TIMEOUT_MS);
+    const result = await withTimeout(
+      "line send",
+      line.send(
+        {
+          channel: "line",
+          target,
+          content: `BLUE-TANUKI live smoke ${new Date().toISOString()}`,
+        },
+        {
+          command_id: `live-${randomUUID()}`,
+          upstream_commit_hash: "live-smoke",
+        },
+      ),
+      TIMEOUT_MS,
+    );
+    if (!result.delivered) {
+      throw new Error(formatDeliveryFailure(result));
+    }
+    return `target=${target} external_id=${result.external_id ?? "unknown"}`;
+  } finally {
+    await line.stop();
   }
 }
 

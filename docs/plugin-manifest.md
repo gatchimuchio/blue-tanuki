@@ -88,6 +88,8 @@ Declaration of expected runtime side effects. The format is `<scope>:<target>`. 
 | `network:http`           | Generic HTTP client capability for gated tools.             |
 | `network:github.com`     | GitHub API capability fixed to `api.github.com`.            |
 | `network:googleapis.com` | Google API capability fixed to Google read hosts.           |
+| `network:graph.microsoft.com` | Microsoft Graph capability for Teams preview send.     |
+| `network:api.line.me`    | LINE Messaging API capability for LINE preview send.        |
 | `github:issue.write`     | GitHub issue create/update capability.                      |
 | `github:pr.write`        | GitHub pull request create capability.                      |
 | `github:comment.write`   | GitHub issue/PR comment create capability.                  |

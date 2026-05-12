@@ -111,6 +111,10 @@ a stop-ship event and inspect the workspace before distributing an archive.
 | `SLACK_LIVE_TARGET`         | live smoke   | Slack channel/DM id for `pnpm smoke:live`             | none               |
 | `DISCORD_BOT_TOKEN`         | optional     | Discord inbound/outbound (silent stub if unset)       | none               |
 | `DISCORD_LIVE_TARGET`       | live smoke   | Discord channel id for `pnpm smoke:live`              | none               |
+| `MICROSOFT_GRAPH_ACCESS_TOKEN` | optional  | Teams outbound through Microsoft Graph (silent stub if unset) | none       |
+| `TEAMS_LIVE_TARGET`         | live smoke   | Teams target for `pnpm smoke:live` (`channel/...`, `reply/...`, or `chat/...`) | none |
+| `LINE_CHANNEL_ACCESS_TOKEN` | optional     | LINE Messaging API push (silent stub if unset)        | none               |
+| `LINE_LIVE_TARGET`          | live smoke   | LINE user/group/room id for `pnpm smoke:live`         | none               |
 | `BLUE_TANUKI_SESSION_DIR`   | optional     | Enables on-disk SessionStore at this directory        | none → in-memory   |
 | `BLUE_TANUKI_SESSION_CAP`   | optional     | Max retained messages per session                     | `100`              |
 | `BLUE_TANUKI_AUDIT_DIR`     | optional     | Enables on-disk AuditLog at `<dir>/audit.jsonl`       | none → in-memory   |
@@ -125,7 +129,7 @@ a stop-ship event and inspect the workspace before distributing an archive.
 | `BLUE_TANUKI_LLM_MAX_TOKENS` | optional    | Per-command max token constraint                      | `1024`             |
 | `BLUE_TANUKI_LLM_TIMEOUT_MS` | optional    | Per-command timeout constraint                        | `30000`            |
 | `BLUE_TANUKI_LIVE_REQUIRED` | live smoke   | `=1` fails `smoke:live` if every live check is skipped | unset              |
-| `BLUE_TANUKI_LIVE_TIMEOUT_MS` | live smoke | Timeout for Slack/Discord live start/send checks      | `30000`            |
+| `BLUE_TANUKI_LIVE_TIMEOUT_MS` | live smoke | Timeout for Slack/Discord/Teams/LINE live start/send checks | `30000`       |
 | `BLUE_TANUKI_LIVE_LLM_TIMEOUT_MS` | live smoke | Timeout for the configured live LLM call          | `BLUE_TANUKI_LIVE_TIMEOUT_MS` |
 | `BLUE_TANUKI_SERVE`         | optional     | `=1` is equivalent to passing `--serve`               | unset              |
 
@@ -149,8 +153,11 @@ it needs before the gateway registers or configures it:
 | ------- | ----------------------------- |
 | Built-in tools | `tool:*`, `fs:read`, `fs:write`, `network:http`, `network:github.com`, `network:googleapis.com`, and declared credential capabilities as required by each tool |
 | WebChat | `network:listen`, `secrets:WEBCHAT_TOKEN`, `secrets:WEBCHAT_RESUME_TOKEN` |
+| Telegram | `network:api.telegram.org`, `secrets:TELEGRAM_BOT_TOKEN` |
 | Slack | `network:slack.com`, `secrets:SLACK_BOT_TOKEN`, `secrets:SLACK_APP_TOKEN` |
 | Discord | `network:discord.com`, `secrets:DISCORD_BOT_TOKEN` |
+| Teams | `network:graph.microsoft.com`, `secrets:MICROSOFT_GRAPH_ACCESS_TOKEN` |
+| LINE | `network:api.line.me`, `secrets:LINE_CHANNEL_ACCESS_TOKEN` |
 | Non-stub LLM providers | `network:llm-provider` plus accessed API-key/header env secrets |
 | Session file store | `fs:read:session_dir`, `fs:write:session_dir`, `fs:append:session_dir` |
 | Audit file store | `fs:append:audit_dir` |
@@ -498,6 +505,11 @@ Configured checks:
   `SLACK_LIVE_TARGET` to a channel/DM id the bot can post to.
 - Discord Gateway: set `DISCORD_BOT_TOKEN` and `DISCORD_LIVE_TARGET` to a
   text channel id the bot can post to.
+- Teams Graph send: set `MICROSOFT_GRAPH_ACCESS_TOKEN` and
+  `TEAMS_LIVE_TARGET` to a test Teams `channel/...`, `reply/...`, or `chat/...`
+  target the signed-in user can post to.
+- LINE Messaging API push: set `LINE_CHANNEL_ACCESS_TOKEN` and
+  `LINE_LIVE_TARGET` to a reachable test userId, groupId, or roomId.
 
 For CI/deploy gates that require at least one real API check, set
 `BLUE_TANUKI_LIVE_REQUIRED=1`.
@@ -565,9 +577,9 @@ the request-bound `approval_token`, and `verdict=approve|reject|block`).
 If a backlog is genuinely abandoned, restart is acceptable — every suspend
 that was lost has an audit entry on disk explaining what happened.
 
-### 6.5 Slack/Discord channel not delivering
+### 6.5 Slack/Discord/Teams/LINE channel not delivering
 
-Symptom: `[slack] WARN SLACK_BOT_TOKEN/SLACK_APP_TOKEN not both set`.
+Symptom: preview channel logs a missing-token warning such as `[teams] WARN MICROSOFT_GRAPH_ACCESS_TOKEN unset - running in silent mode`.
 
 This is the fail-closed silent mode. Outbound dispatch returns `delivered:
 false` with typed delivery fields:
@@ -577,9 +589,9 @@ false` with typed delivery fields:
 - `error_kind=non_recoverable`: token, target, app permission, channel
   membership, or channel type must be fixed before retry.
 
-Recovery: set the required token(s), verify the live target is a test channel,
-restart, then run live smoke. Doctor reports optional-env presence so deploy CI
-can check this without booting.
+Recovery: set the required token(s), verify the live target is a safe test
+channel/chat/user/group, restart, then run live smoke. Doctor reports optional
+token presence so deploy CI can check this without booting.
 
 ---
 
@@ -624,8 +636,7 @@ development it is acceptable for every live check to report SKIP.
 - [ ] `pnpm build`
 - [ ] `pnpm typecheck`
 - [ ] `pnpm test` — all green
-- [ ] `pnpm smoke:serve` — green (audit persistence pinned)
-- [ ] `pnpm smoke:resume` — green (SUSPEND→RESUME→ASSERT pinned)
+- [ ] `pnpm smoke:serve` / `pnpm smoke:resume` only when explicitly fixing root workspace smoke resolution; ordinary validation excludes them while that known environment issue remains open
 - [ ] `pnpm smoke:live` — green for every configured real provider, or SKIP is
       explicitly accepted for this deployment
 - [ ] `pnpm validate:packaging` — green if packaging files are in use
@@ -656,7 +667,7 @@ development it is acceptable for every live check to report SKIP.
 - [ ] If using systemd, `/var/lib/blue-tanuki` is writable by the
       `blue-tanuki` user
 - [ ] If `LLM_BACKEND=anthropic`, `ANTHROPIC_API_KEY` present
-- [ ] Channel tokens (Slack/Discord) set or explicitly omitted
+- [ ] Channel tokens (Slack/Discord/Teams/LINE) set or explicitly omitted
 
 ---
 

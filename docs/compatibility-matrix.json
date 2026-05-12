@@ -19,12 +19,14 @@
       "notes": "Release-polished adapter with conformance tests, retry/backoff, typed delivery errors, and credentialed live smoke path. Remains preview until owner-run live credentials are verified."
     },
     "teams": {
-      "status": "first-party",
-      "target_release": "v0.2"
+      "status": "first-party-preview",
+      "target_release": "v0.2-preview",
+      "notes": "Preview adapter using Microsoft Graph chatMessage send. Conformance tests, silent fail-closed mode, retry/backoff, and live smoke skip path are implemented. Remains preview until owner-run Microsoft Graph credentials and Teams targets are verified."
     },
     "line": {
-      "status": "first-party",
-      "target_release": "v0.2"
+      "status": "first-party-preview",
+      "target_release": "v0.2-preview",
+      "notes": "Preview adapter using LINE Messaging API push. Conformance tests, silent fail-closed mode, retry/backoff, and live smoke skip path are implemented. Remains preview until owner-run LINE credentials and targets are verified."
     },
     "whatsapp": {
       "status": "reserved-third-party",

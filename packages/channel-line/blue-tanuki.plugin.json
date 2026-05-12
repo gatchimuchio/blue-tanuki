@@ -1,0 +1,14 @@
+{
+  "name": "@blue-tanuki/channel-line",
+  "version": "0.0.1",
+  "kind": "channel",
+  "entry": "./dist/index.js",
+  "exports": {
+    "channel": "LineChannel"
+  },
+  "permissions": [
+    "network:api.line.me",
+    "secrets:LINE_CHANNEL_ACCESS_TOKEN"
+  ],
+  "description": "LINE Messaging API preview channel. Push send, silent fallback, adapter retry/backoff, and typed delivery errors."
+}

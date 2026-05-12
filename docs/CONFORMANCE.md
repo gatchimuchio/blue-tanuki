@@ -7,6 +7,7 @@
 現在の main release gate として扱うテスト群:
 
 - `apps/gateway/test/adapter_conformance.test.ts`
+  - Teams / LINE inbound normalization and canonical outbound dispatch
   - Slack / Discord / Telegram の inbound normalization
   - canonical `InboundRequest` / `ChannelSendPayload` の利用
   - channel metadata が authority metadata を持ち込まないこと
@@ -15,6 +16,11 @@
   - adapter-level retry/backoff
   - typed recoverable / non-recoverable delivery errors
   - credential missing, rate limit, and permission failure handling
+- `packages/channel-teams/test/teams.test.ts` / `packages/channel-line/test/line.test.ts`
+  - preview adapter silent fail-closed mode
+  - Graph / Messaging API request shape
+  - adapter-level retry/backoff and typed delivery errors
+  - credential value non-leakage in history
 - `apps/gateway/test/compatibility_matrix.test.ts`
   - `docs/compatibility-matrix.json` と first-party / preview channel manifest の整合
   - WhatsApp が `reserved-third-party` のまま維持されること

@@ -23,6 +23,21 @@ import {
   TelegramChannel,
   type TelegramFetch,
 } from "@blue-tanuki/channel-telegram";
+import {
+  TeamsChannel,
+  teamsChannelTarget,
+  type TeamsInboundHandler,
+  type TeamsInboundMessage,
+  type TeamsPostResult,
+  type TeamsTransport,
+} from "@blue-tanuki/channel-teams";
+import {
+  LineChannel,
+  type LineInboundHandler,
+  type LineInboundMessage,
+  type LinePostResult,
+  type LineTransport,
+} from "@blue-tanuki/channel-line";
 
 const FORBIDDEN_AUTHORITY_METADATA = [
   "blue_tanuki.authority_context",
@@ -113,6 +128,52 @@ class FakeDiscordTransport implements DiscordTransport {
 
   async emit(message: DiscordInboundMessage): Promise<void> {
     if (!this.handler) throw new Error("discord transport not started");
+    await this.handler(message);
+  }
+}
+
+class FakeTeamsTransport implements TeamsTransport {
+  handler: TeamsInboundHandler | null = null;
+  posted: Array<{ target: string; text: string }> = [];
+
+  async start(handler: TeamsInboundHandler): Promise<void> {
+    this.handler = handler;
+  }
+
+  async stop(): Promise<void> {
+    this.handler = null;
+  }
+
+  async postMessage(args: { target: string; text: string }): Promise<TeamsPostResult> {
+    this.posted.push({ ...args });
+    return { ok: true, message_id: `teams-${this.posted.length}` };
+  }
+
+  async emit(message: TeamsInboundMessage): Promise<void> {
+    if (!this.handler) throw new Error("teams transport not started");
+    await this.handler(message);
+  }
+}
+
+class FakeLineTransport implements LineTransport {
+  handler: LineInboundHandler | null = null;
+  posted: Array<{ target: string; text: string }> = [];
+
+  async start(handler: LineInboundHandler): Promise<void> {
+    this.handler = handler;
+  }
+
+  async stop(): Promise<void> {
+    this.handler = null;
+  }
+
+  async postMessage(args: { target: string; text: string }): Promise<LinePostResult> {
+    this.posted.push({ ...args });
+    return { ok: true, request_id: `line-${this.posted.length}` };
+  }
+
+  async emit(message: LineInboundMessage): Promise<void> {
+    if (!this.handler) throw new Error("line transport not started");
     await this.handler(message);
   }
 }
@@ -223,6 +284,58 @@ describe("adapter conformance: inbound normalization", () => {
       await channel.stop();
     }
   });
+
+  it("Teams normalizes transport events into canonical InboundRequest without authority metadata", async () => {
+    const transport = new FakeTeamsTransport();
+    const channel = new TeamsChannel({ transport, log: () => undefined });
+    const received: InboundRequest[] = [];
+    await channel.start(async (req) => {
+      received.push(req);
+    });
+    try {
+      await transport.emit({
+        team_id: "team-1",
+        channel_id: "channel-1",
+        user_id: "teams-user",
+        user_display: "dana",
+        text: "hello from teams",
+        message_id: "teams-message",
+        tenant_id: "tenant-1",
+      });
+      const inbound = await waitFor(() => received[0]);
+      assertCanonicalInbound(inbound, "teams");
+      expect(inbound.metadata?.reply_to).toBe(
+        teamsChannelTarget("team-1", "channel-1"),
+      );
+    } finally {
+      await channel.stop();
+    }
+  });
+
+  it("LINE normalizes transport events into canonical InboundRequest without authority metadata", async () => {
+    const transport = new FakeLineTransport();
+    const channel = new LineChannel({ transport, log: () => undefined });
+    const received: InboundRequest[] = [];
+    await channel.start(async (req) => {
+      received.push(req);
+    });
+    try {
+      await transport.emit({
+        source_type: "user",
+        source_id: "U123",
+        user_id: "U123",
+        user_display: "erin",
+        text: "hello from line",
+        message_id: "line-message",
+        reply_token: "reply-token",
+      });
+      const inbound = await waitFor(() => received[0]);
+      assertCanonicalInbound(inbound, "line");
+      expect(inbound.metadata?.reply_to).toBe("U123");
+    } finally {
+      await channel.stop();
+    }
+  });
 });
 
 describe("adapter conformance: outbound delivery boundary", () => {
@@ -290,6 +403,44 @@ describe("adapter conformance: outbound delivery boundary", () => {
     expect(calls[0]?.url).toContain("/sendMessage");
     expect(calls[0]?.body).toMatchObject({ chat_id: "12345", text: "reply" });
   });
+
+  it("Teams sends only through canonical ChannelSendPayload", async () => {
+    const transport = new FakeTeamsTransport();
+    const channel = new TeamsChannel({ transport, log: () => undefined });
+    const payload = ChannelSendPayloadSchema.parse({
+      channel: "teams",
+      target: teamsChannelTarget("team-1", "channel-1"),
+      content: "reply",
+    });
+    await channel.start(async () => undefined);
+    try {
+      const result = await channel.send(payload, SEND_META);
+      expect(result).toMatchObject({ delivered: true, external_id: "teams-1" });
+      expect(transport.posted).toEqual([
+        { target: teamsChannelTarget("team-1", "channel-1"), text: "reply" },
+      ]);
+    } finally {
+      await channel.stop();
+    }
+  });
+
+  it("LINE sends only through canonical ChannelSendPayload", async () => {
+    const transport = new FakeLineTransport();
+    const channel = new LineChannel({ transport, log: () => undefined });
+    const payload = ChannelSendPayloadSchema.parse({
+      channel: "line",
+      target: "U123",
+      content: "reply",
+    });
+    await channel.start(async () => undefined);
+    try {
+      const result = await channel.send(payload, SEND_META);
+      expect(result).toMatchObject({ delivered: true, external_id: "line-1" });
+      expect(transport.posted).toEqual([{ target: "U123", text: "reply" }]);
+    } finally {
+      await channel.stop();
+    }
+  });
 });
 
 describe("adapter conformance: fail closed on unavailable transport", () => {
@@ -342,6 +493,44 @@ describe("adapter conformance: fail closed on unavailable transport", () => {
         SEND_META,
       );
       expect(result).toEqual({ delivered: false, error: "silent_mode" });
+    } finally {
+      await channel.stop();
+    }
+  });
+
+  it("Teams fails closed in silent mode", async () => {
+    const channel = new TeamsChannel({ log: () => undefined });
+    await channel.start(handler);
+    try {
+      const result = await channel.send(
+        { channel: "teams", target: teamsChannelTarget("team", "channel"), content: "x" },
+        SEND_META,
+      );
+      expect(result).toMatchObject({
+        delivered: false,
+        error: "silent_mode",
+        error_kind: "non_recoverable",
+        error_code: "teams_not_configured",
+      });
+    } finally {
+      await channel.stop();
+    }
+  });
+
+  it("LINE fails closed in silent mode", async () => {
+    const channel = new LineChannel({ log: () => undefined });
+    await channel.start(handler);
+    try {
+      const result = await channel.send(
+        { channel: "line", target: "U123", content: "x" },
+        SEND_META,
+      );
+      expect(result).toMatchObject({
+        delivered: false,
+        error: "silent_mode",
+        error_kind: "non_recoverable",
+        error_code: "line_not_configured",
+      });
     } finally {
       await channel.stop();
     }

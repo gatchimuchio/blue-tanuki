@@ -261,9 +261,9 @@ Completed or mostly completed:
 Known gaps:
 
 - Slack / Discord remain preview until owner credentialed live smoke is run
-- browser automation is not implemented
+- browser automation is implemented as disabled-by-default preview
 - Google write integrations are implemented as bounded L3 downstream tools
-- Teams / LINE are not implemented
+- Teams / LINE are implemented as first-party-preview target adapters; owner credentialed live smoke and permanent-use review are still required before first-party promotion
 - resident native UX is not complete
 - v1.0 hardening is not complete
 
@@ -285,8 +285,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 9-S1 | D | F-reference audit integration | P1 | completed |
 | 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | completed |
 | 9-S3 | D | Google write integration | P2 | completed |
-| 9-S4 | D | Teams / LINE adapters | P2 | current |
-| 10-S1 | E | Control Center approval UX polish | P1 | 8-S1, 8-S2b |
+| 9-S4 | D | Teams / LINE adapters | P2 | completed |
+| 10-S1 | E | Control Center approval UX polish | P1 | current |
 | 10-S2 | E | Resident notification center | P2 | 10-S1 |
 | 10-S3 | E | Distribution UX hardening | P1 | 8-S2a, 8-S2b |
 | 11-S1 | F | v1.0 security review closure | P0 | all main features |
@@ -1445,6 +1445,14 @@ Add Teams and LINE as first-party target adapters.
 
 - WhatsApp first-party support
 
+## Completion Notes
+
+- Added `@blue-tanuki/channel-teams` and `@blue-tanuki/channel-line` as first-party-preview channel adapters.
+- Teams outbound uses Microsoft Graph chatMessage send; LINE outbound uses Messaging API push.
+- Missing credentials fail closed through silent mode with typed downstream delivery results.
+- Adapter conformance, compatibility matrix, doctor, live smoke skip paths, docs, and capability envelopes are updated.
+- First-party promotion remains gated on owner-run credentialed live smoke and permanent-use recovery review.
+
 ---
 
 # Phase 10-S1 — Control Center Approval UX Polish
@@ -1677,7 +1685,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 9-S4 - Teams / LINE Adapters
+Phase 10-S1 - Control Center Approval UX Polish
 ```
 
-Do not begin resident UX or release-hardening lanes before Phase 9-S4 is completed unless explicitly instructed.
+Phase 9-S4 is complete. Proceed to resident UX only through Phase 10-S1.

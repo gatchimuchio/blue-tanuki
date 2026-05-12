@@ -92,6 +92,8 @@ These always require review regardless of full-access default:
 - schedule delete
 - GitHub issue/PR/comment write
 - browser automation action
+- Gmail / Google Calendar / Drive writes
+- Teams / LINE outbound sends
 
 `payment.charge` is a defensive placeholder. v0.1 has no payment feature, but any future payment-class operation is L3 from the moment it is introduced.
 
@@ -138,6 +140,19 @@ Rules:
 - Calendar attendee invites, Drive delete/share, and autonomous cross-service action are not implemented.
 - Daily Brief Google source remains a cron input source; it does not move authority into Google services.
 - Tool output and audit feedback must not include token values or full request content.
+
+## Teams / LINE preview channel boundary
+
+`@blue-tanuki/channel-teams` and `@blue-tanuki/channel-line` are downstream preview adapters. They do not create authority and cannot bypass HDS-BRAIN, Approval Gate, or audit closure.
+
+Rules:
+
+- Teams outbound uses Microsoft Graph through `MICROSOFT_GRAPH_ACCESS_TOKEN`.
+- LINE outbound uses the Messaging API through `LINE_CHANNEL_ACCESS_TOKEN`.
+- Missing credentials keep adapters in silent fail-closed mode with typed delivery errors.
+- Teams tenant/team/channel/chat metadata and LINE source/user metadata are context only; they cannot escalate actor authority, approval level, or tool capability.
+- Delivery results are executor feedback and audit evidence only.
+- Credentialed first-party promotion requires owner-run live smoke and permanent-use recovery review.
 
 ## Runtime schedule boundary
 

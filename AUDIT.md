@@ -134,7 +134,7 @@ OAuth access tokens and full request bodies are never written to audit output or
 
 ## Channel delivery audit compatibility
 
-Slack / Discord delivery failures are returned to executor feedback as typed downstream results:
+Slack / Discord / Teams / LINE delivery failures are returned to executor feedback as typed downstream results:
 
 - `error_kind`: `recoverable` or `non_recoverable`
 - `error_code`: bounded machine-readable error code

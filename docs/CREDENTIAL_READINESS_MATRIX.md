@@ -15,6 +15,8 @@ Secret values must never be printed in docs, logs, doctor output, runtime snapsh
 | `SLACK_BOT_TOKEN` | Slack release-polished preview adapter | bot token | Slack app config | optional token presence | yes, Slack silent fallback | typed `slack_not_configured`, `invalid_auth`, `token_revoked`, or delivery error / live smoke skip | rotate Slack bot token, restart |
 | `SLACK_APP_TOKEN` | Slack Socket Mode | app token | Slack app config | optional token presence | yes, Slack silent fallback | typed `slack_not_configured` or Socket Mode start failure | rotate Slack app token, restart |
 | `DISCORD_BOT_TOKEN` | Discord release-polished preview adapter | bot token | Discord developer portal | optional token presence | yes, Discord silent fallback | typed `discord_not_configured`, token/permission error, or live smoke skip | rotate in developer portal, restart |
+| `MICROSOFT_GRAPH_ACCESS_TOKEN` | Microsoft Teams preview adapter | OAuth access token | Microsoft Entra / delegated Graph OAuth | optional token presence | yes, Teams silent fallback | typed `teams_not_configured`, Graph auth/permission/target error, or live smoke skip | rotate through OAuth/app consent path, restart |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE preview adapter | channel access token | LINE Developers console | optional token presence | yes, LINE silent fallback | typed `line_not_configured`, Messaging API auth/permission/target error, or live smoke skip | rotate in LINE Developers, restart |
 | `GITHUB_TOKEN` | `github.write` external write tool | API token | GitHub token settings/manual env | optional token presence | yes, `github.write` fails closed | `GITHUB_TOKEN is required for github.write; mutation_sent=false` | rotate in GitHub, restart gateway |
 | `BLUE_TANUKI_GITHUB_REPOS` | `github.write` repository allowlist | repo list, not secret | manual env | optional presence | yes, `github.write` fails closed | allowlist missing/denied before mutation | list `owner/repo`; changing allowlist changes write reach |
 | `GOOGLE_ACCESS_TOKEN` | Google read/write tools and optional Daily Brief Google source | OAuth access token | Google OAuth/manual env | Google Daily Brief source check when enabled | yes, Google tools fail closed | `GOOGLE_ACCESS_TOKEN is required ... request_sent=false; mutation_sent=false` | rotate in Google account/OAuth client, restart gateway |
@@ -31,6 +33,8 @@ Secret values must never be printed in docs, logs, doctor output, runtime snapsh
 | `BLUE_TANUKI_SCHEDULES_DIR` | runtime schedule store | local path | default/manual env | schedule config release gate | default `.blue-tanuki/schedules` | schedule store unwritable | backup with local runtime data |
 | `SLACK_LIVE_TARGET` | live smoke | target id | manual env | not doctor-owned | live smoke skip | Slack live check skipped | use test channel |
 | `DISCORD_LIVE_TARGET` | live smoke | target id | manual env | not doctor-owned | live smoke skip | Discord live check skipped | use test channel |
+| `TEAMS_LIVE_TARGET` | live smoke | target id | manual env | not doctor-owned | live smoke skip | Teams live check skipped | use `channel/<team_id>/<channel_id>`, `reply/<team_id>/<channel_id>/<message_id>`, or `chat/<chat_id>` test target |
+| `LINE_LIVE_TARGET` | live smoke | target id | manual env | not doctor-owned | live smoke skip | LINE live check skipped | use a reachable userId, groupId, or roomId test target |
 
 ## Rotation Rule
 

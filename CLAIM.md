@@ -28,7 +28,7 @@ BLUE-TANUKI does not claim that the following are internally transparent:
 
 - OS kernel
 - network providers
-- Telegram / Slack / Discord platforms
+- Telegram / Slack / Discord / Teams / LINE platforms
 - LLM providers
 - browser engines
 - external APIs
@@ -45,12 +45,14 @@ The transparency claim is limited to BLUE-TANUKI's own authority path.
 - runtime snapshot
 - Telegram channel
 - Slack / Discord existing adapters with silent fallback
+- Teams / LINE preview adapters with silent fallback
 - Daily Brief and generic scheduled-message smoke with optional read-only Google source
 
 ## v0.1 Explicit Preview / Deferred
 
 - WhatsApp: reserved-third-party only. BLUE-TANUKI does not ship first-party WhatsApp core support, Baileys/WAHA/WhatsApp Web automation, Business API support, or Twilio WhatsApp support.
 - Gmail / Google Calendar / Drive: bounded downstream tools; writes are L3 final-review
+- Teams / LINE: preview channel adapters; first-party promotion waits for owner credentialed live smoke and permanent-use recovery review
 - Voice / Mobile: interface/design only, real product quality v0.2+
 - Rich Canvas / A2UI: v0.2+
 - third-party Skill registry: intentionally excluded

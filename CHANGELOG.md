@@ -18,6 +18,7 @@
 - Added Phase 9-S1: `F:<id>` memory read/write references in audit and Control Center traces while preserving `memory_used_for_authority=false`.
 - Added Phase 9-S2: read-only `gmail.read`, `google.calendar.read`, and `google.drive.read` tools, credential-scoped Google Daily Brief source, doctor/docs coverage, and advanced the active execution lane to Google write.
 - Added Phase 9-S3: bounded `gmail.write`, `google.calendar.write`, and `google.drive.write` tools with L3 final-review mapping, fail-closed credential handling, audit-safe mutation summaries, and advanced the active execution lane to Teams / LINE adapters.
+- Added Phase 9-S4: Microsoft Teams and LINE first-party-preview adapters with capability manifests, conformance tests, live smoke skip paths, doctor/compatibility gates, typed delivery failures, and updated readiness docs.
 - Fixed root workspace script delegation so `pnpm run setup -- --yes` and `pnpm run doctor` do not collide with pnpm built-ins.
 
 ## 0.1.0 - 2026-05-06

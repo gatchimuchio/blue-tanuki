@@ -108,8 +108,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 9-S1 | D | F-reference audit integration | P1 | completed |
 | 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | completed |
 | 9-S3 | D | Google write integration | P2 | completed |
-| 9-S4 | D | Teams / LINE adapters | P2 | current |
-| 10-S1 | E | Control Center approval UX polish | P1 | 8-S1, 8-S2b |
+| 9-S4 | D | Teams / LINE adapters | P2 | completed |
+| 10-S1 | E | Control Center approval UX polish | P1 | current |
 | 10-S2 | E | Resident notification center | P2 | 10-S1 |
 | 10-S3 | E | Distribution UX hardening | P1 | 8-S2a, 8-S2b |
 | 11-S1 | F | v1.0 security review closure | P0 | all main features |
@@ -118,10 +118,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 9-S4 - Teams / LINE adapters
+Phase 10-S1 - Control Center approval UX polish
 ```
 
-Do not begin resident UX or release-hardening lanes before Phase 9-S4 is completed unless explicitly instructed.
+Phase 9-S4 is complete. Resident UX work begins with Phase 10-S1.
 
 ## 4. Completed Phase Summaries
 
@@ -174,6 +174,35 @@ Do not begin resident UX or release-hardening lanes before Phase 9-S4 is complet
 - Live smoke failure output now includes typed delivery detail and owner next action
 - Compatibility matrix keeps Slack / Discord as release-polished preview until owner credentialed live smoke
 - Active execution lane advanced to Phase 8-S6 browser automation preview
+
+### Phase 8-S6
+
+- Disabled-by-default browser automation preview
+- Guarded `browser.snapshot` and `browser.automation` tool paths
+- L2/L3 ApprovalLevel mapping and credential denial
+- Smoke skip path for preview-disabled operation
+
+### Phase 9-S1
+
+- `F:<id>` memory read/write references in audit and Control Center traces
+- HDS long-term memory remains non-authority with `memory_used_for_authority=false`
+
+### Phase 9-S2
+
+- Read-only Gmail, Google Calendar, and Google Drive tools
+- Optional Google Daily Brief source with credential-scoped fail-closed behavior
+
+### Phase 9-S3
+
+- Bounded Gmail, Google Calendar, and Google Drive write tools
+- Google writes map to L3 final-review and return audit-safe mutation summaries
+
+### Phase 9-S4
+
+- Microsoft Teams and LINE first-party-preview channel adapters
+- Teams Graph send and LINE Messaging API push live smoke skip paths
+- Conformance, doctor, compatibility matrix, and permanent-use docs updated
+- Active execution lane advanced to Phase 10-S1 Control Center approval UX polish
 
 ## 5. Non-Goals
 
