@@ -11,6 +11,10 @@ export {
   type WebChatAuditSurface,
   type WebChatAuthorityTraceItem,
   type WebChatAuthoritySurface,
+  type WebChatNotificationItem,
+  type WebChatNotificationKind,
+  type WebChatNotificationSeverity,
+  type WebChatNotificationSurface,
 } from "./webchat.js";
 export {
   MemoryResumeApprovalTokenStore,

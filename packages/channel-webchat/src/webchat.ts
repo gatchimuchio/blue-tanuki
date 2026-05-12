@@ -118,6 +118,7 @@ export interface WebChatAuthorityTraceItem {
     | "approval_gate"
     | "authority_event"
     | "command_lifecycle"
+    | "executor_feedback"
     | "schedule_lifecycle"
     | "memory_reference";
   event: string;
@@ -139,6 +140,11 @@ export interface WebChatAuthorityTraceItem {
   summary?: unknown;
   reason?: string;
   decision?: string;
+  status?: string;
+  error?: string;
+  known_command?: boolean;
+  source_process_kind?: string;
+  source_channel?: string;
   authority_trace?: unknown;
   timestamp: number;
 }
@@ -146,6 +152,44 @@ export interface WebChatAuthorityTraceItem {
 export interface WebChatAuthoritySurface {
   /** Return a read-only authority trace projected from the live audit chain. */
   trace: () => Promise<readonly WebChatAuthorityTraceItem[]>;
+}
+
+export type WebChatNotificationKind =
+  | "approval_required"
+  | "schedule_fired"
+  | "schedule_failed"
+  | "connector_failure"
+  | "audit_warning";
+
+export type WebChatNotificationSeverity =
+  | "info"
+  | "warning"
+  | "critical"
+  | "action_required";
+
+export interface WebChatNotificationItem {
+  id: string;
+  kind: WebChatNotificationKind;
+  severity: WebChatNotificationSeverity;
+  title: string;
+  message: string;
+  timestamp: number;
+  source: string;
+  read_only: true;
+  authority: "display_only";
+  request_id?: string | null;
+  command_id?: string;
+  schedule_id?: string;
+  approval_level?: string;
+  risk?: string;
+  payload_hash?: string;
+  expires_at_ms?: number;
+  next_action?: string;
+}
+
+export interface WebChatNotificationSurface {
+  /** Return display-only resident notifications for the local console. */
+  list: () => Promise<readonly WebChatNotificationItem[]>;
 }
 
 export interface WebChatOptions {
@@ -212,6 +256,8 @@ export interface WebChatOptions {
   audit?: WebChatAuditSurface;
   /** Optional local authority trace API surface. Uses the normal inbound bearer token. */
   authority?: WebChatAuthoritySurface;
+  /** Optional display-only notification API surface. Uses the normal inbound bearer token. */
+  notifications?: WebChatNotificationSurface;
   /**
    * Per-endpoint rate limit configuration. Pass `false` to disable
    * rate limiting entirely. Default: enabled with the per-endpoint
@@ -259,6 +305,7 @@ const RESUME_GLOBAL_KEY = "*";
  *   POST /approval/:id body:{verdict, approval_token} auth:Bearer resume-token
  *   GET  /audit/dump auth:Bearer inbound-token
  *   GET  /authority/trace auth:Bearer inbound-token
+ *   GET  /notifications auth:Bearer inbound-token
  *   GET  /ws         query:?ticket=...
  *   GET  /healthz    no auth, not rate-limited
  *
@@ -637,6 +684,11 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
 
     if (url.pathname === "/authority/trace") {
       await this.handleAuthorityTrace(req, res);
+      return;
+    }
+
+    if (url.pathname === "/notifications") {
+      await this.handleNotifications(req, res);
       return;
     }
 
@@ -1029,6 +1081,33 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       "cache-control": "no-store",
     });
     res.end(JSON.stringify(snapshot));
+  }
+
+  private async handleNotifications(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    if (!this.opts.notifications) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "notifications_not_configured" }));
+      return;
+    }
+    if (req.method !== "GET") {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    if (!this.checkAuth(req, "inbound")) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+    const notifications = await this.opts.notifications.list();
+    res.writeHead(200, {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    });
+    res.end(JSON.stringify({ notifications }));
   }
 
   private async handleSettingsPage(

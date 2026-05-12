@@ -10,6 +10,7 @@ import {
   type WebChatApprovalSurface,
   type WebChatAuditSurface,
   type WebChatAuthoritySurface,
+  type WebChatNotificationSurface,
   type WebChatRuntimeSurface,
   type WebChatSettingsSurface,
 } from "../src/index.js";
@@ -46,6 +47,7 @@ function setup(
       approval?: WebChatApprovalSurface;
       audit?: WebChatAuditSurface;
       authority?: WebChatAuthoritySurface;
+      notifications?: WebChatNotificationSurface;
     }
   > = {},
 ): Ctx & { teardown: () => Promise<void> } {
@@ -67,6 +69,7 @@ function setup(
     approval: opts.approval,
     audit: opts.audit,
     authority: opts.authority,
+    notifications: opts.notifications,
     // Default: disable rate limiting in legacy tests so existing flows
     // keep working without thinking about bursts. Rate-limit behavior is
     // covered by its own describe() block below.
@@ -292,6 +295,8 @@ describe("WebChatChannel — Control Center shell", () => {
       expect(html).toContain("First-Run Next Action");
       expect(html).toContain("ApprovalLevel");
       expect(html).toContain("Final Review");
+      expect(html).toContain("Notification Center");
+      expect(html).toContain("load-notifications");
       expect(html).toContain("runtime-schedule-list");
       expect(html).toContain("authority-trace-list");
       expect(html).toContain("redactRuntimeValue");
@@ -1403,5 +1408,78 @@ describe("WebChatChannel — rate-limit prune", () => {
     // No assertion on internal state; this test exists primarily to
     // ensure no unhandled error surfaces when interval=0 is configured.
     await ch.stop();
+  });
+});
+
+describe("WebChatChannel - resident notifications API", () => {
+  it("serves display-only notifications only with the inbound token", async () => {
+    const ctx = setup({
+      notifications: {
+        list: async () => [
+          {
+            id: "approval:cmd-1",
+            kind: "approval_required",
+            severity: "action_required",
+            title: "Approval required",
+            message: "tool.shell.exec is waiting for owner review.",
+            timestamp: 12345,
+            source: "approval_queue",
+            read_only: true,
+            authority: "display_only",
+            request_id: "req-1",
+            command_id: "cmd-1",
+            approval_level: "L3_final_review",
+            risk: "high",
+            next_action: "Open Approval Queue.",
+          },
+        ],
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      expect((await getRaw(ctx.port, "/notifications")).status).toBe(401);
+      expect(
+        (await getRaw(ctx.port, "/notifications", {
+          authorization: `Bearer ${RESUME_TOKEN}`,
+        })).status,
+      ).toBe(401);
+
+      const ok = await getRaw(ctx.port, "/notifications", {
+        authorization: `Bearer ${TOKEN}`,
+      });
+      expect(ok.status).toBe(200);
+      const body = JSON.parse(ok.text);
+      expect(body.notifications).toHaveLength(1);
+      expect(body.notifications[0]).toMatchObject({
+        kind: "approval_required",
+        severity: "action_required",
+        read_only: true,
+        authority: "display_only",
+        command_id: "cmd-1",
+      });
+      expect(JSON.stringify(body)).not.toContain("approval_token");
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("does not accept POST /notifications", async () => {
+    const ctx = setup({
+      notifications: {
+        list: async () => [],
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      const r = await postJson(
+        ctx.port,
+        "/notifications",
+        {},
+        { authorization: `Bearer ${TOKEN}` },
+      );
+      expect(r.status).toBe(405);
+    } finally {
+      await ctx.teardown();
+    }
   });
 });

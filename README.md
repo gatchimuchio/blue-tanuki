@@ -13,6 +13,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - WebChat Control Center at `/` and `/app`
 - Runtime snapshot at `/runtime/snapshot`
 - Authority trace at `/authority/trace`
+- Resident notifications at `/notifications`
 - Scheduled task snapshot in Control Center
 - Resident Control Center status cards for first-run next action, permanent-use status, approvals, runtime schedules, audit chain, and authority trace
 - HDS Process / Memory / Authority closure
@@ -357,6 +358,15 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 
 `/authority/trace` is read-only. It projects Approval Gate, authority event, command lifecycle, and safe `F:<id>` memory-reference entries from the live hash-chain audit so Control Center can inspect authority decisions without creating a second authority path.
 
+## Resident notifications HTTP
+
+```bash
+curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
+  http://127.0.0.1:8787/notifications
+```
+
+`/notifications` is read-only and display-only. It projects approval-required, schedule fired/failed, connector failure, and audit warning notifications from existing runtime and audit state. Notifications cannot approve, reject, execute, mutate audit, or grant authority.
+
 ## Documents
 
 - [docs/ROADMAP.md](./docs/ROADMAP.md) - internal roadmap v9 and Sacred Constraints
@@ -369,6 +379,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase9-s3-google-write-integration.md](./docs/phase9-s3-google-write-integration.md) - Google write integration boundary
 - [docs/phase9-s4-teams-line-adapters.md](./docs/phase9-s4-teams-line-adapters.md) - Teams / LINE preview adapter boundary
 - [docs/phase10-s1-control-center-approval-ux.md](./docs/phase10-s1-control-center-approval-ux.md) - Control Center resident approval UX boundary
+- [docs/phase10-s2-resident-notifications.md](./docs/phase10-s2-resident-notifications.md) - resident notification center boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

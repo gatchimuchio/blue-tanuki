@@ -287,8 +287,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 9-S3 | D | Google write integration | P2 | completed |
 | 9-S4 | D | Teams / LINE adapters | P2 | completed |
 | 10-S1 | E | Control Center approval UX polish | P1 | completed |
-| 10-S2 | E | Resident notification center | P2 | current |
-| 10-S3 | E | Distribution UX hardening | P1 | 8-S2a, 8-S2b |
+| 10-S2 | E | Resident notification center | P2 | completed |
+| 10-S3 | E | Distribution UX hardening | P1 | current |
 | 11-S1 | F | v1.0 security review closure | P0 | all main features |
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
 
@@ -1508,6 +1508,14 @@ Add resident notification behavior without creating a second authority path.
 - notification cannot approve by itself
 - notification metadata is not authority
 
+## Completion Notes
+
+- WebChat exposes `GET /notifications` with the normal inbound token.
+- Control Center includes a read-only Notification Center panel.
+- Notifications are projected from existing runtime, approval, audit, and authority trace state.
+- Covered notification kinds: approval required, schedule fired, schedule failed, connector failure, and audit warning.
+- Notification metadata is marked `authority=display_only` and cannot approve, reject, execute, mutate audit, or grant authority.
+
 ---
 
 # Phase 10-S3 — Distribution UX Hardening
@@ -1692,7 +1700,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 10-S2 - Resident Notification Center
+Phase 10-S3 - Distribution UX Hardening
 ```
 
-Phase 10-S1 is complete. Continue resident UX through Phase 10-S2.
+Phase 10-S2 is complete. Continue resident UX and packaging work through Phase 10-S3.

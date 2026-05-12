@@ -110,18 +110,18 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 9-S3 | D | Google write integration | P2 | completed |
 | 9-S4 | D | Teams / LINE adapters | P2 | completed |
 | 10-S1 | E | Control Center approval UX polish | P1 | completed |
-| 10-S2 | E | Resident notification center | P2 | current |
-| 10-S3 | E | Distribution UX hardening | P1 | 8-S2a, 8-S2b |
+| 10-S2 | E | Resident notification center | P2 | completed |
+| 10-S3 | E | Distribution UX hardening | P1 | current |
 | 11-S1 | F | v1.0 security review closure | P0 | all main features |
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
 
 ## 3. Current Active Phase
 
 ```txt
-Phase 10-S2 - Resident notification center
+Phase 10-S3 - Distribution UX hardening
 ```
 
-Phase 10-S1 is complete. Resident UX work continues with Phase 10-S2.
+Phase 10-S2 is complete. Resident UX and packaging work continues with Phase 10-S3.
 
 ## 4. Completed Phase Summaries
 
@@ -211,6 +211,14 @@ Phase 10-S1 is complete. Resident UX work continues with Phase 10-S2.
 - Runtime schedules now show active/pending state, approval lifecycle metadata, and payload hashes without schedule content
 - Runtime snapshot display now includes first-run next action and permanent-use status cards
 - Active execution lane advanced to Phase 10-S2 resident notification center
+
+### Phase 10-S2
+
+- Display-only resident notifications added to WebChat at `/notifications`
+- Control Center Notification Center surfaces approval-required, schedule fired/failed, connector failure, and audit-warning states
+- Authority Trace now includes executor feedback summaries so downstream delivery failures can be surfaced without becoming authority
+- Notification metadata is explicitly `display_only` and cannot approve, execute, mutate audit, or grant authority
+- Active execution lane advanced to Phase 10-S3 distribution UX hardening
 
 ## 5. Non-Goals
 

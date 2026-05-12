@@ -45,6 +45,7 @@ import {
   formatAuditTextReport,
 } from "./audit_dump.js";
 import { buildRuntimeStatusSnapshot } from "./runtime_status.js";
+import { buildResidentNotificationsSnapshot } from "./resident_notifications.js";
 
 /**
  * Gateway serve mode.
@@ -319,6 +320,9 @@ export async function serve(): Promise<ServeShutdown> {
       authority: {
         trace: async () => authorityTraceSnapshot(),
       },
+      notifications: {
+        list: async () => residentNotificationSnapshot(),
+      },
       onResume: async (
         request_id: string,
         verdict: "approve" | "reject" | "block",
@@ -353,7 +357,22 @@ export async function serve(): Promise<ServeShutdown> {
 
   function authorityTraceSnapshot(): WebChatAuthorityTraceItem[] {
     const items: WebChatAuthorityTraceItem[] = [];
-    for (const entry of hds.getAudit().list()) {
+    const auditEntries = hds.getAudit().list();
+    const requestSources = new Map<
+      string,
+      { source_process_kind: string; source_channel: string }
+    >();
+    for (const entry of auditEntries) {
+      const log = entry.log;
+      if (!("kind" in log)) {
+        requestSources.set(log.request_id, {
+          source_process_kind: log.frame.process.process_kind,
+          source_channel: log.frame.actor.channel,
+        });
+      }
+    }
+
+    for (const entry of auditEntries) {
       const log = entry.log;
       const base = {
         index: entry.index,
@@ -429,6 +448,24 @@ export async function serve(): Promise<ServeShutdown> {
         continue;
       }
 
+      if (log.kind === "executor_feedback") {
+        const source = log.request_id
+          ? requestSources.get(log.request_id)
+          : undefined;
+        items.push({
+          ...base,
+          kind: "executor_feedback",
+          event: `executor.${log.feedback.status}`,
+          command_id: log.command_id,
+          status: log.feedback.status,
+          error: log.feedback.error,
+          known_command: log.known_command,
+          source_process_kind: source?.source_process_kind,
+          source_channel: source?.source_channel,
+        });
+        continue;
+      }
+
       if (log.kind === "command_lifecycle") {
         items.push({
           ...base,
@@ -459,6 +496,14 @@ export async function serve(): Promise<ServeShutdown> {
       }
     }
     return items;
+  }
+
+  function residentNotificationSnapshot() {
+    return buildResidentNotificationsSnapshot({
+      audit_chain_valid: hds.getAudit().verify(),
+      pending_approvals: pendingApprovalSnapshot(),
+      authority_trace: authorityTraceSnapshot(),
+    });
   }
 
   const telegramPermissions = [

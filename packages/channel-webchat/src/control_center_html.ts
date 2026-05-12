@@ -291,6 +291,7 @@ export function renderControlCenterHtml(): string {
       }
 
       .queue-list,
+      .notification-list,
       .schedule-list,
       .trace-list,
       .audit-list {
@@ -299,6 +300,7 @@ export function renderControlCenterHtml(): string {
       }
 
       .queue-item,
+      .notification-item,
       .schedule-item,
       .trace-item,
       .audit-item {
@@ -437,7 +439,7 @@ export function renderControlCenterHtml(): string {
           <div class="metric"><span>Gateway</span><span id="gateway-status">not loaded</span></div>
           <div class="metric"><span>HDS Invariants</span><span id="runtime-invariant">not loaded</span></div>
           <div class="metric"><span>Audit Chain</span><span id="runtime-audit">not loaded</span></div>
-          <input id="runtime-token" type="password" autocomplete="off" placeholder="resume token" />
+          <input id="runtime-token" type="password" autocomplete="off" placeholder="webchat token" />
           <button id="load-runtime" class="primary">Load</button>
         </section>
 
@@ -459,6 +461,16 @@ export function renderControlCenterHtml(): string {
             <h2>Approval Model</h2>
             <p class="muted">L3 and final-review work remains a one-time operator decision. The console only submits explicit approve, reject, or block verdicts.</p>
           </article>
+        </section>
+
+        <section class="card">
+          <div class="row">
+            <h2>Notification Center</h2>
+            <span id="notification-summary" class="badge warn">not loaded</span>
+          </div>
+          <input id="notifications-token" type="password" autocomplete="off" placeholder="webchat token" />
+          <button id="load-notifications" class="primary">Load</button>
+          <div id="notification-list" class="notification-list"></div>
         </section>
 
         <section class="card">
@@ -490,7 +502,7 @@ export function renderControlCenterHtml(): string {
             <h2>Authority Trace</h2>
             <span id="authority-summary" class="badge warn">not loaded</span>
           </div>
-          <input id="authority-token" type="password" autocomplete="off" placeholder="resume token" />
+          <input id="authority-token" type="password" autocomplete="off" placeholder="webchat token" />
           <button id="load-authority" class="primary">Load</button>
           <div id="authority-trace-list" class="trace-list"></div>
           <pre id="authority-json">not loaded</pre>
@@ -505,7 +517,7 @@ export function renderControlCenterHtml(): string {
           </div>
           <div class="metric"><span>Chain Valid</span><span id="audit-chain-valid">not loaded</span></div>
           <div class="metric"><span>Entries</span><span id="audit-entry-count">not loaded</span></div>
-          <input id="audit-token" type="password" autocomplete="off" placeholder="resume token" />
+          <input id="audit-token" type="password" autocomplete="off" placeholder="webchat token" />
           <div class="action-row">
             <button id="load-audit" class="primary">Load Audit</button>
             <button id="verify-audit">Verify Chain</button>
@@ -551,6 +563,7 @@ export function renderControlCenterHtml(): string {
         approvalToken: sessionStorage.getItem("bt.approvalToken") || "",
         auditToken: sessionStorage.getItem("bt.auditToken") || "",
         authorityToken: sessionStorage.getItem("bt.authorityToken") || "",
+        notificationsToken: sessionStorage.getItem("bt.notificationsToken") || "",
         approvalTokens: Object.create(null)
       };
 
@@ -648,6 +661,13 @@ export function renderControlCenterHtml(): string {
         byId("approval-token").value = state.approvalToken;
         byId("audit-token").value = state.auditToken;
         byId("authority-token").value = state.authorityToken;
+        byId("notifications-token").value = state.notificationsToken;
+      }
+
+      function severityTone(severity) {
+        if (severity === "critical") return "bad";
+        if (severity === "warning" || severity === "action_required") return "review";
+        return "good";
       }
 
       function updatePermanentUseStatus(body) {
@@ -795,6 +815,50 @@ export function renderControlCenterHtml(): string {
         );
       }
 
+      function renderNotifications(body) {
+        const notifications = Array.isArray(body.notifications) ? body.notifications : [];
+        setText("notification-summary", String(notifications.length) + " active");
+        byId("notification-summary").className = "badge " + (notifications.length > 0 ? "review" : "good");
+
+        if (notifications.length === 0) {
+          setHtml("notification-list", '<div class="notification-item muted">no resident notifications</div>');
+          return;
+        }
+
+        setHtml(
+          "notification-list",
+          notifications
+            .map(function (item) {
+              const fields = [
+                ["kind", item.kind || "unknown"],
+                ["severity", badge(item.severity || "info", severityTone(item.severity))],
+                ["source", item.source || "unknown"],
+                ["request", item.request_id || "none"],
+                ["command", item.command_id || "none"],
+                ["schedule", item.schedule_id || "none"],
+                ["ApprovalLevel", item.approval_level || "none"],
+                ["risk", item.risk || "none"],
+                ["payload", item.payload_hash || "not recorded"],
+                ["next", item.next_action || "none"],
+                ["authority", item.authority || "display_only"]
+              ];
+              return '<article class="notification-item">' +
+                '<div class="row"><h3>' + escapeHtml(item.title || "Notification") + '</h3>' + badge("read only", "good") + '</div>' +
+                '<p class="muted">' + escapeHtml(item.message || "") + '</p>' +
+                '<dl class="kv">' +
+                fields
+                  .map(function (field) {
+                    const value = field[0] === "severity" ? field[1] : escapeHtml(field[1]);
+                    return '<dt>' + escapeHtml(field[0]) + '</dt><dd>' + value + '</dd>';
+                  })
+                  .join("") +
+                '</dl>' +
+                '</article>';
+            })
+            .join("")
+        );
+      }
+
       function renderAudit(body) {
         const chainValid = body.chain_valid ?? body.valid ?? body.audit_chain_valid;
         const entries = Array.isArray(body.entries) ? body.entries : Array.isArray(body.audit_log) ? body.audit_log : [];
@@ -890,6 +954,20 @@ export function renderControlCenterHtml(): string {
         }
       }
 
+      async function loadNotifications() {
+        const token = byId("notifications-token").value.trim();
+        state.notificationsToken = token;
+        sessionStorage.setItem("bt.notificationsToken", token);
+        try {
+          const body = await fetchJson("/notifications", token);
+          renderNotifications(body);
+        } catch (error) {
+          setHtml("notification-list", '<div class="notification-item">' + escapeHtml(error.message) + '</div>');
+          setText("notification-summary", "error");
+          byId("notification-summary").className = "badge bad";
+        }
+      }
+
       async function submitApproval(commandId, verdict, approvalToken) {
         const token = byId("approval-token").value.trim();
         const response = await fetch("/approval/" + encodeURIComponent(commandId), {
@@ -974,6 +1052,7 @@ export function renderControlCenterHtml(): string {
       });
 
       byId("load-runtime").addEventListener("click", loadRuntime);
+      byId("load-notifications").addEventListener("click", loadNotifications);
       byId("load-approvals").addEventListener("click", loadApprovals);
       byId("load-audit").addEventListener("click", loadAuditText);
       byId("verify-audit").addEventListener("click", verifyAudit);

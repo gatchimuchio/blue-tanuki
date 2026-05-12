@@ -57,6 +57,12 @@
 - [ ] pending/rejected/timed-out schedule が fire しないことを確認した
 - [ ] `/runtime/snapshot` に schedule content が出ないことを確認した
 
+## Resident Notifications
+
+- [ ] Control Center Notification Center shows approval-required, schedule fired/failed, connector failure, and audit-warning states.
+- [ ] `/notifications` is read-only, uses `WEBCHAT_TOKEN`, and returns `authority=display_only`.
+- [ ] Notification output does not expose one-time approval tokens, schedule content, credentials, or raw connector payloads.
+
 ## Channel Readiness
 
 - [ ] WebChat は必須 local console として動いている
