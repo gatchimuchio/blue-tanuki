@@ -288,6 +288,13 @@ describe("WebChatChannel — Control Center shell", () => {
       expect(html).toContain("Verify Chain");
       expect(html).toContain("Authority Trace");
       expect(html).toContain("Scheduled Tasks");
+      expect(html).toContain("Permanent-Use Status");
+      expect(html).toContain("First-Run Next Action");
+      expect(html).toContain("ApprovalLevel");
+      expect(html).toContain("Final Review");
+      expect(html).toContain("runtime-schedule-list");
+      expect(html).toContain("authority-trace-list");
+      expect(html).toContain("redactRuntimeValue");
     } finally {
       await ctx.teardown();
     }

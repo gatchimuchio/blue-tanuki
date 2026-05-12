@@ -109,8 +109,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | completed |
 | 9-S3 | D | Google write integration | P2 | completed |
 | 9-S4 | D | Teams / LINE adapters | P2 | completed |
-| 10-S1 | E | Control Center approval UX polish | P1 | current |
-| 10-S2 | E | Resident notification center | P2 | 10-S1 |
+| 10-S1 | E | Control Center approval UX polish | P1 | completed |
+| 10-S2 | E | Resident notification center | P2 | current |
 | 10-S3 | E | Distribution UX hardening | P1 | 8-S2a, 8-S2b |
 | 11-S1 | F | v1.0 security review closure | P0 | all main features |
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
@@ -118,10 +118,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 10-S1 - Control Center approval UX polish
+Phase 10-S2 - Resident notification center
 ```
 
-Phase 9-S4 is complete. Resident UX work begins with Phase 10-S1.
+Phase 10-S1 is complete. Resident UX work continues with Phase 10-S2.
 
 ## 4. Completed Phase Summaries
 
@@ -203,6 +203,14 @@ Phase 9-S4 is complete. Resident UX work begins with Phase 10-S1.
 - Teams Graph send and LINE Messaging API push live smoke skip paths
 - Conformance, doctor, compatibility matrix, and permanent-use docs updated
 - Active execution lane advanced to Phase 10-S1 Control Center approval UX polish
+
+### Phase 10-S1
+
+- Control Center resident status polished around approval queue, runtime schedules, audit chain, and authority trace visibility
+- Approval Queue now surfaces ApprovalLevel, final-review labeling, one-time token expiry, and redacted authority trace context
+- Runtime schedules now show active/pending state, approval lifecycle metadata, and payload hashes without schedule content
+- Runtime snapshot display now includes first-run next action and permanent-use status cards
+- Active execution lane advanced to Phase 10-S2 resident notification center
 
 ## 5. Non-Goals
 

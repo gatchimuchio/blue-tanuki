@@ -32,6 +32,8 @@
 
 ## Audit
 
+- [ ] Control Center Authority Audit shows chain validity and recent event/hash metadata without exposing secrets.
+
 - [ ] `BLUE_TANUKI_AUDIT_DIR` は永続ディスク上にある
 - [ ] `node apps/gateway/dist/main.js --audit-verify` が通る
 - [ ] `--audit-dump` で decision / approval / schedule lifecycle を読める
@@ -39,12 +41,16 @@
 
 ## Approval Queue
 
+- [ ] Control Center Approval Queue shows pending count, `ApprovalLevel`, final-review labels, token expiry, reason, and redacted authority trace.
+
 - [ ] `/approval` は `WEBCHAT_RESUME_TOKEN` でのみ操作する
 - [ ] final-review 操作は full access でも止まることを確認した
 - [ ] one-time approval token を audit なしに再利用しない
 - [ ] abandon された pending request の扱いを決めている
 
 ## Runtime Schedules
+
+- [ ] Control Center Runtime Schedules shows active/pending state, pending approval linkage, timing, and payload hash only.
 
 - [ ] boot-time schedule と runtime schedule の違いを理解している
 - [ ] runtime schedule create/update/delete が L3 final-review であることを確認した

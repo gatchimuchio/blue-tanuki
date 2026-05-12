@@ -14,6 +14,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Runtime snapshot at `/runtime/snapshot`
 - Authority trace at `/authority/trace`
 - Scheduled task snapshot in Control Center
+- Resident Control Center status cards for first-run next action, permanent-use status, approvals, runtime schedules, audit chain, and authority trace
 - HDS Process / Memory / Authority closure
 - deterministic `MemoryTrace` with `used_for_authority=false`
 - Approval Gate with final-review boundary
@@ -333,6 +334,8 @@ curl -X POST -H "Authorization: Bearer $WEBCHAT_RESUME_TOKEN" \
 
 `/approval` is a Control Center surface over the existing human resume gate. It does not create a second authority path: approval still uses the separated resume token, request-bound one-time approval token, Approval Gate audit, and HDS-BRAIN lifecycle trace.
 
+The resident Approval Queue displays pending count, `ApprovalLevel`, final-review status, one-time token expiry, reason, and redacted authority trace context.
+
 ## Audit dump HTTP
 
 ```bash
@@ -365,6 +368,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase9-s2-google-read-integration.md](./docs/phase9-s2-google-read-integration.md) - Google read integration boundary
 - [docs/phase9-s3-google-write-integration.md](./docs/phase9-s3-google-write-integration.md) - Google write integration boundary
 - [docs/phase9-s4-teams-line-adapters.md](./docs/phase9-s4-teams-line-adapters.md) - Teams / LINE preview adapter boundary
+- [docs/phase10-s1-control-center-approval-ux.md](./docs/phase10-s1-control-center-approval-ux.md) - Control Center resident approval UX boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

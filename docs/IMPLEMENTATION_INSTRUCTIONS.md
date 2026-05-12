@@ -286,8 +286,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 9-S2 | D | Gmail / Google Calendar / Drive read integration | P1 | completed |
 | 9-S3 | D | Google write integration | P2 | completed |
 | 9-S4 | D | Teams / LINE adapters | P2 | completed |
-| 10-S1 | E | Control Center approval UX polish | P1 | current |
-| 10-S2 | E | Resident notification center | P2 | 10-S1 |
+| 10-S1 | E | Control Center approval UX polish | P1 | completed |
+| 10-S2 | E | Resident notification center | P2 | current |
 | 10-S3 | E | Distribution UX hardening | P1 | 8-S2a, 8-S2b |
 | 11-S1 | F | v1.0 security review closure | P0 | all main features |
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
@@ -1479,6 +1479,13 @@ Make Approval Queue, Authority Trace, Runtime Schedules, and Audit visibility us
 - no mobile
 - no voice
 
+## Completion Notes
+
+- Control Center now exposes first-run next action and permanent-use status cards.
+- Approval Queue displays pending count, ApprovalLevel, final-review status, token expiry, reason, and redacted authority trace.
+- Runtime Schedules display active/pending counts, lifecycle metadata, approval linkage, timing, and payload hashes without schedule content.
+- Authority Trace and Audit views now render operator-readable summaries while redacting token, secret, credential, password, and content-like keys in raw JSON panes.
+
 ---
 
 # Phase 10-S2 — Resident Notification Center
@@ -1685,7 +1692,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 10-S1 - Control Center Approval UX Polish
+Phase 10-S2 - Resident Notification Center
 ```
 
-Phase 9-S4 is complete. Proceed to resident UX only through Phase 10-S1.
+Phase 10-S1 is complete. Continue resident UX through Phase 10-S2.
