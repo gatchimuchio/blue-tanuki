@@ -36,6 +36,12 @@ function main(): void {
   requireIncludes("install/README.md", installReadme, "RESET_CONFIG=1");
   requireIncludes("install/README.md", installReadme, "preserves");
   requireIncludes("install/README.md", installReadme, ".bak");
+  requireIncludes("install/README.md", installReadme, "Distribution readiness");
+  requireIncludes(
+    "install/README.md",
+    installReadme,
+    "does not build signed native packages yet",
+  );
 
   const winInstall = read("install/windows/install.ps1");
   requireIncludes("install/windows/install.ps1", winInstall, "Node.js 22.14.0");
@@ -120,6 +126,40 @@ function main(): void {
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "blue-tanuki.env.");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, ".env.bak");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, ".pem");
+
+  const doctor = read("apps/gateway/src/doctor.ts");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "distribution_readiness");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "Distribution readiness");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "does not build signed native packages yet");
+  requireIncludes(
+    "apps/gateway/src/doctor.ts",
+    doctor,
+    "does not currently implement an automatic updater",
+  );
+
+  const runbook = read("docs/UPDATE_ROLLBACK_RUNBOOK.md");
+  requireIncludes(
+    "docs/UPDATE_ROLLBACK_RUNBOOK.md",
+    runbook,
+    "does not currently implement an automatic updater",
+  );
+  requireIncludes(
+    "docs/UPDATE_ROLLBACK_RUNBOOK.md",
+    runbook,
+    "Distribution readiness gate",
+  );
+
+  const phase10s3 = read("docs/phase10-s3-distribution-ux-hardening.md");
+  requireIncludes(
+    "docs/phase10-s3-distribution-ux-hardening.md",
+    phase10s3,
+    "No signed native installer",
+  );
+  requireIncludes(
+    "docs/phase10-s3-distribution-ux-hardening.md",
+    phase10s3,
+    "No automatic updater",
+  );
 
   const packageJson = read("package.json");
   requireIncludes("package.json", packageJson, "\"release:verify\"");

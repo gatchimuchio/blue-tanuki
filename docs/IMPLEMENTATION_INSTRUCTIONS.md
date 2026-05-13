@@ -288,8 +288,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 9-S4 | D | Teams / LINE adapters | P2 | completed |
 | 10-S1 | E | Control Center approval UX polish | P1 | completed |
 | 10-S2 | E | Resident notification center | P2 | completed |
-| 10-S3 | E | Distribution UX hardening | P1 | current |
-| 11-S1 | F | v1.0 security review closure | P0 | all main features |
+| 10-S3 | E | Distribution UX hardening | P1 | completed |
+| 11-S1 | F | v1.0 security review closure | P0 | current |
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
 
 ---
@@ -1541,6 +1541,13 @@ Improve installation/update/uninstall experience without pretending to be a sign
 - no automatic updater unless explicitly implemented
 - no commercial SaaS framing
 
+## Completion Notes
+
+- `doctor` now includes a `distribution_readiness` check for installer docs, update/rollback guidance, permanent-use checklist boundaries, release bundle creator/verifier coverage, packaging validation, and platform uninstall/purge scripts.
+- Installer and rollback docs explicitly state the portable distribution boundary: no signed native installer and no automatic updater.
+- `pnpm validate:packaging` now checks the distribution readiness gate and Phase 10-S3 report.
+- Completion report: `docs/phase10-s3-distribution-ux-hardening.md`.
+
 ---
 
 # Phase 11-S1 — v1.0 Security + Permanent-Use Review Closure
@@ -1700,7 +1707,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 10-S3 - Distribution UX Hardening
+Phase 11-S1 - v1.0 Security + Permanent-Use Review Closure
 ```
 
-Phase 10-S2 is complete. Continue resident UX and packaging work through Phase 10-S3.
+Phase 10-S3 is complete. Continue with Phase 11-S1.

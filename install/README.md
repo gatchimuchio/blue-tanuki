@@ -4,6 +4,15 @@ These scripts are the Phase 6-S3 installer layer. They do not build signed
 native packages yet; they install a portable BLUE-TANUKI app directory, run the
 existing setup flow, and create a launcher.
 
+## Distribution readiness
+
+`doctor` checks that this installer guide, update/rollback guidance,
+uninstall/purge paths, and release-bundle verification scripts are present
+before release. This is an operator-safety gate, not a claim that BLUE-TANUKI
+ships as a signed native product or has an automatic updater.
+The portable installer does not build signed native packages yet.
+Use the uninstall dry-run option before destructive removal when available.
+
 ## Requirements
 
 - Node.js `>=22.14.0`

@@ -111,17 +111,17 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 9-S4 | D | Teams / LINE adapters | P2 | completed |
 | 10-S1 | E | Control Center approval UX polish | P1 | completed |
 | 10-S2 | E | Resident notification center | P2 | completed |
-| 10-S3 | E | Distribution UX hardening | P1 | current |
-| 11-S1 | F | v1.0 security review closure | P0 | all main features |
+| 10-S3 | E | Distribution UX hardening | P1 | completed |
+| 11-S1 | F | v1.0 security review closure | P0 | current |
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
 
 ## 3. Current Active Phase
 
 ```txt
-Phase 10-S3 - Distribution UX hardening
+Phase 11-S1 - v1.0 security review closure
 ```
 
-Phase 10-S2 is complete. Resident UX and packaging work continues with Phase 10-S3.
+Phase 10-S3 is complete. v1.0 security and permanent-use closure begins with Phase 11-S1.
 
 ## 4. Completed Phase Summaries
 
@@ -220,6 +220,13 @@ Phase 10-S2 is complete. Resident UX and packaging work continues with Phase 10-
 - Notification metadata is explicitly `display_only` and cannot approve, execute, mutate audit, or grant authority
 - Active execution lane advanced to Phase 10-S3 distribution UX hardening
 
+### Phase 10-S3
+
+- Distribution readiness is now a `doctor` gate covering installer docs, update/rollback guidance, permanent-use checklist boundaries, release bundle checks, packaging validation, and uninstall/purge scripts
+- Installer and rollback docs now make the no-signed-native-installer and no-automatic-updater boundaries explicit
+- Packaging validation checks the distribution readiness surfaces
+- Active execution lane advanced to Phase 11-S1 v1.0 security review closure
+
 ## 5. Non-Goals
 
 Do not add:
@@ -242,6 +249,7 @@ Do not add:
 - [OpenClaw Rejection Audit](OPENCLAW_REJECTION_AUDIT.md)
 - [Phase 8-S4 GitHub Write](phase8-s4-github-write.md)
 - [Phase 8-S5 Slack / Discord Polish](phase8-s5-slack-discord-polish.md)
+- [Phase 10-S3 Distribution UX Hardening](phase10-s3-distribution-ux-hardening.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)
 - [Channel Readiness Matrix](CHANNEL_READINESS_MATRIX.md)

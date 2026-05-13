@@ -96,6 +96,93 @@ async function writeManifestFixture(root: string): Promise<void> {
     }),
     "utf8",
   );
+  await writeDistributionFixture(root);
+}
+
+async function writeFixtureFile(root: string, rel: string, text: string): Promise<void> {
+  const target = path.join(root, rel);
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, text, "utf8");
+}
+
+async function writeDistributionFixture(root: string): Promise<void> {
+  await writeFixtureFile(
+    root,
+    "install/README.md",
+    [
+      "# Install",
+      "Distribution readiness",
+      "Windows macOS Linux",
+      "BLUE_TANUKI_SETTINGS_TOKEN",
+      "RESET_CONFIG=1 PURGE=1 dry-run",
+      "does not build signed native packages yet",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "docs/UPDATE_ROLLBACK_RUNBOOK.md",
+    [
+      "# Runbook",
+      "BLUE-TANUKI does not currently implement an automatic updater.",
+      "Release Bundle Update",
+      "Config Preservation",
+      "Rollback",
+      "Uninstall / Purge",
+      "Distribution readiness gate",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "docs/PERMANENT_USE_CHECKLIST.md",
+    [
+      "# Permanent Use",
+      "release bundle",
+      "signed native installer",
+      "automatic updater",
+      "dry-run",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "scripts/create_release_bundle.ts",
+    [
+      "install/windows/install.ps1",
+      "install/macos/install.sh",
+      "install/linux/install.sh",
+      ".sha256",
+      ".manifest.json",
+      "isSecretLikeFileName",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "scripts/verify_release_bundle.ts",
+    ["sha256", "manifest", "isForbiddenFileName"].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "scripts/validate_packaging.ts",
+    [
+      "Distribution readiness",
+      "does not build signed native packages yet",
+      "does not currently implement an automatic updater",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "install/windows/uninstall.ps1",
+    "Purge DryRun Assert-SafeTarget Data retained",
+  );
+  await writeFixtureFile(
+    root,
+    "install/macos/uninstall.sh",
+    "PURGE DRY_RUN safe_target Data retained",
+  );
+  await writeFixtureFile(
+    root,
+    "install/linux/uninstall.sh",
+    "PURGE DRY_RUN safe_target Config retained",
+  );
 }
 
 describe("compareSemver", () => {
@@ -767,6 +854,39 @@ describe("runDoctor — compatibility matrix gate", () => {
       });
       const detail = r.checks.find((x) => x.id === "compatibility_matrix")?.detail ?? "";
       expect(detail).toContain("whatsapp must remain reserved-third-party");
+      expect(r.exit_code).toBe(2);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("runDoctor - distribution readiness gate", () => {
+  it("locates and reports distribution readiness as ok in this repo", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+    });
+    const c = r.checks.find((x) => x.id === "distribution_readiness");
+    expect(c?.level).toBe("ok");
+    expect(c?.detail).toContain("install/update/uninstall surfaces verified");
+  });
+
+  it("errors when required installer docs are missing from an explicit root", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-dist-doc-"));
+    try {
+      await writeManifestFixture(root);
+      await fs.rm(path.join(root, "install", "README.md"), { force: true });
+      const r = await runDoctor({
+        env: baseEnv(),
+        probe_port: false,
+        node_version: "22.14.0",
+        manifest_root: root,
+      });
+      const detail = r.checks.find((x) => x.id === "distribution_readiness")?.detail ?? "";
+      expect(detail).toContain("install/README.md");
+      expect(detail).toContain("cannot read portable installer docs");
       expect(r.exit_code).toBe(2);
     } finally {
       await fs.rm(root, { recursive: true, force: true });

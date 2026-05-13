@@ -380,6 +380,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase9-s4-teams-line-adapters.md](./docs/phase9-s4-teams-line-adapters.md) - Teams / LINE preview adapter boundary
 - [docs/phase10-s1-control-center-approval-ux.md](./docs/phase10-s1-control-center-approval-ux.md) - Control Center resident approval UX boundary
 - [docs/phase10-s2-resident-notifications.md](./docs/phase10-s2-resident-notifications.md) - resident notification center boundary
+- [docs/phase10-s3-distribution-ux-hardening.md](./docs/phase10-s3-distribution-ux-hardening.md) - install/update/uninstall distribution readiness boundary
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status
@@ -421,3 +422,5 @@ Source packages live under `packages/`; runtime apps live under `apps/`. Root fi
 ## Release boundary
 
 Release archives are source bundles, not standalone binaries. They intentionally exclude `node_modules`, local `.env` files, audit/session data, and secret-like backups.
+
+`doctor` includes a `distribution_readiness` gate for installer docs, update and rollback guidance, uninstall/purge paths, and release-bundle checks. BLUE-TANUKI does not currently ship a signed native installer or automatic updater.

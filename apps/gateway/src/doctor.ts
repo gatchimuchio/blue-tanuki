@@ -41,6 +41,7 @@ import { parseGoogleServices } from "./google_daily_brief.js";
  *   - BLUE_TANUKI_FILE_ROOT and BLUE_TANUKI_SHELL_ROOT (if set) are directories
  *   - BLUE_TANUKI_SCHEDULES_JSON parses as scheduled-message config
  *   - LLM_BACKEND consistency (stub / anthropic / openai-compatible)
+ *   - Distribution readiness docs and release-bundle gates are present
  *
  * What we do NOT check:
  *   - Live Slack / Discord / Anthropic API connectivity. Those are
@@ -131,6 +132,93 @@ interface ChannelCompatibility {
 interface CompatibilityMatrix {
   channels?: Record<string, ChannelCompatibility>;
 }
+
+interface DistributionRequirement {
+  rel: string;
+  label: string;
+  needles: readonly string[];
+}
+
+const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
+  {
+    rel: "install/README.md",
+    label: "portable installer docs",
+    needles: [
+      "Windows",
+      "macOS",
+      "Linux",
+      "BLUE_TANUKI_SETTINGS_TOKEN",
+      "RESET_CONFIG=1",
+      "PURGE=1",
+      "dry-run",
+      "does not build signed native packages yet",
+      "Distribution readiness",
+    ],
+  },
+  {
+    rel: "docs/UPDATE_ROLLBACK_RUNBOOK.md",
+    label: "update and rollback runbook",
+    needles: [
+      "does not currently implement an automatic updater",
+      "Release Bundle Update",
+      "Config Preservation",
+      "Rollback",
+      "Uninstall / Purge",
+      "Distribution readiness gate",
+    ],
+  },
+  {
+    rel: "docs/PERMANENT_USE_CHECKLIST.md",
+    label: "permanent-use checklist",
+    needles: [
+      "release bundle",
+      "signed native installer",
+      "automatic updater",
+      "dry-run",
+    ],
+  },
+  {
+    rel: "scripts/create_release_bundle.ts",
+    label: "release bundle creator",
+    needles: [
+      "install/windows/install.ps1",
+      "install/macos/install.sh",
+      "install/linux/install.sh",
+      ".sha256",
+      ".manifest.json",
+      "isSecretLikeFileName",
+    ],
+  },
+  {
+    rel: "scripts/verify_release_bundle.ts",
+    label: "release bundle verifier",
+    needles: ["sha256", "manifest", "isForbiddenFileName"],
+  },
+  {
+    rel: "scripts/validate_packaging.ts",
+    label: "packaging validator",
+    needles: [
+      "Distribution readiness",
+      "does not build signed native packages yet",
+      "does not currently implement an automatic updater",
+    ],
+  },
+  {
+    rel: "install/windows/uninstall.ps1",
+    label: "Windows uninstaller",
+    needles: ["Purge", "DryRun", "Assert-SafeTarget", "Data retained"],
+  },
+  {
+    rel: "install/macos/uninstall.sh",
+    label: "macOS uninstaller",
+    needles: ["PURGE", "DRY_RUN", "safe_target", "Data retained"],
+  },
+  {
+    rel: "install/linux/uninstall.sh",
+    label: "Linux uninstaller",
+    needles: ["PURGE", "DRY_RUN", "safe_target", "Config retained"],
+  },
+];
 
 /** Compare two semver-like strings. Returns -1/0/1. */
 export function compareSemver(a: string, b: string): number {
@@ -929,6 +1017,53 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDra
   };
 }
 
+async function checkDistributionReadiness(rootOverride?: string): Promise<CheckDraft> {
+  const root = rootOverride ? path.resolve(rootOverride) : await locateRepoRoot();
+  if (!root) {
+    return {
+      id: "distribution_readiness",
+      level: "warn",
+      label: "distribution readiness",
+      detail: "repo root not located; distribution readiness check skipped",
+    };
+  }
+
+  const failures: string[] = [];
+  for (const req of DISTRIBUTION_REQUIREMENTS) {
+    const file = path.join(root, req.rel);
+    let text = "";
+    try {
+      text = await fs.readFile(file, "utf8");
+    } catch (e) {
+      failures.push(
+        `${req.rel}: cannot read ${req.label}: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      continue;
+    }
+    for (const needle of req.needles) {
+      if (!text.includes(needle)) {
+        failures.push(`${req.rel}: missing ${needle}`);
+      }
+    }
+  }
+
+  if (failures.length > 0) {
+    return {
+      id: "distribution_readiness",
+      level: "error",
+      label: "distribution readiness",
+      detail: failures.join("; "),
+    };
+  }
+
+  return {
+    id: "distribution_readiness",
+    level: "ok",
+    label: "distribution readiness",
+    detail: `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall surfaces verified`,
+  };
+}
+
 function statusFromLevel(level: CheckLevel): CheckStatus {
   return level === "warn" ? "warning" : level;
 }
@@ -1132,6 +1267,16 @@ function remediationFor(check: CheckDraft): Remediation {
     };
   }
 
+  if (check.id === "distribution_readiness") {
+    return {
+      cause: check.detail,
+      impact: "Install, update, rollback, uninstall, or release verification guidance may be incomplete for operators.",
+      next_action: "Fix the listed distribution docs or release scripts, then rerun pnpm run doctor and pnpm validate:packaging.",
+      doc_ref: "docs/phase10-s3-distribution-ux-hardening.md",
+      safe_to_ignore: false,
+    };
+  }
+
   if (check.id === "port") {
     return {
       cause: check.detail,
@@ -1177,6 +1322,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   draftChecks.push(await checkShellRoot(env));
   draftChecks.push(await checkBundledManifests(opts.manifest_root));
   draftChecks.push(await checkCompatibilityMatrix(opts.manifest_root));
+  draftChecks.push(await checkDistributionReadiness(opts.manifest_root));
 
   if (opts.probe_port !== false) {
     const port = parseInt(env.WEBCHAT_PORT ?? "8787", 10);

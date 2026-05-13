@@ -10,6 +10,7 @@ const requiredDocs = [
   "docs/CREDENTIAL_READINESS_MATRIX.md",
   "docs/UPDATE_ROLLBACK_RUNBOOK.md",
   "docs/phase8-s2a-operator-usability-docs.md",
+  "docs/phase10-s3-distribution-ux-hardening.md",
 ];
 
 const failures = [];

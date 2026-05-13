@@ -2,6 +2,13 @@
 
 BLUE-TANUKI does not currently implement an automatic updater. Updates are operator-run source or release-bundle replacements, followed by validation.
 
+## Distribution readiness gate
+
+`doctor` validates that installer docs, update/rollback guidance,
+uninstall/purge guidance, and release bundle checks remain present. Treat a
+`distribution_readiness` error as a release blocker. Fix the listed docs or
+scripts, then rerun `pnpm run doctor` and `pnpm validate:packaging`.
+
 ## 1. Before Update
 
 1. Stop the gateway if it is running.

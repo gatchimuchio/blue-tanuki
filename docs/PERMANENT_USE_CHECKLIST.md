@@ -78,6 +78,13 @@
 - [ ] release bundle の場合、`.sha256` と manifest を検証する
 - [ ] update 後に `doctor` と smoke を走らせる
 
+## Distribution Readiness
+
+- [ ] `doctor` includes `distribution_readiness` and it is `ok`.
+- [ ] `pnpm validate:packaging` passes before publishing a bundle.
+- [ ] installer docs do not claim a signed native installer.
+- [ ] update docs do not claim an automatic updater.
+
 ## Rollback
 
 - [ ] source rollback は前の commit に戻す手順を持っている

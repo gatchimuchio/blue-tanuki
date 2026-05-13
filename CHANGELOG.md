@@ -21,6 +21,7 @@
 - Added Phase 9-S4: Microsoft Teams and LINE first-party-preview adapters with capability manifests, conformance tests, live smoke skip paths, doctor/compatibility gates, typed delivery failures, and updated readiness docs.
 - Added Phase 10-S1: resident Control Center approval UX polish with permanent-use status, first-run next action, ApprovalLevel/final-review queue display, runtime schedule state, audit summaries, authority trace summaries, and redacted JSON panes.
 - Added Phase 10-S2: display-only resident notifications for approval-required, schedule fired/failed, connector failure, and audit-warning states through `/notifications` and Control Center.
+- Added Phase 10-S3: distribution readiness hardening with a `doctor` gate for installer/update/uninstall docs, release-bundle checks, packaging validation, and explicit no-signed-installer / no-automatic-updater boundaries.
 - Fixed root workspace script delegation so `pnpm run setup -- --yes` and `pnpm run doctor` do not collide with pnpm built-ins.
 
 ## 0.1.0 - 2026-05-06
