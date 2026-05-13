@@ -289,8 +289,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 10-S1 | E | Control Center approval UX polish | P1 | completed |
 | 10-S2 | E | Resident notification center | P2 | completed |
 | 10-S3 | E | Distribution UX hardening | P1 | completed |
-| 11-S1 | F | v1.0 security review closure | P0 | current |
-| 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
+| 11-S1 | F | v1.0 security review closure | P0 | completed |
+| 11-S2 | F | v1.0 permanent-use release candidate | P0 | current |
 
 ---
 
@@ -1596,6 +1596,13 @@ docs/v1.0-security-and-permanent-use-review.md
 - permanent-use checklist passes
 - all validation reported
 
+## Completion Notes
+
+- Created `docs/v1.0-security-and-permanent-use-review.md`.
+- Reviewed all required areas and recorded PASS/known-preview boundaries.
+- No release-blocking final-review bypass, hidden authority source, undocumented privileged operation, stale preview promotion, or false 5-minute claim was identified.
+- Validation record is captured in the review document.
+
 ---
 
 # Phase 11-S2 — v1.0 Release Candidate
@@ -1707,7 +1714,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S1 - v1.0 Security + Permanent-Use Review Closure
+Phase 11-S2 - v1.0 Permanent-Use Release Candidate
 ```
 
-Phase 10-S3 is complete. Continue with Phase 11-S1.
+Phase 11-S1 is complete. Continue with Phase 11-S2.

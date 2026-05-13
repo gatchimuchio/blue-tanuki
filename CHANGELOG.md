@@ -22,6 +22,7 @@
 - Added Phase 10-S1: resident Control Center approval UX polish with permanent-use status, first-run next action, ApprovalLevel/final-review queue display, runtime schedule state, audit summaries, authority trace summaries, and redacted JSON panes.
 - Added Phase 10-S2: display-only resident notifications for approval-required, schedule fired/failed, connector failure, and audit-warning states through `/notifications` and Control Center.
 - Added Phase 10-S3: distribution readiness hardening with a `doctor` gate for installer/update/uninstall docs, release-bundle checks, packaging validation, and explicit no-signed-installer / no-automatic-updater boundaries.
+- Added Phase 11-S1: v1.0 security and permanent-use review closure, documenting authority, Approval Gate, preview, distribution, recovery, and validation status.
 - Fixed root workspace script delegation so `pnpm run setup -- --yes` and `pnpm run doctor` do not collide with pnpm built-ins.
 
 ## 0.1.0 - 2026-05-06

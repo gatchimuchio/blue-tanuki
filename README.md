@@ -381,6 +381,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase10-s1-control-center-approval-ux.md](./docs/phase10-s1-control-center-approval-ux.md) - Control Center resident approval UX boundary
 - [docs/phase10-s2-resident-notifications.md](./docs/phase10-s2-resident-notifications.md) - resident notification center boundary
 - [docs/phase10-s3-distribution-ux-hardening.md](./docs/phase10-s3-distribution-ux-hardening.md) - install/update/uninstall distribution readiness boundary
+- [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

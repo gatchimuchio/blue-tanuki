@@ -112,16 +112,16 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 10-S1 | E | Control Center approval UX polish | P1 | completed |
 | 10-S2 | E | Resident notification center | P2 | completed |
 | 10-S3 | E | Distribution UX hardening | P1 | completed |
-| 11-S1 | F | v1.0 security review closure | P0 | current |
-| 11-S2 | F | v1.0 permanent-use release candidate | P0 | 11-S1 |
+| 11-S1 | F | v1.0 security review closure | P0 | completed |
+| 11-S2 | F | v1.0 permanent-use release candidate | P0 | current |
 
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S1 - v1.0 security review closure
+Phase 11-S2 - v1.0 permanent-use release candidate
 ```
 
-Phase 10-S3 is complete. v1.0 security and permanent-use closure begins with Phase 11-S1.
+Phase 11-S1 is complete. v1.0 release-candidate preparation begins with Phase 11-S2.
 
 ## 4. Completed Phase Summaries
 
@@ -227,6 +227,13 @@ Phase 10-S3 is complete. v1.0 security and permanent-use closure begins with Pha
 - Packaging validation checks the distribution readiness surfaces
 - Active execution lane advanced to Phase 11-S1 v1.0 security review closure
 
+### Phase 11-S1
+
+- v1.0 security and permanent-use review created at `docs/v1.0-security-and-permanent-use-review.md`
+- Reviewed authority path, approval model, final-review operations, runtime automation, external write tools, channel adapters, memory/F-reference, browser preview, Google integrations, install/update/uninstall, audit, capability envelope, secret handling, sandboxes, docs, compatibility matrix, first-run UX, permanent-use UX, and recovery/rollback
+- No release-blocking final-review bypass, hidden authority source, undocumented privileged operation, stale preview promotion, or false 5-minute claim was identified
+- Active execution lane advanced to Phase 11-S2 v1.0 permanent-use release candidate
+
 ## 5. Non-Goals
 
 Do not add:
@@ -250,6 +257,7 @@ Do not add:
 - [Phase 8-S4 GitHub Write](phase8-s4-github-write.md)
 - [Phase 8-S5 Slack / Discord Polish](phase8-s5-slack-discord-polish.md)
 - [Phase 10-S3 Distribution UX Hardening](phase10-s3-distribution-ux-hardening.md)
+- [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)
 - [Channel Readiness Matrix](CHANNEL_READINESS_MATRIX.md)
