@@ -11,6 +11,9 @@ importers:
       '@types/node':
         specifier: ^22.7.0
         version: 22.19.17
+      '@types/ws':
+        specifier: ^8.5.13
+        version: 8.18.1
       tsx:
         specifier: ^4.19.0
         version: 4.21.0
@@ -20,6 +23,9 @@ importers:
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.19.17)
+      ws:
+        specifier: ^8.18.0
+        version: 8.20.0
 
   apps/gateway:
     dependencies:
