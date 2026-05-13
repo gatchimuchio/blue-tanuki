@@ -46,16 +46,16 @@ describe("compatibility matrix conformance", () => {
     expect(packageEntries.some((name) => /whatsapp/i.test(name))).toBe(false);
   });
 
-  it("maps v0.1 first-party channels to channel manifests", async () => {
+  it("maps v1.0 first-party channels to channel manifests", async () => {
     const matrix = await readMatrix();
-    const v01FirstParty = Object.entries(matrix.channels)
+    const v10FirstParty = Object.entries(matrix.channels)
       .filter(([, entry]) => entry.status === "first-party")
-      .filter(([, entry]) => entry.target_release === "v0.1")
+      .filter(([, entry]) => entry.target_release === "v1.0")
       .map(([name]) => name);
 
-    expect(v01FirstParty.sort()).toEqual(["telegram", "webchat"]);
+    expect(v10FirstParty.sort()).toEqual(["telegram", "webchat"]);
 
-    for (const channel of v01FirstParty) {
+    for (const channel of v10FirstParty) {
       const manifest = await readManifest(manifestPathFor(channelPackageDir(channel)));
       expect(manifest.kind).toBe("channel");
       expect(manifest.exports.channel).toBeDefined();
@@ -66,10 +66,10 @@ describe("compatibility matrix conformance", () => {
   it("keeps preview channels explicitly quarantined", async () => {
     const matrix = await readMatrix();
     const previewTargets: Record<string, string> = {
-      discord: "v0.1-preview",
-      slack: "v0.1-preview",
-      teams: "v0.2-preview",
-      line: "v0.2-preview",
+      discord: "v1.0-preview",
+      slack: "v1.0-preview",
+      teams: "v1.0-preview",
+      line: "v1.0-preview",
     };
     for (const [channel, targetRelease] of Object.entries(previewTargets)) {
       expect(matrix.channels[channel]).toMatchObject({

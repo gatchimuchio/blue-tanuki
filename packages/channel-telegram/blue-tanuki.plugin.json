@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "@blue-tanuki/channel-telegram",
-  "version": "0.1.0",
+  "version": "1.0.0-rc.1",
   "kind": "channel",
   "entry": "./dist/index.js",
   "permissions": [

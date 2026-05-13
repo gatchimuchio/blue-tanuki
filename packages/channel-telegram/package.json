@@ -1,9 +1,9 @@
 {
   "name": "@blue-tanuki/channel-telegram",
-  "version": "0.1.0",
+  "version": "1.0.0-rc.1",
   "private": true,
   "license": "MIT",
-  "description": "Telegram Bot API channel adapter for BLUE-TANUKI v0.1",
+  "description": "Telegram Bot API channel adapter for BLUE-TANUKI v1.0 RC",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,7 +13,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
     "typecheck": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",

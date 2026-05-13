@@ -108,9 +108,9 @@
 
 ## Known Limitations
 
-- v0.1 は signed native installer ではない
-- v0.1 は automatic updater を持たない
-- v0.1 Daily Brief は scheduled message smoke が既定であり、Gmail/GCal/Drive は read-only source として optional
+- v1.0 RC は signed native installer ではない
+- v1.0 RC は automatic updater を持たない
+- v1.0 RC Daily Brief は scheduled message smoke が既定であり、Gmail/GCal/Drive は read-only source として optional
 - Slack/Discord は release-polished preview-level。実 token / test target での live smoke 完走後に first-party 昇格判断を行う
 - Google write integrations、Teams、LINE は後続 phase
 - WhatsApp は first-party core から除外

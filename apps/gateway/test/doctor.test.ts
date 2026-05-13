@@ -80,12 +80,12 @@ async function writeManifestFixture(root: string): Promise<void> {
     path.join(root, "docs", "compatibility-matrix.json"),
     JSON.stringify({
       channels: {
-        webchat: { status: "first-party", target_release: "v0.1" },
-        telegram: { status: "first-party", target_release: "v0.1" },
-        discord: { status: "first-party-preview", target_release: "v0.1-preview" },
-        slack: { status: "first-party-preview", target_release: "v0.1-preview" },
-        teams: { status: "first-party-preview", target_release: "v0.2-preview" },
-        line: { status: "first-party-preview", target_release: "v0.2-preview" },
+        webchat: { status: "first-party", target_release: "v1.0" },
+        telegram: { status: "first-party", target_release: "v1.0" },
+        discord: { status: "first-party-preview", target_release: "v1.0-preview" },
+        slack: { status: "first-party-preview", target_release: "v1.0-preview" },
+        teams: { status: "first-party-preview", target_release: "v1.0-preview" },
+        line: { status: "first-party-preview", target_release: "v1.0-preview" },
         whatsapp: {
           status: "reserved-third-party",
           target_release: null,
@@ -830,15 +830,15 @@ describe("runDoctor — compatibility matrix gate", () => {
         path.join(root, "docs", "compatibility-matrix.json"),
         JSON.stringify({
           channels: {
-            webchat: { status: "first-party", target_release: "v0.1" },
-            telegram: { status: "first-party", target_release: "v0.1" },
-            discord: { status: "first-party-preview", target_release: "v0.1-preview" },
-            slack: { status: "first-party-preview", target_release: "v0.1-preview" },
-            teams: { status: "first-party-preview", target_release: "v0.2-preview" },
-            line: { status: "first-party-preview", target_release: "v0.2-preview" },
+            webchat: { status: "first-party", target_release: "v1.0" },
+            telegram: { status: "first-party", target_release: "v1.0" },
+            discord: { status: "first-party-preview", target_release: "v1.0-preview" },
+            slack: { status: "first-party-preview", target_release: "v1.0-preview" },
+            teams: { status: "first-party-preview", target_release: "v1.0-preview" },
+            line: { status: "first-party-preview", target_release: "v1.0-preview" },
             whatsapp: {
               status: "first-party",
-              target_release: "v0.1",
+              target_release: "v1.0",
               core_supported: true,
               warranty: "none",
             },

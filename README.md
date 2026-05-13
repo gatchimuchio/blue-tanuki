@@ -1,4 +1,4 @@
-# BLUE-TANUKI v0.1
+# BLUE-TANUKI v1.0 Release Candidate
 
 BLUE-TANUKI is a local resident AI control plane.
 
@@ -8,7 +8,7 @@ BLUE-TANUKI is a local resident AI control plane.
 2. **No black box in the HDS authority path.** Actor/process/memory/approval/execution/audit are structured and inspectable.
 3. **Safety first, robustness second, comfort/UX third.** Feature coverage and channel coverage never outrank the HDS authority boundary.
 
-## v0.1 completed surface
+## v1.0 RC completed surface
 
 - WebChat Control Center at `/` and `/app`
 - Runtime snapshot at `/runtime/snapshot`
@@ -27,7 +27,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Optional token-gated HTTP webhook ingress at `/webhook`
 - Built-in `file.search`, `file.write`, `file.edit`, `http.fetch`, `web.search`, `github.read`, `github.write`, `gmail.read`, `gmail.write`, `google.calendar.read`, `google.calendar.write`, `google.drive.read`, `google.drive.write`, `browser.read`, `browser.snapshot`, `browser.automation`, and `shell.exec` with sandbox / network / approval guards
 
-## v0.1 explicit boundaries
+## v1.0 RC explicit boundaries
 
 - WhatsApp is not a first-party core target. It is `reserved-third-party` and may only be approached through the generic adapter interface.
 - Google integrations are credential-scoped downstream tools. Reads are summary/metadata only; writes are bounded and always final-review.
@@ -59,7 +59,7 @@ HDS-BRAIN never calls an LLM and never consumes downstream session history for a
 
 ## Quickstart
 
-v0.1 provides a guided first-run path, not a verified 5-minute beginner guarantee. Use [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) for the full first-run path and [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) before leaving BLUE-TANUKI running permanently.
+v1.0 RC provides a guided first-run path, not a verified 5-minute beginner guarantee. Use [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) for the full first-run path and [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) before leaving BLUE-TANUKI running permanently.
 
 ```bash
 pnpm install
@@ -109,11 +109,11 @@ export BLUE_TANUKI_DAILY_BRIEF_ENABLED=1
 export BLUE_TANUKI_DAILY_BRIEF_CHANNEL=telegram
 export BLUE_TANUKI_DAILY_BRIEF_TARGET="<telegram-chat-id>"
 export BLUE_TANUKI_DAILY_BRIEF_TIME="07:00"
-export BLUE_TANUKI_DAILY_BRIEF_CONTENT="Daily Brief: scheduled smoke from BLUE-TANUKI v0.1"
+export BLUE_TANUKI_DAILY_BRIEF_CONTENT="Daily Brief: scheduled smoke from BLUE-TANUKI v1.0 RC"
 pnpm gateway:serve
 ```
 
-By default, v0.1 Daily Brief is a scheduled `channel_send` smoke.
+By default, v1.0 RC Daily Brief is a scheduled `channel_send` smoke.
 To opt into read-only Gmail / Google Calendar / Drive summaries, configure read-only OAuth tokens and enable the Google source:
 
 ```bash
@@ -382,6 +382,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase10-s2-resident-notifications.md](./docs/phase10-s2-resident-notifications.md) - resident notification center boundary
 - [docs/phase10-s3-distribution-ux-hardening.md](./docs/phase10-s3-distribution-ux-hardening.md) - install/update/uninstall distribution readiness boundary
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
+- [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
+- [docs/INDEX.md](./docs/INDEX.md) - documentation index
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md) - first-party / preview / reserved channel status

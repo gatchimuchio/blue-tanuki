@@ -1,6 +1,6 @@
 {
   "name": "@blue-tanuki/channel-discord",
-  "version": "0.0.2",
+  "version": "1.0.0-rc.1",
   "kind": "channel",
   "entry": "./dist/index.js",
   "exports": {

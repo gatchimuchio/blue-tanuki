@@ -290,7 +290,7 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 10-S2 | E | Resident notification center | P2 | completed |
 | 10-S3 | E | Distribution UX hardening | P1 | completed |
 | 11-S1 | F | v1.0 security review closure | P0 | completed |
-| 11-S2 | F | v1.0 permanent-use release candidate | P0 | current |
+| 11-S2 | F | v1.0 permanent-use release candidate | P0 | completed |
 
 ---
 
@@ -1635,6 +1635,14 @@ Prepare a v1.0 release candidate.
 - security/permanent-use review exists
 - smoke/test results reported
 
+## Completion Notes
+
+- Workspace package and plugin manifest versions are `1.0.0-rc.1`.
+- Created `docs/INDEX.md`.
+- Created `docs/v1.0-release-candidate.md`.
+- Compatibility matrix first-party targets are `v1.0`; preview channels remain `first-party-preview` with `v1.0-preview` targets.
+- RC document records support/no-support boundary, upgrade notes, first-run proof, permanent-use proof, validation matrix, and release decision boundary.
+
 ---
 
 # Global Validation Command Set
@@ -1714,7 +1722,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S2 - v1.0 Permanent-Use Release Candidate
+v1.0 RC complete - owner release decision
 ```
 
-Phase 11-S1 is complete. Continue with Phase 11-S2.
+Phase 11-S2 is complete. Continue with owner release decision, release publication, or post-RC fixes.

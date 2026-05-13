@@ -2,30 +2,30 @@
   "channels": {
     "webchat": {
       "status": "first-party",
-      "target_release": "v0.1"
+      "target_release": "v1.0"
     },
     "telegram": {
       "status": "first-party",
-      "target_release": "v0.1"
+      "target_release": "v1.0"
     },
     "discord": {
       "status": "first-party-preview",
-      "target_release": "v0.1-preview",
+      "target_release": "v1.0-preview",
       "notes": "Release-polished adapter with conformance tests, retry/backoff, typed delivery errors, and credentialed live smoke path. Remains preview until owner-run live credentials are verified."
     },
     "slack": {
       "status": "first-party-preview",
-      "target_release": "v0.1-preview",
+      "target_release": "v1.0-preview",
       "notes": "Release-polished adapter with conformance tests, retry/backoff, typed delivery errors, and credentialed live smoke path. Remains preview until owner-run live credentials are verified."
     },
     "teams": {
       "status": "first-party-preview",
-      "target_release": "v0.2-preview",
+      "target_release": "v1.0-preview",
       "notes": "Preview adapter using Microsoft Graph chatMessage send. Conformance tests, silent fail-closed mode, retry/backoff, and live smoke skip path are implemented. Remains preview until owner-run Microsoft Graph credentials and Teams targets are verified."
     },
     "line": {
       "status": "first-party-preview",
-      "target_release": "v0.2-preview",
+      "target_release": "v1.0-preview",
       "notes": "Preview adapter using LINE Messaging API push. Conformance tests, silent fail-closed mode, retry/backoff, and live smoke skip path are implemented. Remains preview until owner-run LINE credentials and targets are verified."
     },
     "whatsapp": {

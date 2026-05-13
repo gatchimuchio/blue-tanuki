@@ -948,8 +948,8 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDra
 
   for (const channel of ["webchat", "telegram"]) {
     const entry = channels[channel];
-    if (entry?.status !== "first-party" || entry?.target_release !== "v0.1") {
-      failures.push(`${channel} must be first-party target_release=v0.1`);
+    if (entry?.status !== "first-party" || entry?.target_release !== "v1.0") {
+      failures.push(`${channel} must be first-party target_release=v1.0`);
       continue;
     }
     try {
@@ -968,10 +968,10 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDra
   }
 
   const previewTargets: Record<string, string> = {
-    discord: "v0.1-preview",
-    slack: "v0.1-preview",
-    teams: "v0.2-preview",
-    line: "v0.2-preview",
+    discord: "v1.0-preview",
+    slack: "v1.0-preview",
+    teams: "v1.0-preview",
+    line: "v1.0-preview",
   };
   for (const [channel, targetRelease] of Object.entries(previewTargets)) {
     const entry = channels[channel];

@@ -163,6 +163,22 @@ function main(): void {
 
   const packageJson = read("package.json");
   requireIncludes("package.json", packageJson, "\"release:verify\"");
+  requireIncludes("package.json", packageJson, "\"version\": \"1.0.0-rc.1\"");
+
+  const docsIndex = read("docs/INDEX.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "v1.0-release-candidate.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "v1.0-security-and-permanent-use-review.md");
+
+  const releaseCandidate = read("docs/v1.0-release-candidate.md");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "1.0.0-rc.1");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "first-party-preview");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "reserved-third-party");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No signed native installer");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No automatic updater");
+
+  const compatibilityMatrix = read("docs/compatibility-matrix.json");
+  requireIncludes("docs/compatibility-matrix.json", compatibilityMatrix, "\"target_release\": \"v1.0\"");
+  requireIncludes("docs/compatibility-matrix.json", compatibilityMatrix, "\"target_release\": \"v1.0-preview\"");
 
   const gitignore = read(".gitignore");
   requireIncludes(".gitignore", gitignore, "*.env.*.bak");

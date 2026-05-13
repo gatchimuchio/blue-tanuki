@@ -1,6 +1,6 @@
 {
   "name": "@blue-tanuki/hds-brain",
-  "version": "0.0.1",
+  "version": "1.0.0-rc.1",
   "kind": "core",
   "entry": "./dist/index.js",
   "exports": {

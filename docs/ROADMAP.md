@@ -113,15 +113,15 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 10-S2 | E | Resident notification center | P2 | completed |
 | 10-S3 | E | Distribution UX hardening | P1 | completed |
 | 11-S1 | F | v1.0 security review closure | P0 | completed |
-| 11-S2 | F | v1.0 permanent-use release candidate | P0 | current |
+| 11-S2 | F | v1.0 permanent-use release candidate | P0 | completed |
 
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S2 - v1.0 permanent-use release candidate
+v1.0 RC complete - owner release decision
 ```
 
-Phase 11-S1 is complete. v1.0 release-candidate preparation begins with Phase 11-S2.
+Phase 11-S2 is complete. Next work is owner release decision, release publication, or post-RC fixes.
 
 ## 4. Completed Phase Summaries
 
@@ -234,6 +234,14 @@ Phase 11-S1 is complete. v1.0 release-candidate preparation begins with Phase 11
 - No release-blocking final-review bypass, hidden authority source, undocumented privileged operation, stale preview promotion, or false 5-minute claim was identified
 - Active execution lane advanced to Phase 11-S2 v1.0 permanent-use release candidate
 
+### Phase 11-S2
+
+- Workspace package and plugin manifest versions advanced to `1.0.0-rc.1`
+- v1.0 release-candidate document created at `docs/v1.0-release-candidate.md`
+- Docs index created at `docs/INDEX.md`
+- Compatibility matrix advanced first-party channels to `v1.0` and preview channels to `v1.0-preview` without promoting previews to first-party
+- Release-candidate support/no-support boundary, upgrade notes, first-run proof, permanent-use proof, and validation matrix recorded
+
 ## 5. Non-Goals
 
 Do not add:
@@ -258,6 +266,8 @@ Do not add:
 - [Phase 8-S5 Slack / Discord Polish](phase8-s5-slack-discord-polish.md)
 - [Phase 10-S3 Distribution UX Hardening](phase10-s3-distribution-ux-hardening.md)
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
+- [v1.0 Release Candidate](v1.0-release-candidate.md)
+- [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)
 - [Channel Readiness Matrix](CHANNEL_READINESS_MATRIX.md)

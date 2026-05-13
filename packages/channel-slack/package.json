@@ -1,6 +1,6 @@
 {
   "name": "@blue-tanuki/channel-slack",
-  "version": "0.0.2",
+  "version": "1.0.0-rc.1",
   "private": true,
   "license": "MIT",
   "description": "Slack channel adapter (Bolt + Socket Mode, typed delivery errors)",

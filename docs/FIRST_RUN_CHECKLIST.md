@@ -1,6 +1,6 @@
 # BLUE-TANUKI First-Run Checklist
 
-v0.1 provides a guided first-run path, not a verified 5-minute beginner guarantee.
+v1.0 RC provides a guided first-run path, not a verified 5-minute beginner guarantee.
 
 このチェックリストは、初回起動で WebChat Control Center に入り、最初のメッセージを安全に通すための手順である。永続運用の確認は [PERMANENT_USE_CHECKLIST.md](./PERMANENT_USE_CHECKLIST.md) を使う。
 
@@ -93,7 +93,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 
 ## 6. Optional Telegram
 
-Telegram は v0.1 first-party channel だが、WebChat の初回成功とは分けて確認する。
+Telegram は v1.0 RC first-party channel だが、WebChat の初回成功とは分けて確認する。
 
 ```bash
 export TELEGRAM_BOT_TOKEN="123456:telegram-bot-token"

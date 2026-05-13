@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 
 const requiredDocs = [
+  "docs/INDEX.md",
   "docs/FIRST_RUN_CHECKLIST.md",
   "docs/PERMANENT_USE_CHECKLIST.md",
   "docs/CHANNEL_READINESS_MATRIX.md",
@@ -12,6 +13,7 @@ const requiredDocs = [
   "docs/phase8-s2a-operator-usability-docs.md",
   "docs/phase10-s3-distribution-ux-hardening.md",
   "docs/v1.0-security-and-permanent-use-review.md",
+  "docs/v1.0-release-candidate.md",
 ];
 
 const failures = [];
@@ -35,7 +37,16 @@ const quickstart = read("QUICKSTART.md");
 const config = read("CONFIG.md");
 const troubleshooting = read("TROUBLESHOOTING.md");
 
-for (const rel of requiredDocs.slice(0, 5)) {
+for (const rel of [
+  "docs/FIRST_RUN_CHECKLIST.md",
+  "docs/PERMANENT_USE_CHECKLIST.md",
+  "docs/CHANNEL_READINESS_MATRIX.md",
+  "docs/CREDENTIAL_READINESS_MATRIX.md",
+  "docs/UPDATE_ROLLBACK_RUNBOOK.md",
+  "docs/INDEX.md",
+  "docs/v1.0-release-candidate.md",
+  "docs/v1.0-security-and-permanent-use-review.md",
+]) {
   const basename = path.basename(rel);
   if (!readme.includes(rel) && !readme.includes(`docs/${basename}`) && !readme.includes(`./docs/${basename}`)) {
     failures.push(`README.md does not reference ${rel}`);

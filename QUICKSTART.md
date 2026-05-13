@@ -1,8 +1,8 @@
-# BLUE-TANUKI v0.1 Quickstart
+# BLUE-TANUKI v1.0 RC Quickstart
 
-v0.1 の最短経路は **WebChat Control Center + HDS Approval/Audit** である。Telegram は first-party channel として追加できる。Slack / Discord は preview adapter であり、credentials がない場合は安全に skip / silent fallback する。
+v1.0 RC の最短経路は **WebChat Control Center + HDS Approval/Audit** である。Telegram は first-party channel として追加できる。Slack / Discord / Teams / LINE は preview adapter であり、credentials がない場合は安全に skip / silent fallback する。
 
-v0.1 provides a guided first-run path, not a verified 5-minute beginner guarantee. 詳細な手順は [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md)、常駐運用の確認は [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) を使う。
+v1.0 RC provides a guided first-run path, not a verified 5-minute beginner guarantee. 詳細な手順は [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md)、常駐運用の確認は [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) を使う。
 
 ## 1. Install
 
@@ -66,7 +66,7 @@ export BLUE_TANUKI_DAILY_BRIEF_ENABLED=1
 export BLUE_TANUKI_DAILY_BRIEF_CHANNEL=telegram
 export BLUE_TANUKI_DAILY_BRIEF_TARGET="<telegram-chat-id>"
 export BLUE_TANUKI_DAILY_BRIEF_TIME="07:00"
-export BLUE_TANUKI_DAILY_BRIEF_CONTENT="Daily Brief: scheduled smoke from BLUE-TANUKI v0.1"
+export BLUE_TANUKI_DAILY_BRIEF_CONTENT="Daily Brief: scheduled smoke from BLUE-TANUKI v1.0 RC"
 pnpm gateway:serve
 ```
 
@@ -103,7 +103,7 @@ Boot-time schedules enter HDS-BRAIN as `cron.process` and share the same cron la
 
 ## 7. Runtime schedules
 
-Runtime schedule creation is enabled in v0.1 through `tool:schedule.*`. Listing is L1. Create/update/delete are L3 final-review operations and do not run until approved.
+Runtime schedule creation is enabled in v1.0 RC through `tool:schedule.*`. Listing is L1. Create/update/delete are L3 final-review operations and do not run until approved.
 
 ```text
 tool:schedule.list

@@ -23,6 +23,7 @@
 - Added Phase 10-S2: display-only resident notifications for approval-required, schedule fired/failed, connector failure, and audit-warning states through `/notifications` and Control Center.
 - Added Phase 10-S3: distribution readiness hardening with a `doctor` gate for installer/update/uninstall docs, release-bundle checks, packaging validation, and explicit no-signed-installer / no-automatic-updater boundaries.
 - Added Phase 11-S1: v1.0 security and permanent-use review closure, documenting authority, Approval Gate, preview, distribution, recovery, and validation status.
+- Added Phase 11-S2: v1.0 release-candidate preparation with workspace version `1.0.0-rc.1`, docs index, RC claim/support boundary, upgrade notes, validation matrix, and v1.0 compatibility targets.
 - Fixed root workspace script delegation so `pnpm run setup -- --yes` and `pnpm run doctor` do not collide with pnpm built-ins.
 
 ## 0.1.0 - 2026-05-06

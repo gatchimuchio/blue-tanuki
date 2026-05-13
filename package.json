@@ -1,6 +1,6 @@
 {
   "name": "blue-tanuki-workspace",
-  "version": "0.0.1",
+  "version": "1.0.0-rc.1",
   "private": true,
   "license": "MIT",
   "packageManager": "pnpm@9.12.0",
