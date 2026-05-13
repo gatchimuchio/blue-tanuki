@@ -13,9 +13,14 @@ jobs:
       WEBCHAT_RESUME_TOKEN: ci-resume-token-123456
       BLUE_TANUKI_SETTINGS_TOKEN: ci-settings-token-123456
       LLM_BACKEND: stub
-      SLACK_BOT_TOKEN: ""
-      SLACK_APP_TOKEN: ""
-      DISCORD_BOT_TOKEN: ""
+      SLACK_BOT_TOKEN: ci-slack-bot-token
+      SLACK_APP_TOKEN: ci-slack-app-token
+      DISCORD_BOT_TOKEN: ci-discord-bot-token
+      MICROSOFT_GRAPH_ACCESS_TOKEN: ci-microsoft-graph-token
+      LINE_CHANNEL_ACCESS_TOKEN: ci-line-channel-token
+      ANTHROPIC_API_KEY: ci-anthropic-api-key
+      GITHUB_TOKEN: ci-github-token
+      BLUE_TANUKI_GITHUB_REPOS: gatchimuchio/blue-tanuki
       BLUE_TANUKI_AUDIT_DIR: .blue-tanuki/audit
       BLUE_TANUKI_SESSION_DIR: .blue-tanuki/sessions
     steps:
