@@ -264,20 +264,23 @@ pnpm --version
 If `pnpm` is still unavailable, report validation as environment-limited. Do not rewrite product code
 to fix missing `pnpm`.
 
-### Root workspace smoke resolution
+### Root workspace smoke checks
 
-The following checks are excluded from ordinary validation:
+The prior root workspace smoke dependency issue is fixed. `pnpm smoke:serve`
+and `pnpm smoke:resume` are no longer classified as known environment failures.
+
+When a task explicitly targets CI, smoke checks, root workspace resolution, or a
+release gate, run these checks and treat failures as actionable until proven
+environment-specific:
 
 ```bash
 pnpm smoke:serve
 pnpm smoke:resume
-smoke_serve
-smoke_resume
 ```
 
-They currently fail because of the existing root workspace resolution issue. Do not debug these smoke
-checks unless the task explicitly asks to fix root workspace resolution. Prefer `pnpm typecheck`,
-`pnpm test`, and targeted package-level tests for normal validation.
+For ordinary feature work, follow the active phase validation set. If these
+smoke checks are skipped for scope, report them as "not run for this scope", not
+as product failures or known environment failures.
 
 See also:
 
@@ -800,10 +803,11 @@ pnpm validate:packaging
 pnpm release:bundle -- --dry-run
 ```
 
-Do not run `pnpm smoke:serve` or `pnpm smoke:resume` for normal validation unless the task explicitly
-targets root workspace resolution. If `pnpm` remains unavailable after the Corepack recovery path in
-`docs/known-environment-failures.md`, stop pnpm-based validation and report it as an environment
-limitation.
+Run `pnpm smoke:serve` and `pnpm smoke:resume` when the task explicitly targets CI, smoke checks,
+root workspace resolution, or release validation. For unrelated feature work, follow the active phase
+validation set and report skipped smoke checks as scope-limited. If `pnpm` remains unavailable after
+the Corepack recovery path in `docs/known-environment-failures.md`, stop pnpm-based validation and
+report it as an environment limitation.
 
 If a command is unavailable or fails, report:
 

@@ -14,6 +14,7 @@ const requiredDocs = [
   "docs/phase10-s3-distribution-ux-hardening.md",
   "docs/v1.0-security-and-permanent-use-review.md",
   "docs/v1.0-release-candidate.md",
+  "docs/v1.0-post-rc-closure-review.md",
 ];
 
 const failures = [];
@@ -45,6 +46,7 @@ for (const rel of [
   "docs/UPDATE_ROLLBACK_RUNBOOK.md",
   "docs/INDEX.md",
   "docs/v1.0-release-candidate.md",
+  "docs/v1.0-post-rc-closure-review.md",
   "docs/v1.0-security-and-permanent-use-review.md",
 ]) {
   const basename = path.basename(rel);
@@ -90,6 +92,8 @@ const expectedStatuses = {
   telegram: "first-party",
   slack: "first-party-preview",
   discord: "first-party-preview",
+  teams: "first-party-preview",
+  line: "first-party-preview",
   whatsapp: "reserved-third-party",
 };
 

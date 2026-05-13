@@ -1,59 +1,58 @@
 # Known Environment Failures
 
-この文書は、Codex 作業時に既知の環境失敗を製品リグレッションとして扱わないための分類表です。内部思想、HDS 核、封印領域、未公開の設計根拠はここに展開しません。
+This file separates runtime or validation environment failures from product
+regressions. Do not use it to hide real test failures.
 
-## `pnpm` が PATH にない
+## `pnpm` is not on `PATH`
 
-### 症状
+### Symptom
 
-`pnpm install` または `pnpm` を使う検証コマンドが、`pnpm` を見つけられず失敗する。
+`pnpm install` or a pnpm-based validation command fails because `pnpm` cannot be
+found.
 
-### 分類
+### Classification
 
-環境セットアップ不備です。アプリケーションコードの不具合として扱いません。
+Environment setup failure, not an application regression.
 
-### 復旧手順
+### Recovery
 
 ```bash
 node --version
 corepack --version || true
 corepack enable
-corepack prepare pnpm@latest --activate
+corepack prepare pnpm@9.12.0 --activate
 pnpm --version
 pnpm install --frozen-lockfile
 ```
 
-この手順後も `pnpm` が使えない場合、検証は環境制約により限定されたものとして報告します。missing `pnpm` を直すために製品コードを書き換えてはいけません。
+If `pnpm` is still unavailable, report validation as environment-limited. Do not
+rewrite application code to work around a missing package manager.
 
-## `smoke:serve` / `smoke:resume` の root workspace resolution 失敗
+## Root smoke checks
 
-### 対象コマンド
+`pnpm smoke:serve` and `pnpm smoke:resume` are no longer classified as known
+environment failures. The prior root dependency issue was fixed by declaring
+the root `ws` / `@types/ws` dev dependencies and updating `pnpm-lock.yaml`.
+
+When a task explicitly targets CI, smoke tests, root workspace resolution, or a
+release gate, run these checks and treat failures as actionable until proven
+environment-specific:
 
 ```bash
 pnpm smoke:serve
 pnpm smoke:resume
-smoke_serve
-smoke_resume
 ```
 
-### 症状
+If either smoke check fails:
 
-リポジトリ root から実行したとき、既存の root workspace resolution 問題により失敗する。
+- confirm `pnpm install --frozen-lockfile` passed
+- confirm root `node_modules/ws` exists after install
+- inspect child gateway logs before changing product code
+- report platform-specific failures separately from CI failures
 
-### 分類
+## Report Format
 
-既知の検証基盤不備です。通常のコード変更に対する製品リグレッション判定には使いません。
-
-### 運用方針
-
-- 通常検証では実行しません。
-- root workspace resolution 修正を明示されたタスクでのみ調査します。
-- 通常検証では `pnpm typecheck`、`pnpm test`、対象パッケージ単位のテストを優先します。
-- この失敗を理由に、無関係なアプリケーションコード、公開 API、設定仕様を書き換えてはいけません。
-
-## 報告形式
-
-既知環境失敗に遭遇した場合は、次を明示します。
+For any environment-limited validation, report:
 
 - command
 - result

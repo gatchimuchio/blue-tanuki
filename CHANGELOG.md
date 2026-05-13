@@ -24,6 +24,10 @@
 - Added Phase 10-S3: distribution readiness hardening with a `doctor` gate for installer/update/uninstall docs, release-bundle checks, packaging validation, and explicit no-signed-installer / no-automatic-updater boundaries.
 - Added Phase 11-S1: v1.0 security and permanent-use review closure, documenting authority, Approval Gate, preview, distribution, recovery, and validation status.
 - Added Phase 11-S2: v1.0 release-candidate preparation with workspace version `1.0.0-rc.1`, docs index, RC claim/support boundary, upgrade notes, validation matrix, and v1.0 compatibility targets.
+- Added post-RC closure review covering bundle sidecar integrity, Windows `smoke:resume` proof, credentialed live-smoke blocker, preview-channel promotion decision, signed-installer decision, and updater decision.
+- Fixed CI root smoke dependency resolution by declaring `ws` and `@types/ws` at the workspace root and updating `pnpm-lock.yaml`.
+- Added CI placeholder env values so `pnpm run doctor` remains warning-free without enabling credentialed live smoke targets.
+- Reclassified root `smoke:serve` / `smoke:resume` as actionable CI/release checks after the root smoke dependency repair.
 - Fixed root workspace script delegation so `pnpm run setup -- --yes` and `pnpm run doctor` do not collide with pnpm built-ins.
 
 ## 0.1.0 - 2026-05-06

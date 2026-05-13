@@ -698,8 +698,9 @@ pnpm validate:packaging
 pnpm release:bundle -- --dry-run
 ```
 
-Do not run `pnpm smoke:serve` or `pnpm smoke:resume` unless the task explicitly targets root
-workspace resolution. See `docs/known-environment-failures.md`.
+For this phase, `pnpm smoke:serve` and `pnpm smoke:resume` are optional unless the task
+explicitly targets CI, smoke checks, root workspace resolution, or release validation.
+They are no longer classified as known environment failures.
 
 ## Manual Smoke
 
@@ -1104,8 +1105,9 @@ pnpm validate:packaging
 pnpm release:bundle -- --dry-run
 ```
 
-Do not run `pnpm smoke:serve` or `pnpm smoke:resume` unless the task explicitly targets root
-workspace resolution. See `docs/known-environment-failures.md`.
+For this phase, `pnpm smoke:serve` and `pnpm smoke:resume` are optional unless the task
+explicitly targets CI, smoke checks, root workspace resolution, or release validation.
+They are no longer classified as known environment failures.
 
 ## Manual Smoke
 
@@ -1642,6 +1644,7 @@ Prepare a v1.0 release candidate.
 - Created `docs/v1.0-release-candidate.md`.
 - Compatibility matrix first-party targets are `v1.0`; preview channels remain `first-party-preview` with `v1.0-preview` targets.
 - RC document records support/no-support boundary, upgrade notes, first-run proof, permanent-use proof, validation matrix, and release decision boundary.
+- Post-RC closure review records bundle integrity sidecar policy, Windows `smoke:resume` proof, credentialed live-smoke blocker, preview-promotion decision, signed-installer decision, and updater decision.
 
 ---
 
@@ -1665,14 +1668,17 @@ pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 pnpm test
+pnpm smoke:serve
+pnpm smoke:resume
 pnpm smoke:live
 pnpm run doctor
 pnpm validate:packaging
 pnpm release:bundle -- --dry-run
 ```
 
-Do not run `pnpm smoke:serve` or `pnpm smoke:resume` unless the task explicitly targets root
-workspace resolution. They are known environment failures for ordinary validation.
+For unrelated feature work, follow the active phase validation boundary. For CI,
+smoke, root workspace, release, and post-RC work, `pnpm smoke:serve` and
+`pnpm smoke:resume` are expected to run and pass.
 
 For release phases also run:
 

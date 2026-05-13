@@ -1,6 +1,8 @@
 # BLUE-TANUKI Channel Readiness Matrix
 
-Channel count は品質指標ではない。first-party 扱いは、setup、credential、smoke、error recovery、audit compatibility、authority non-escalation が揃った場合に限る。
+Channel count is not a quality metric. A channel is first-party only when setup,
+credentials, smoke, error recovery, audit compatibility, and authority
+non-escalation are all verified.
 
 | Channel | Status | Setup difficulty | Credential | Live smoke | Skip path | Inbound | Outbound | Rate limit / backoff | Known failure modes | Next phase |
 |---|---|---:|---|---|---|---|---|---|---|---|
@@ -10,7 +12,7 @@ Channel count は品質指標ではない。first-party 扱いは、setup、cred
 | Discord | first-party-preview | medium | `DISCORD_BOT_TOKEN` | supported when credentials/target exist | yes | yes | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | gateway intent, channel permission, token revoked, rate limit | owner credentialed live smoke before first-party promotion |
 | Microsoft Teams | first-party-preview | high | `MICROSOFT_GRAPH_ACCESS_TOKEN` | supported when credentials/target exist | yes | injected transport / no gateway webhook listener yet | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | Graph permission, tenant/app consent, target format, token revoked, rate limit | owner credentialed live smoke before first-party promotion |
 | LINE | first-party-preview | high | `LINE_CHANNEL_ACCESS_TOKEN` | supported when credentials/target exist | yes | injected transport / no gateway webhook listener yet | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | Messaging API permission, target reachability, token revoked, rate limit | owner credentialed live smoke before first-party promotion |
-| WhatsApp | reserved-third-party | high | third-party adapter-specific | not first-party | n/a | no core support | no core support | not warranted | ToS/stability/operation responsibility cannot be guaranteed by core | generic adapter IF only |
+| WhatsApp | reserved-third-party | high | third-party adapter-specific | not first-party | n/a | no core support | no core support | not warranted | ToS/stability/operation responsibility cannot be guaranteed by core | generic adapter interface only |
 
 ## Release Meaning
 
@@ -21,7 +23,9 @@ Channel count は品質指標ではない。first-party 扱いは、setup、cred
 
 ## Authority Rule
 
-No channel metadata can escalate authority. Channel user IDs, roles, group metadata, thread metadata, webhook metadata, and adapter-specific metadata are downstream context only.
+No channel metadata can escalate authority. Channel user IDs, roles, group
+metadata, thread metadata, webhook metadata, and adapter-specific metadata are
+downstream context only.
 
 ## Preview Channel Boundaries
 
@@ -41,4 +45,12 @@ Current boundary:
 
 ### Slack / Discord Preview Boundary
 
-Slack / Discord は Phase 8-S5 で adapter conformance、retry/backoff、typed delivery error、live smoke credential path まで整備済み。first-party 昇格は、所有者が実 token / test target で `smoke:live` を走らせ、失敗時の復旧手順を確認してから行う。
+Slack / Discord reached release-polished preview in Phase 8-S5: adapter
+conformance, retry/backoff, typed delivery errors, and credentialed live-smoke
+paths are implemented.
+
+First-party promotion still waits for:
+
+- owner-run real token / test target `smoke:live`
+- token revocation and permission failure recovery review
+- permanent-use support decision

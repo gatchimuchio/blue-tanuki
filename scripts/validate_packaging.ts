@@ -23,6 +23,12 @@ function requireNotIncludes(file: string, text: string, needle: string): void {
   }
 }
 
+function requireNotMatches(file: string, text: string, pattern: RegExp, label: string): void {
+  if (pattern.test(text)) {
+    throw new Error(`${file}: forbidden pattern present: ${label}`);
+  }
+}
+
 function main(): void {
   const installReadme = read("install/README.md");
   requireIncludes("install/README.md", installReadme, "Windows");
@@ -167,14 +173,31 @@ function main(): void {
 
   const docsIndex = read("docs/INDEX.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-release-candidate.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "v1.0-post-rc-closure-review.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-security-and-permanent-use-review.md");
 
   const releaseCandidate = read("docs/v1.0-release-candidate.md");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "1.0.0-rc.1");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "generated `.sha256`");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No hard-coded archive SHA");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "first-party-preview");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "reserved-third-party");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No signed native installer");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No automatic updater");
+  requireNotMatches(
+    "docs/v1.0-release-candidate.md",
+    releaseCandidate,
+    /SHA-256: `?[a-f0-9]{64}`?/i,
+    "hard-coded release bundle SHA",
+  );
+
+  const postRcReview = read("docs/v1.0-post-rc-closure-review.md");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Credentialed Live Smoke");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Status: PASS");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "cannot be completed in this workspace");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "remain `first-party-preview`");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "No signed native installer");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "No automatic updater");
 
   const compatibilityMatrix = read("docs/compatibility-matrix.json");
   requireIncludes("docs/compatibility-matrix.json", compatibilityMatrix, "\"target_release\": \"v1.0\"");

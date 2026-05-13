@@ -241,6 +241,7 @@ Phase 11-S2 is complete. Next work is owner release decision, release publicatio
 - Docs index created at `docs/INDEX.md`
 - Compatibility matrix advanced first-party channels to `v1.0` and preview channels to `v1.0-preview` without promoting previews to first-party
 - Release-candidate support/no-support boundary, upgrade notes, first-run proof, permanent-use proof, and validation matrix recorded
+- Post-RC closure review records bundle sidecar integrity, Windows `smoke:resume` proof, credentialed live-smoke blocker, preview-channel promotion decision, signed-installer decision, and updater decision
 
 ## 5. Non-Goals
 
@@ -267,6 +268,7 @@ Do not add:
 - [Phase 10-S3 Distribution UX Hardening](phase10-s3-distribution-ux-hardening.md)
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [v1.0 Release Candidate](v1.0-release-candidate.md)
+- [v1.0 Post-RC Closure Review](v1.0-post-rc-closure-review.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)
