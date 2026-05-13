@@ -1,4 +1,4 @@
-# BLUE-TANUKI v0.1 Troubleshooting
+# BLUE-TANUKI v1.0 RC Troubleshooting
 
 まず [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) で初回経路を確認し、常駐運用では [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) と [docs/UPDATE_ROLLBACK_RUNBOOK.md](./docs/UPDATE_ROLLBACK_RUNBOOK.md) を併用する。
 
@@ -104,7 +104,7 @@ If WebChat works, Telegram failure is channel readiness, not HDS authority failu
 
 ## Slack / Discord does not deliver
 
-Slack and Discord are release-polished preview channels in v0.1. They have typed delivery errors, adapter retry/backoff, and credentialed live smoke paths, but remain preview until the owner runs live credentials against a test target.
+Slack and Discord are release-polished preview channels. They have typed delivery errors, adapter retry/backoff, and credentialed live smoke paths, but remain preview until the owner runs live credentials against a test target.
 
 Check:
 

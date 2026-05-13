@@ -38,6 +38,25 @@ const quickstart = read("QUICKSTART.md");
 const config = read("CONFIG.md");
 const troubleshooting = read("TROUBLESHOOTING.md");
 
+const currentReleaseDocs = [
+  "README.md",
+  "QUICKSTART.md",
+  "CLAIM.md",
+  "SECURITY.md",
+  "AUDIT.md",
+  "CONFIG.md",
+  "TROUBLESHOOTING.md",
+  "docs/FIRST_RUN_CHECKLIST.md",
+  "docs/PERMANENT_USE_CHECKLIST.md",
+  "docs/CHANNEL_READINESS_MATRIX.md",
+  "docs/CREDENTIAL_READINESS_MATRIX.md",
+  "docs/UPDATE_ROLLBACK_RUNBOOK.md",
+  "docs/INDEX.md",
+  "docs/v1.0-release-candidate.md",
+  "docs/v1.0-post-rc-closure-review.md",
+  "docs/v1.0-security-and-permanent-use-review.md",
+];
+
 for (const rel of [
   "docs/FIRST_RUN_CHECKLIST.md",
   "docs/PERMANENT_USE_CHECKLIST.md",
@@ -82,6 +101,12 @@ for (const rel of ["README.md", "QUICKSTART.md", "CONFIG.md", "TROUBLESHOOTING.m
     if (pattern.test(text)) {
       failures.push(`${rel} contains stale runtime schedule text: ${pattern}`);
     }
+  }
+}
+
+for (const rel of currentReleaseDocs) {
+  if (/\bv0\.1\b/.test(read(rel))) {
+    failures.push(`${rel} contains stale v0.1 release text`);
   }
 }
 

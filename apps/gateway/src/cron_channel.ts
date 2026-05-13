@@ -97,7 +97,7 @@ interface CronTaskRuntime {
 }
 
 /**
- * v0.1 cron source.
+ * Runtime cron source.
  *
  * It emits internal cron InboundRequests. HDS-BRAIN still owns authority:
  * a cron request must pass cron.process and becomes a channel_send only via
@@ -364,7 +364,7 @@ export function dailyBriefCronFromEnv(env: Record<string, string | undefined> = 
     enabled,
     channel,
     target,
-    content: env.BLUE_TANUKI_DAILY_BRIEF_CONTENT ?? "Daily Brief: no external integrations are enabled in v0.1. This is the scheduled-message smoke.",
+    content: env.BLUE_TANUKI_DAILY_BRIEF_CONTENT ?? "Daily Brief: scheduled smoke from BLUE-TANUKI v1.0 RC.",
     time: env.BLUE_TANUKI_DAILY_BRIEF_TIME ?? "07:00",
     interval_ms: parsePositiveInt(env.BLUE_TANUKI_DAILY_BRIEF_INTERVAL_MS),
   };

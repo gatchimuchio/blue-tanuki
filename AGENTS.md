@@ -367,13 +367,13 @@ This rule applies to code, tests, docs, manifests, scripts, and operational inst
 
 Do not collapse `ApprovalRisk`.
 
-Current risk model must remain a severity scale of three levels in v0.1:
+Current risk model must remain a severity scale of three levels:
 
 ```ts
 type ApprovalRisk = "low" | "medium" | "high";
 ```
 
-`critical` is intentionally not introduced in v0.1. If a future phase needs a severity above `high`, it must be added as a standalone security phase, not as a side effect of feature work.
+`critical` is intentionally not part of the current release line. If a future phase needs a severity above `high`, it must be added as a standalone security phase, not as a side effect of feature work.
 
 L1/L2/L3 must be represented as a separate workflow axis:
 
@@ -631,11 +631,11 @@ Adapters must not:
 First-party completion path:
 
 - WebChat: resident control plane and local console
-- Telegram: v0.1 first-party smoke/release channel
-- Slack: first-party after release polish
-- Discord: first-party after release polish
-- Teams: v0.2+
-- LINE: v0.2+
+- Telegram: first-party release channel
+- Slack: first-party-preview pending owner credentialed live smoke and permanent-use recovery review
+- Discord: first-party-preview pending owner credentialed live smoke and permanent-use recovery review
+- Teams: first-party-preview pending webhook/listener closure, owner credentialed live smoke, and permanent-use recovery review
+- LINE: first-party-preview pending webhook/listener closure, owner credentialed live smoke, and permanent-use recovery review
 
 Channel count is not a product-quality metric.
 

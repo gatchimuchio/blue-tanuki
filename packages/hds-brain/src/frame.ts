@@ -15,7 +15,7 @@ export interface FrameConfig {
   resolve?: (req: InboundRequest) => string | undefined;
   /**
    * Upstream-owned deterministic memory reader. HDS-BRAIN may attach memory
-   * hits to the audit frame, but v0.1 never lets those hits expand authority.
+   * hits to the audit frame, but the current release never lets those hits expand authority.
    */
   memory_reader?: MemoryReaderPort;
   /** Override actor/process resolution for tests or higher-level gateway policy. */

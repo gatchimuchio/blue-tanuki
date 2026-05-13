@@ -45,7 +45,7 @@ export interface MemoryHit {
 export interface MemoryTrace {
   policy_id: string;
   process_id: string;
-  /** v0.1 invariant: memory is surfaced for context/audit, not for authority escalation. */
+  /** Current invariant: memory is surfaced for context/audit, not for authority escalation. */
   used_for_authority: false;
   hits: MemoryHit[];
 }

@@ -1,4 +1,4 @@
-# BLUE-TANUKI v0.1 Security Model
+# BLUE-TANUKI v1.0 RC Security Model
 
 ## Priority
 
@@ -54,7 +54,7 @@ The Runtime Invariants endpoint exposes the current values for the core containm
 | HDS-BRAIN never calls an LLM. | `hds_calls_llm=false` | Structural guarantee | `@blue-tanuki/hds-brain` emits `llm_call` commands but has no LLM client dependency. |
 | HDS-BRAIN never trusts session history. | covered by `hds_calls_llm=false` and authority-path tests | Structural guarantee | Session history belongs to the downstream executor/session store. HDS-BRAIN receives only the current `InboundRequest`. |
 | External metadata cannot upgrade actor/process authority. | `external_metadata_can_escalate_authority=false` | Runtime guarantee | Channel metadata is ignored for actor/process upgrades unless gateway normalization marks it as internal; spoofed external metadata is covered by tests. |
-| MemoryTrace is `used_for_authority=false` in v0.1. | `memory_used_for_authority=false` | Structural guarantee | `MemoryTrace.used_for_authority` is typed as the literal `false`; memory traces are context/audit inputs only. |
+| MemoryTrace is `used_for_authority=false`. | `memory_used_for_authority=false` | Structural guarantee | `MemoryTrace.used_for_authority` is typed as the literal `false`; memory traces are context/audit inputs only. |
 | Process execution policy is enforced before command emission. | `process_policy_enforced=true` | Runtime guarantee | HDS-BRAIN evaluates actor/process policy and command execution policy before returning an executable command. |
 | final-review operations cannot be bypassed by full access. | `final_review_boundary_enforced_by_approval_gate=true` | Runtime guarantee | Approval Gate evaluation remains between HDS ASSERT and executor execution; full access and reusable grants cannot skip final-review operations. |
 | cron/webhook actors are not treated as humans. | covered by actor/process policy tests | Runtime guarantee | `cron` and `webhook` resolve to dedicated actor/process kinds with constrained execution policies. |
@@ -64,10 +64,10 @@ The Runtime Invariants endpoint exposes the current values for the core containm
 
 `ApprovalRisk` and `ApprovalLevel` are separate axes.
 
-- `ApprovalRisk`: severity, limited to `low | medium | high` in v0.1.
+- `ApprovalRisk`: severity, limited to `low | medium | high` in the current release.
 - `ApprovalLevel`: workflow, expressed as `L1_observe | L2_operate | L3_final_review`.
 
-`critical` is intentionally absent from v0.1. If a future operation needs a severity above `high`, it must be added as a standalone security phase.
+`critical` is intentionally absent from the current release. If a future operation needs a severity above `high`, it must be added as a standalone security phase.
 
 | Level | Name | Target | Approval behavior | Current implementation |
 |---|---|---|---|---|
@@ -95,7 +95,7 @@ These always require review regardless of full-access default:
 - Gmail / Google Calendar / Drive writes
 - Teams / LINE outbound sends
 
-`payment.charge` is a defensive placeholder. v0.1 has no payment feature, but any future payment-class operation is L3 from the moment it is introduced.
+`payment.charge` is a defensive placeholder. The current release has no payment feature, but any future payment-class operation is L3 from the moment it is introduced.
 
 ## Browser automation preview boundary
 
@@ -201,7 +201,7 @@ There are four distinct stores:
 | Session memory | downstream LLM chat continuity | no |
 | Audit log | immutable evidence chain | evidence only |
 | Approval grant store | reusable owner grants | yes, via Approval Gate |
-| HDS long-term memory | structured past-decision snapshots | no in v0.1 |
+| HDS long-term memory | structured past-decision snapshots | no |
 
 HDS long-term memory entries and hits use `F:<id>` audit references. The reference is a trace label only:
 
@@ -213,7 +213,7 @@ HDS long-term memory entries and hits use `F:<id>` audit references. The referen
 
 ## Skill registry boundary
 
-v0.1 intentionally does not implement a public Skill registry. Third-party plugin marketplaces are a supply-chain risk and are out of scope.
+The current release intentionally does not implement a public Skill registry. Third-party plugin marketplaces are a supply-chain risk and are out of scope.
 
 ## WhatsApp boundary
 

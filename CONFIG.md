@@ -1,4 +1,4 @@
-# BLUE-TANUKI v0.1 Configuration
+# BLUE-TANUKI v1.0 RC Configuration
 
 このファイルは env reference である。初回手順は [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md)、credential の readiness は [docs/CREDENTIAL_READINESS_MATRIX.md](./docs/CREDENTIAL_READINESS_MATRIX.md)、常駐運用の確認は [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) を参照する。
 
@@ -185,9 +185,9 @@ BLUE_TANUKI_HTTP_ALLOWLIST=search.example.com
 
 ## GitHub tools
 
-`github.read` is read-only, unauthenticated, and fixed to `api.github.com` in
-v0.1. It supports public repo metadata, issue metadata, issue lists, pull
-request metadata, and pull request lists.
+`github.read` is read-only, unauthenticated, and fixed to `api.github.com`.
+It supports public repo metadata, issue metadata, issue lists, pull request
+metadata, and pull request lists.
 
 ```text
 tool:github.read resource=repo owner=gatchimuchio repo=blue-tanuki

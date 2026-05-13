@@ -1,4 +1,4 @@
-# BLUE-TANUKI v0.1 Audit
+# BLUE-TANUKI v1.0 RC Audit
 
 ## Audit files
 

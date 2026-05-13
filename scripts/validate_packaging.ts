@@ -284,6 +284,22 @@ function main(): void {
     env,
     "BLUE_TANUKI_AUDIT_DIR=/var/lib/blue-tanuki/audit",
   );
+  requireIncludes(
+    "deploy/systemd/blue-tanuki.env.example",
+    env,
+    "BLUE_TANUKI_DAILY_BRIEF_CONTENT=Daily Brief: scheduled smoke from BLUE-TANUKI v1.0 RC",
+  );
+  requireNotIncludes("deploy/systemd/blue-tanuki.env.example", env, "v0.1");
+  requireNotIncludes("deploy/systemd/blue-tanuki.env.example", env, "v0.2+");
+
+  const cronChannel = read("apps/gateway/src/cron_channel.ts");
+  requireIncludes("apps/gateway/src/cron_channel.ts", cronChannel, "Runtime cron source.");
+  requireIncludes(
+    "apps/gateway/src/cron_channel.ts",
+    cronChannel,
+    "\"Daily Brief: scheduled smoke from BLUE-TANUKI v1.0 RC.\"",
+  );
+  requireNotIncludes("apps/gateway/src/cron_channel.ts", cronChannel, "v0.1");
 
   console.log("[packaging] PASS");
 }
