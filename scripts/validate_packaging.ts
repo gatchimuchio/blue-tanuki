@@ -34,6 +34,9 @@ function main(): void {
   requireIncludes("install/README.md", installReadme, "Windows");
   requireIncludes("install/README.md", installReadme, "macOS");
   requireIncludes("install/README.md", installReadme, "Linux");
+  requireIncludes("install/README.md", installReadme, "pnpm installer:run");
+  requireIncludes("install/README.md", installReadme, "guided first-run");
+  requireIncludes("install/README.md", installReadme, "Verify LLM");
   requireIncludes("install/README.md", installReadme, "BLUE_TANUKI_SETTINGS_TOKEN");
   requireIncludes("install/README.md", installReadme, "doctor");
   requireIncludes("install/README.md", installReadme, "settings");
@@ -48,6 +51,31 @@ function main(): void {
     installReadme,
     "does not build signed native packages yet",
   );
+
+  const guidedInstallerReadme = read("install/installer/README.md");
+  requireIncludes("install/installer/README.md", guidedInstallerReadme, "guided first-run");
+  requireIncludes("install/installer/README.md", guidedInstallerReadme, "pnpm installer:run");
+  requireIncludes("install/installer/README.md", guidedInstallerReadme, "Verify LLM");
+  requireIncludes("install/installer/README.md", guidedInstallerReadme, "not a signed native installer");
+  requireIncludes("install/installer/README.md", guidedInstallerReadme, "not an automatic updater");
+
+  const guidedInstallerIndex = read("install/installer/src/index.ts");
+  requireIncludes("install/installer/src/index.ts", guidedInstallerIndex, "runInstallerCli");
+  requireIncludes("install/installer/src/index.ts", guidedInstallerIndex, "--provider");
+  requireIncludes("install/installer/src/index.ts", guidedInstallerIndex, "--no-serve");
+
+  const guidedInstallerFlow = read("install/installer/src/setup_flow.ts");
+  requireIncludes("install/installer/src/setup_flow.ts", guidedInstallerFlow, "runInstallerFlow");
+  requireIncludes("install/installer/src/setup_flow.ts", guidedInstallerFlow, "runSetupCommand");
+  requireIncludes("install/installer/src/setup_flow.ts", guidedInstallerFlow, "runDoctor");
+
+  const guidedInstallerProvisioning = read("install/installer/src/api_provisioning.ts");
+  requireIncludes("install/installer/src/api_provisioning.ts", guidedInstallerProvisioning, "llmSetupArgs");
+  requireIncludes("install/installer/src/api_provisioning.ts", guidedInstallerProvisioning, "--api-key-env");
+
+  const guidedInstallerVerify = read("install/installer/src/verify.ts");
+  requireIncludes("install/installer/src/verify.ts", guidedInstallerVerify, "runInstallerPreflight");
+  requireIncludes("install/installer/src/verify.ts", guidedInstallerVerify, "pnpm installer:run");
 
   const winInstall = read("install/windows/install.ps1");
   requireIncludes("install/windows/install.ps1", winInstall, "Node.js 22.14.0");
@@ -108,6 +136,8 @@ function main(): void {
   requireIncludes("install/linux/uninstall.sh", linuxUninstall, "Config retained");
 
   const releaseBundle = read("scripts/create_release_bundle.ts");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/README.md");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/src/index.ts");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/windows/install.ps1");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/windows/uninstall.ps1");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/macos/install.sh");
@@ -125,6 +155,8 @@ function main(): void {
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "sha256");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "manifest");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "tar");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/README.md");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/src/index.ts");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/windows/uninstall.ps1");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/macos/uninstall.sh");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/linux/uninstall.sh");
@@ -136,6 +168,7 @@ function main(): void {
   const doctor = read("apps/gateway/src/doctor.ts");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "distribution_readiness");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "Distribution readiness");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "guided first-run installer docs");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "does not build signed native packages yet");
   requireIncludes(
     "apps/gateway/src/doctor.ts",
@@ -168,10 +201,14 @@ function main(): void {
   );
 
   const packageJson = read("package.json");
+  requireIncludes("package.json", packageJson, "\"installer:run\"");
+  requireIncludes("package.json", packageJson, "\"installer:verify\"");
   requireIncludes("package.json", packageJson, "\"release:verify\"");
   requireIncludes("package.json", packageJson, "\"version\": \"1.0.0-rc.1\"");
 
   const docsIndex = read("docs/INDEX.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "INSTALLER_GUIDE.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "phase11-s9-installer-setup-ux.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-release-candidate.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-post-rc-closure-review.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-security-and-permanent-use-review.md");
@@ -216,6 +253,19 @@ function main(): void {
   const settingsSurface = read("apps/gateway/src/settings_surface.ts");
   requireIncludes("apps/gateway/src/settings_surface.ts", settingsSurface, "writeEnvFileAtomic");
   requireIncludes("apps/gateway/src/settings_surface.ts", settingsSurface, "backup_label: \"settings\"");
+  requireIncludes("apps/gateway/src/settings_surface.ts", settingsSurface, "verifyLlmProvisioning");
+  requireIncludes("apps/gateway/src/settings_surface.ts", settingsSurface, "Verify LLM");
+
+  const settingsApi = read("apps/gateway/src/control_center/setup/api_settings.ts");
+  requireIncludes("apps/gateway/src/control_center/setup/api_settings.ts", settingsApi, "verifyLlmProvisioning");
+  requireIncludes("apps/gateway/src/control_center/setup/api_settings.ts", settingsApi, "secret_exposed: false");
+
+  const settingsSetupPage = read("apps/gateway/src/control_center/setup/setup_page.ts");
+  requireIncludes("apps/gateway/src/control_center/setup/setup_page.ts", settingsSetupPage, "/settings/llm/verify");
+
+  const webchat = read("packages/channel-webchat/src/webchat.ts");
+  requireIncludes("packages/channel-webchat/src/webchat.ts", webchat, "/settings/llm/verify");
+  requireIncludes("packages/channel-webchat/src/webchat.ts", webchat, "verifyLlm");
 
   const setup = read("apps/gateway/src/setup.ts");
   requireIncludes("apps/gateway/src/setup.ts", setup, "writeEnvFileAtomic");

@@ -65,6 +65,13 @@
   - Daily Operator invoke enters the existing inbound handler with gateway-owned surface metadata
   - Developer Operator Control Center endpoints require inbound auth
   - Developer Operator invoke enters the existing inbound handler with gateway-owned surface metadata
+  - Settings `Verify LLM` route requires the settings token and performs non-mutating verification
+- `apps/gateway/test/settings_surface.test.ts`
+  - SIM-like LLM API settings verification passes for the stub provider without external network access
+  - non-stub provider verification returns safe failure without saving secrets or mutating the env file
+- `install/installer/test/installer.test.ts`
+  - guided first-run installer CLI parses provider and no-serve options
+  - installer preflight reports owner next action when run outside a repo root
 - `apps/gateway/test/doctor.test.ts`
   - doctor が manifest / compatibility matrix / schedule config の release gate を表示すること
 
@@ -78,6 +85,8 @@
 - Runtime invariant preservation tests
 - Runtime automation containment tests
 - First-party operator surface tests
+- Installer setup UX tests
+- SIM-like LLM API settings verification tests
 - Preview quarantine rule
 - Main release gate rule
 

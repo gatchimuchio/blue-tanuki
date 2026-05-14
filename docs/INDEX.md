@@ -43,6 +43,7 @@
 
 - [Configuration](../CONFIG.md)
 - [Troubleshooting](../TROUBLESHOOTING.md)
+- [Installer Guide](INSTALLER_GUIDE.md)
 - [Credential Readiness Matrix](CREDENTIAL_READINESS_MATRIX.md)
 - [Channel Readiness Matrix](CHANNEL_READINESS_MATRIX.md)
 - [Update / Rollback / Recovery Runbook](UPDATE_ROLLBACK_RUNBOOK.md)
@@ -52,6 +53,7 @@
 ## Distribution
 
 - [Portable Installer Guide](../install/README.md)
+- [Phase 11-S9 Installer and Setup UX](phase11-s9-installer-setup-ux.md)
 - [Phase 10-S3 Distribution UX Hardening](phase10-s3-distribution-ux-hardening.md)
 - [Compatibility Matrix](compatibility-matrix.json)
 

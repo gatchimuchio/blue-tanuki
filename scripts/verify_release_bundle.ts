@@ -30,6 +30,11 @@ const root = process.cwd();
 
 const REQUIRED_ARCHIVE_PATHS = [
   "install/README.md",
+  "install/installer/README.md",
+  "install/installer/src/index.ts",
+  "install/installer/src/setup_flow.ts",
+  "install/installer/src/api_provisioning.ts",
+  "install/installer/src/verify.ts",
   "install/windows/install.ps1",
   "install/windows/uninstall.ps1",
   "install/macos/install.sh",
@@ -44,6 +49,8 @@ const REQUIRED_ARCHIVE_PATHS = [
   "docs/history/phase7-s2-approval-gate-execution-bridge.md",
   "docs/history/phase7-s3-full-access-default.md",
   "docs/history/phase7-s4-transparent-full-access-authority.md",
+  "docs/INSTALLER_GUIDE.md",
+  "docs/phase11-s9-installer-setup-ux.md",
 ] as const;
 
 const FORBIDDEN_SEGMENTS = new Set([

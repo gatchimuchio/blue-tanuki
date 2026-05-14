@@ -123,8 +123,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S6 | F | Writing Operator Implementation | P0 | completed |
 | 11-S7 | F | Daily Operator Implementation | P0 | completed |
 | 11-S8 | F | Developer Operator Implementation | P0 | completed |
-| 11-S9 | F | Installer and Setup UX | P0 | active |
-| 11-S10 | F | Resident Application Integration | P0 | 11-S9 |
+| 11-S9 | F | Installer and Setup UX | P0 | completed |
+| 11-S10 | F | Resident Application Integration | P0 | active |
 | 11-S11 | F | Channel First-Party Promotion | P0 | 11-S3 |
 | 11-S12 | F | Plugin Review Gate Implementation | P0 | 11-S5 |
 | 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
@@ -132,10 +132,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S9 Installer and Setup UX
+Phase 11-S10 Resident Application Integration
 ```
 
-Phase 11-S8 is complete. Next work is Phase 11-S9 Installer and Setup UX.
+Phase 11-S9 is complete. Next work is Phase 11-S10 Resident Application Integration.
 
 ## 4. Completed Phase Summaries
 
@@ -311,6 +311,15 @@ Phase 11-S8 is complete. Next work is Phase 11-S9 Installer and Setup UX.
 - Conformance evidence added for Developer surface registration, preview quarantine preservation, metadata non-escalation, and permission-enforced surface loading
 - Active execution lane advances to Phase 11-S9 Installer and Setup UX
 
+### Phase 11-S9
+
+- Guided first-run installer added under `install/installer/` with preflight, setup, doctor, and Control Center Settings handoff
+- Root scripts `installer:verify` and `installer:run` added
+- Settings surface adds token-gated, non-mutating `Verify LLM` for SIM-like LLM API provider setup
+- Installer guide, first-run checklist, permanent-use checklist, rollback runbook, RC docs, conformance docs, doctor distribution readiness, and packaging validation updated
+- Signed native installer, automatic updater, and verified 5-minute setup guarantee remain out of scope
+- Active execution lane advances to Phase 11-S10 Resident Application Integration
+
 ## 5. Non-Goals
 
 Do not add:
@@ -340,6 +349,7 @@ Do not add:
 - [Phase 11-S6 Writing Operator Implementation](phase11-s6-writing-operator.md)
 - [Phase 11-S7 Daily Operator Implementation](phase11-s7-daily-operator.md)
 - [Phase 11-S8 Developer Operator Implementation](phase11-s8-developer-operator.md)
+- [Phase 11-S9 Installer and Setup UX](phase11-s9-installer-setup-ux.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

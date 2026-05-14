@@ -18,6 +18,8 @@
     "gateway:serve:dev": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run serve:dev",
     "doctor": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run doctor",
     "doctor:dev": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run doctor:dev",
+    "installer:run": "node node_modules/tsx/dist/cli.mjs install/installer/src/index.ts",
+    "installer:verify": "node node_modules/tsx/dist/cli.mjs install/installer/src/verify.ts",
     "setup": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run setup",
     "setup:dist": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run setup:dist",
     "smoke:serve": "node node_modules/tsx/dist/cli.mjs scripts/smoke_serve.ts",

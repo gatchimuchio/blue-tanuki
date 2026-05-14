@@ -13,6 +13,34 @@ ships as a signed native product or has an automatic updater.
 The portable installer does not build signed native packages yet.
 Use the uninstall dry-run option before destructive removal when available.
 
+## Guided first-run installer
+
+Phase 11-S9 adds a guided first-run wrapper for source and release-bundle users:
+
+```bash
+pnpm installer:run
+```
+
+This path performs preflight checks, enables Corepack/pnpm when possible, runs
+setup, runs `doctor`, and opens the path toward the Control Center settings UI.
+It is a guided first-run accelerator, not a verified 5-minute setup guarantee.
+
+Use the Control Center Settings page and the `Verify LLM` action before saving
+LLM provider changes. API key values are written only to the env file and are
+not printed by the installer, doctor, runtime snapshot, or audit output.
+
+For a non-serving setup pass:
+
+```bash
+pnpm installer:run -- --no-serve
+```
+
+For local OpenAI-compatible endpoints:
+
+```bash
+pnpm installer:run -- --provider openai-compatible --endpoint http://127.0.0.1:11434/v1 --model local-model --no-serve
+```
+
 ## Requirements
 
 - Node.js `>=22.14.0`

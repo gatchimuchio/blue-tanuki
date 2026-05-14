@@ -669,6 +669,17 @@ BLUE-TANUKI may eventually claim "beginner can use in 5 minutes" only if all are
 
 Until then, use "first-run path" or "guided setup path", not "5-minute setup".
 
+### Installer-Accelerated First-Run
+
+installer (`install/installer/`) を経由した first-run 経路の存在は本ルールを変更しない。
+
+- installer は guided first-run の加速を行うが、5-minute setup の保証主張ではない
+- installer 提供によって docs 上の "guided first-run path" 表現が "verified 5-minute beginner guarantee" 表現に置き換わることは禁止
+- installer 経由でも doctor の actionable remediation は維持する
+- installer 失敗時の owner next action 表示は必須
+- installer は HDS-BRAIN authority 経路に介入しない
+- installer は env file / secrets を生成するが、生成された secret を表示・log 出力しない
+
 ---
 
 ## Permanent-Use UX Rule

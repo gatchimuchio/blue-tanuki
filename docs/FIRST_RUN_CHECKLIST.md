@@ -24,6 +24,23 @@ pnpm build
 pnpm run setup -- --yes
 ```
 
+Recommended guided path:
+
+```bash
+pnpm installer:run
+```
+
+Non-serving guided path:
+
+```bash
+pnpm installer:run -- --no-serve
+```
+
+The guided installer performs setup, doctor, and Control Center handoff. It is
+not a signed native installer, not an automatic updater, and not a verified
+5-minute setup guarantee. Use `Verify LLM` in Settings before saving non-stub
+LLM provider changes.
+
 `pnpm run setup -- --yes` はローカル env file を生成する。生成された secret は公開しない。既存 env file を上書きする場合、`.bak` backup が作られる。
 
 手動 env で起動する場合:

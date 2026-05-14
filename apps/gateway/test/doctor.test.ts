@@ -113,9 +113,37 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "# Install",
       "Distribution readiness",
       "Windows macOS Linux",
+      "pnpm installer:run",
+      "guided first-run",
+      "Verify LLM",
       "BLUE_TANUKI_SETTINGS_TOKEN",
       "RESET_CONFIG=1 PURGE=1 dry-run",
       "does not build signed native packages yet",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "install/installer/README.md",
+    [
+      "# Guided Installer",
+      "guided first-run",
+      "pnpm installer:run",
+      "Verify LLM",
+      "not a signed native installer",
+      "not an automatic updater",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "docs/INSTALLER_GUIDE.md",
+    [
+      "# Installer Guide",
+      "guided first-run",
+      "SIM-like LLM API settings",
+      "pnpm installer:run",
+      "Verify LLM",
+      "not a signed native installer",
+      "not an automatic updater",
     ].join("\n"),
   );
   await writeFixtureFile(

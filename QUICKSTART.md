@@ -13,7 +13,29 @@ pnpm test
 pnpm build
 ```
 
-## 2. Local setup
+## 2. Guided first-run
+
+Recommended:
+
+```bash
+pnpm installer:run
+```
+
+For setup without starting the gateway:
+
+```bash
+pnpm installer:run -- --no-serve
+```
+
+The installer runs setup and doctor, writes a local env file, and then points to
+the Control Center Settings page. It is a guided first-run path, not a signed
+native installer, not an automatic updater, and not a verified 5-minute setup
+guarantee.
+
+Use `Verify LLM` in Settings before saving a non-stub provider, endpoint, model,
+or API key.
+
+## 3. Local setup
 
 推奨:
 
@@ -37,7 +59,7 @@ Open:
 http://127.0.0.1:8787/
 ```
 
-## 3. First WebChat message
+## 4. First WebChat message
 
 Control Center から短いメッセージを送る。HTTP で直接確認する場合:
 
@@ -48,7 +70,7 @@ curl -X POST http://127.0.0.1:8787/inbound \
   -d '{"user":"local-user","content":"hello blue-tanuki"}'
 ```
 
-## 4. Telegram
+## 5. Telegram
 
 ```bash
 export TELEGRAM_BOT_TOKEN="123456:telegram-bot-token"
@@ -57,7 +79,7 @@ pnpm gateway:serve
 
 Telegram inbound uses Bot API long polling. Outbound target is `chat_id`.
 
-## 5. Daily Brief smoke
+## 6. Daily Brief smoke
 
 Daily Brief is a scheduled `channel_send` smoke by default. Gmail/GCal/Drive can be enabled as an optional read-only source after the basic smoke works.
 
@@ -84,7 +106,7 @@ export BLUE_TANUKI_DAILY_BRIEF_GOOGLE_SERVICES="gmail,calendar,drive"
 export GOOGLE_ACCESS_TOKEN="<read-only-google-oauth-token>"
 ```
 
-## 6. Boot-time scheduled-message smoke
+## 7. Boot-time scheduled-message smoke
 
 ```bash
 export BLUE_TANUKI_SCHEDULES_JSON='[
@@ -101,7 +123,7 @@ pnpm gateway:serve
 
 Boot-time schedules enter HDS-BRAIN as `cron.process` and share the same cron lane as approved runtime schedules.
 
-## 7. Runtime schedules
+## 8. Runtime schedules
 
 Runtime schedule creation is enabled in v1.0 RC through `tool:schedule.*`. Listing is L1. Create/update/delete are L3 final-review operations and do not run until approved.
 
@@ -114,7 +136,7 @@ tool:schedule.delete id=<id>
 
 Pending, rejected, or timed-out schedule requests do not fire. Runtime snapshots expose ids, counts, timing metadata, and payload hashes, never schedule content.
 
-## 8. Runtime snapshot
+## 9. Runtime snapshot
 
 ```bash
 curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
@@ -123,8 +145,9 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 
 The snapshot exposes HDS state, audit chain validity, memory count, pending approvals, safe scheduled-task metadata, and authority-path invariants.
 
-## 9. Next documents
+## 10. Next documents
 
+- [docs/INSTALLER_GUIDE.md](./docs/INSTALLER_GUIDE.md)
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md)
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md)
 - [docs/CHANNEL_READINESS_MATRIX.md](./docs/CHANNEL_READINESS_MATRIX.md)

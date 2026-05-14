@@ -2011,6 +2011,18 @@ CHANGELOG.md
 
 ---
 
+# Phase 11-S9 Completion Notes
+
+- Added guided first-run installer files under `install/installer/`.
+- Added root `installer:verify` and `installer:run` scripts.
+- Added token-gated Settings `Verify LLM` route and UI for non-mutating provider checks.
+- Added installer guide and Phase 11-S9 report.
+- Updated first-run, permanent-use, rollback, RC, conformance, doctor, and packaging validation references.
+- The guided installer remains portable setup UX: no signed native installer, no automatic updater, and no verified 5-minute setup guarantee.
+- Active execution lane advances to Phase 11-S10 Resident Application Integration.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2101,7 +2113,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S9 Installer and Setup UX
+Phase 11-S10 Resident Application Integration
 ```
 
-Phase 11-S8 is complete. Proceed to Phase 11-S9 Installer and Setup UX.
+Phase 11-S9 is complete. Proceed to Phase 11-S10 Resident Application Integration.

@@ -9,6 +9,19 @@ uninstall/purge guidance, and release bundle checks remain present. Treat a
 `distribution_readiness` error as a release blocker. Fix the listed docs or
 scripts, then rerun `pnpm run doctor` and `pnpm validate:packaging`.
 
+The Phase 11-S9 guided first-run installer is part of this gate. It is a
+portable setup wrapper, not a signed native installer and not an automatic
+updater. If `pnpm installer:run` fails, keep the existing env file and `.bak`
+files in place, fix the reported preflight/setup/doctor issue, and rerun:
+
+```bash
+pnpm installer:verify
+pnpm installer:run -- --no-serve
+```
+
+Use the Control Center Settings `Verify LLM` action before saving any provider,
+endpoint, model, or API key change after update.
+
 ## 1. Before Update
 
 1. Stop the gateway if it is running.

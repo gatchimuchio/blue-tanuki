@@ -9,6 +9,7 @@ import {
   settingsSurfaceAllowed,
   updateSettingsEnvFile,
 } from "../src/settings_surface.js";
+import { verifyLlmProvisioning } from "../src/control_center/setup/api_settings.js";
 import {
   createDefaultSetupConfig,
   renderSetupEnvFile,
@@ -99,6 +100,45 @@ describe("settings surface", () => {
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }
+  });
+
+  it("verifies candidate stub LLM settings without writing secrets", async () => {
+    const result = await verifyLlmProvisioning(
+      { llm: { provider: "stub" } },
+      {
+        WEBCHAT_TOKEN: "webchat-token-123456",
+        WEBCHAT_RESUME_TOKEN: "resume-token-123456",
+        BLUE_TANUKI_SETTINGS_TOKEN: "settings-token-123456",
+      },
+      runtime(),
+    );
+    expect(result.status).toBe("pass");
+    expect(result.changed).toBe(false);
+    expect(result.secret_exposed).toBe(false);
+    expect(result.detail).not.toContain("settings-token-123456");
+  });
+
+  it("reports LLM verification failures as safe non-mutating results", async () => {
+    const result = await verifyLlmProvisioning(
+      {
+        llm: {
+          provider: "openai-compatible",
+          model: "missing-endpoint",
+          api_key: "candidate-secret-123456",
+        },
+      },
+      {
+        WEBCHAT_TOKEN: "webchat-token-123456",
+        WEBCHAT_RESUME_TOKEN: "resume-token-123456",
+        BLUE_TANUKI_SETTINGS_TOKEN: "settings-token-123456",
+      },
+      runtime(),
+    );
+    expect(result.status).toBe("fail");
+    expect(result.changed).toBe(false);
+    expect(result.safe).toBe(true);
+    expect(result.detail).not.toContain("candidate-secret-123456");
+    expect(result.next_action).toContain("Check provider");
   });
 
   it("exposes settings surface only when a settings token is configured", () => {

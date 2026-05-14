@@ -78,6 +78,8 @@ export interface WebChatSettingsSurface {
   getSnapshot: () => Promise<unknown>;
   /** Persist a settings update. When omitted, POST is rejected. */
   update?: (body: Record<string, unknown>) => Promise<unknown>;
+  /** Verify a candidate LLM configuration without persisting it. */
+  verifyLlm?: (body: Record<string, unknown>) => Promise<unknown>;
 }
 
 export interface WebChatRuntimeSurface {
@@ -686,6 +688,11 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       return;
     }
 
+    if (url.pathname === "/settings/llm/verify") {
+      await this.handleSettingsLlmVerify(req, res);
+      return;
+    }
+
     if (url.pathname === "/runtime/snapshot") {
       await this.handleRuntimeSnapshot(req, res);
       return;
@@ -1276,6 +1283,44 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     }
     res.writeHead(405, { "content-type": "application/json" });
     res.end(JSON.stringify({ error: "method_not_allowed" }));
+  }
+
+  private async handleSettingsLlmVerify(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    if (!this.opts.settings) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "settings_not_configured" }));
+      return;
+    }
+    if (!this.checkSettingsAuth(req)) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+    if (req.method !== "POST") {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    if (!this.opts.settings.verifyLlm) {
+      res.writeHead(501, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "settings_llm_verify_not_configured" }));
+      return;
+    }
+    const body = await readJson(req);
+    if (!body) {
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "json_body_required" }));
+      return;
+    }
+    const result = await this.opts.settings.verifyLlm(body);
+    res.writeHead(200, {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    });
+    res.end(JSON.stringify({ ok: true, result }));
   }
 }
 

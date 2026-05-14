@@ -1,0 +1,12 @@
+{
+  "name": "@blue-tanuki/installer",
+  "version": "1.0.0-rc.1",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Guided first-run wrapper for BLUE-TANUKI portable source bundles",
+  "scripts": {
+    "start": "node ../../node_modules/tsx/dist/cli.mjs src/index.ts",
+    "verify": "node ../../node_modules/tsx/dist/cli.mjs src/verify.ts"
+  }
+}

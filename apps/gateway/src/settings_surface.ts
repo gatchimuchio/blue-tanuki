@@ -6,7 +6,6 @@ import {
   renderSetupEnvFile,
   setupConfigFromEnv,
   setupConfigToEnv,
-  type BlueTanukiSetupConfig,
   type SetupProviderKind,
 } from "./setup_config.js";
 import {
@@ -14,6 +13,11 @@ import {
   describeLLMConfig,
 } from "./llm_config.js";
 import type { PluginRuntime } from "./plugin_loader.js";
+import {
+  applySettingsPatch,
+  verifyLlmProvisioning,
+} from "./control_center/setup/api_settings.js";
+import { LLM_VERIFY_ROUTE } from "./control_center/setup/setup_page.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -86,72 +90,6 @@ function envValue(env: Env, ...names: string[]): string | undefined {
   return undefined;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function stringField(
-  obj: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const value = obj[key];
-  return typeof value === "string" && value.trim().length > 0
-    ? value.trim()
-    : undefined;
-}
-
-function optionalStringField(
-  obj: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const value = obj[key];
-  if (value === undefined) return undefined;
-  if (value === null) return undefined;
-  if (typeof value !== "string") {
-    throw new Error(`${key} must be a string`);
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function optionalNumberField(
-  obj: Record<string, unknown>,
-  key: string,
-): number | undefined {
-  const value = obj[key];
-  if (value === undefined || value === null || value === "") return undefined;
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(parsed)) {
-    throw new Error(`${key} must be a number`);
-  }
-  return parsed;
-}
-
-function optionalIntField(
-  obj: Record<string, unknown>,
-  key: string,
-): number | undefined {
-  const value = optionalNumberField(obj, key);
-  if (value === undefined) return undefined;
-  if (!Number.isInteger(value)) {
-    throw new Error(`${key} must be an integer`);
-  }
-  return value;
-}
-
-function normalizeProvider(value: string): SetupProviderKind {
-  const normalized = value.trim().toLowerCase();
-  if (
-    normalized === "stub" ||
-    normalized === "anthropic" ||
-    normalized === "openai" ||
-    normalized === "openai-compatible"
-  ) {
-    return normalized;
-  }
-  throw new Error("provider must be stub | anthropic | openai | openai-compatible");
-}
-
 async function readEnvFileEnv(filePath: string | undefined): Promise<Env> {
   if (!filePath) return {};
   const raw = await fs.readFile(filePath, "utf8").catch(() => "");
@@ -221,47 +159,6 @@ export function buildSettingsSnapshot(
   };
 }
 
-function applySettingsPatch(
-  config: BlueTanukiSetupConfig,
-  body: Record<string, unknown>,
-): BlueTanukiSetupConfig {
-  if (isRecord(body.llm)) {
-    const llm = body.llm;
-    const provider = stringField(llm, "provider");
-    if (provider) config.llm.provider = normalizeProvider(provider);
-    const model = optionalStringField(llm, "model");
-    if (model !== undefined) config.llm.model = model;
-    const endpoint = optionalStringField(llm, "endpoint");
-    if (endpoint !== undefined) config.llm.endpoint = endpoint;
-    const apiKey = optionalStringField(llm, "api_key");
-    if (apiKey !== undefined) config.llm.api_key = apiKey;
-    const temperature = optionalNumberField(llm, "temperature");
-    if (temperature !== undefined) config.llm.temperature = temperature;
-    const maxTokens = optionalIntField(llm, "max_tokens");
-    if (maxTokens !== undefined) config.llm.max_tokens = maxTokens;
-    const timeoutMs = optionalIntField(llm, "timeout_ms");
-    if (timeoutMs !== undefined) config.llm.timeout_ms = timeoutMs;
-  }
-  if (isRecord(body.webchat)) {
-    const webchat = body.webchat;
-    const host = optionalStringField(webchat, "host");
-    if (host !== undefined) config.webchat.host = host;
-    const port = optionalIntField(webchat, "port");
-    if (port !== undefined) config.webchat.port = port;
-  }
-  if (isRecord(body.paths)) {
-    const paths = body.paths;
-    const fileRoot = optionalStringField(paths, "file_root");
-    if (fileRoot !== undefined) config.paths.file_root = fileRoot;
-    const sessionDir = optionalStringField(paths, "session_dir");
-    if (sessionDir !== undefined) config.paths.session_dir = sessionDir;
-    const auditDir = optionalStringField(paths, "audit_dir");
-    if (auditDir !== undefined) config.paths.audit_dir = auditDir;
-  }
-  setupConfigToEnv(config);
-  return config;
-}
-
 export async function updateSettingsEnvFile(
   body: Record<string, unknown>,
   env: Env,
@@ -302,6 +199,7 @@ export function createWebChatSettingsSurface(
     html: renderSettingsHtml,
     getSnapshot: async () => buildSettingsSnapshot(env, opts.plugins),
     update: async (body) => updateSettingsEnvFile(body, env),
+    verifyLlm: async (body) => verifyLlmProvisioning(body, env, opts.plugins),
   };
 }
 
@@ -598,6 +496,7 @@ export function renderSettingsHtml(): string {
         </section>
         <div class="actions">
           <button class="secondary" id="load-btn" type="button">Load</button>
+          <button class="secondary" id="verify-llm-btn" type="button">Verify LLM</button>
           <button class="primary" id="save-btn" type="button">Save</button>
         </div>
         <div class="notice" id="notice"></div>
@@ -690,6 +589,19 @@ export function renderSettingsHtml(): string {
       }
     }
     async function save() {
+      const payload = buildPayload();
+      try {
+        await api("/settings/config", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        setNotice("Saved. Restart required.", "warn");
+        await load();
+      } catch (e) {
+        setNotice(e.message, "bad");
+      }
+    }
+    function buildPayload() {
       const llm = {
         provider: fields.provider.value,
         model: fields.model.value,
@@ -699,26 +611,31 @@ export function renderSettingsHtml(): string {
         timeout_ms: fields.timeoutMs.value
       };
       if (fields.apiKey.value.trim()) llm.api_key = fields.apiKey.value.trim();
+      return {
+        llm,
+        webchat: { host: fields.host.value, port: fields.port.value },
+        paths: {
+          file_root: fields.fileRoot.value,
+          session_dir: fields.sessionDir.value,
+          audit_dir: fields.auditDir.value
+        }
+      };
+    }
+    async function verifyLlm() {
       try {
-        await api("/settings/config", {
+        const body = await api("${LLM_VERIFY_ROUTE}", {
           method: "POST",
-          body: JSON.stringify({
-            llm,
-            webchat: { host: fields.host.value, port: fields.port.value },
-            paths: {
-              file_root: fields.fileRoot.value,
-              session_dir: fields.sessionDir.value,
-              audit_dir: fields.auditDir.value
-            }
-          })
+          body: JSON.stringify(buildPayload())
         });
-        setNotice("Saved. Restart required.", "warn");
-        await load();
+        const result = body.result;
+        const kind = result.status === "pass" ? "ok" : "bad";
+        setNotice("LLM verify " + result.status + ": " + result.detail + " Next: " + result.next_action, kind);
       } catch (e) {
         setNotice(e.message, "bad");
       }
     }
     document.querySelector("#load-btn").addEventListener("click", load);
+    document.querySelector("#verify-llm-btn").addEventListener("click", verifyLlm);
     document.querySelector("#save-btn").addEventListener("click", save);
     if (tokenInput.value) load();
   </script>

@@ -4,6 +4,9 @@
 
 ## Startup
 
+- [ ] Guided first-run installer users have recorded the env file path printed by `pnpm installer:run`.
+- [ ] Non-stub LLM provider changes were checked with `Verify LLM` before saving.
+
 - [ ] 起動方法を 1 つに決めている: source install、release bundle、Docker、systemd、portable installer
 - [ ] 起動時に読み込む env file の場所を把握している
 - [ ] `WEBCHAT_TOKEN` と `WEBCHAT_RESUME_TOKEN` が別値である
@@ -82,6 +85,8 @@
 
 - [ ] `doctor` includes `distribution_readiness` and it is `ok`.
 - [ ] `pnpm validate:packaging` passes before publishing a bundle.
+- [ ] `pnpm installer:verify` passes from the repository root.
+- [ ] `pnpm installer:run -- --no-serve` has a documented recovery path if setup fails.
 - [ ] installer docs do not claim a signed native installer.
 - [ ] update docs do not claim an automatic updater.
 

@@ -601,6 +601,39 @@ describe("WebChatChannel — settings surface", () => {
     expect(updates).toEqual([{ llm: { provider: "stub" } }]);
     await ctx.teardown();
   });
+
+  it("routes POST /settings/llm/verify to the non-mutating verify handler", async () => {
+    const verifyBodies: unknown[] = [];
+    const ctx = setup({
+      settings: {
+        token: SETTINGS_TOKEN,
+        html: "<!doctype html>",
+        getSnapshot: async () => ({ ok: true }),
+        verifyLlm: async (body) => {
+          verifyBodies.push(body);
+          return { status: "pass", changed: false };
+        },
+      },
+    });
+    await ctx.ch.start(async () => {});
+    expect((await postJson(ctx.port, "/settings/llm/verify", {}, {
+      authorization: `Bearer ${TOKEN}`,
+    })).status).toBe(401);
+
+    const r = await postJson(
+      ctx.port,
+      "/settings/llm/verify",
+      { llm: { provider: "stub" } },
+      { authorization: `Bearer ${SETTINGS_TOKEN}` },
+    );
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({
+      ok: true,
+      result: { status: "pass", changed: false },
+    });
+    expect(verifyBodies).toEqual([{ llm: { provider: "stub" } }]);
+    await ctx.teardown();
+  });
 });
 
 describe("WebChatChannel — audit dump API", () => {
