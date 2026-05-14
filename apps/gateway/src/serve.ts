@@ -23,6 +23,10 @@ import type {
   ExecuteCommand,
   InboundRequest,
 } from "@blue-tanuki/protocol";
+import {
+  DAILY_OPERATOR_REQUIRED_PERMISSIONS,
+  type DailySurfaceSnapshot,
+} from "@blue-tanuki/operator-daily";
 import type {
   WebChatChannel,
   WebChatApprovalQueueItem,
@@ -93,6 +97,11 @@ export async function serve(): Promise<ServeShutdown> {
   plugins.enforceLLMConfig(process.env);
   plugins.enforceSessionConfig(process.env);
   plugins.enforceAuditConfig(process.env);
+  const dailySurfaceSnapshot = plugins.getSurface<typeof import("@blue-tanuki/operator-daily").getDailySurfaceSnapshot>({
+    package_name: "@blue-tanuki/operator-daily",
+    required_permissions: DAILY_OPERATOR_REQUIRED_PERMISSIONS,
+    action: "register daily operator surface",
+  });
   const writingSurfaceSnapshot = plugins.getSurface<() => WritingSurfaceSnapshot>({
     package_name: "@blue-tanuki/operator-writing",
     required_permissions: WRITING_OPERATOR_REQUIRED_PERMISSIONS,
@@ -289,6 +298,8 @@ export async function serve(): Promise<ServeShutdown> {
           const pendingApprovals = pendingApprovalSnapshot();
           const runtimeSchedulesCount = runtimeSchedules.activeCount();
           const pendingScheduleApprovalsCount = runtimeSchedules.pendingCount();
+          const scheduledTasks = cron.snapshot();
+          const runtimeScheduleSnapshot = runtimeSchedules.snapshot();
           return {
             ...buildRuntimeStatusSnapshot({
               gateway_status: "running",
@@ -302,13 +313,18 @@ export async function serve(): Promise<ServeShutdown> {
             }),
             hds: hdsSnapshot,
             pending_approvals: pendingApprovals,
-            scheduled_tasks: cron.snapshot(),
+            scheduled_tasks: scheduledTasks,
             operator_surfaces: {
+              daily: dailySurfaceSnapshot({
+                env: process.env,
+                scheduled_tasks: scheduledTasks,
+                runtime_schedules: runtimeScheduleSnapshot,
+              }) satisfies DailySurfaceSnapshot,
               writing: writingSurfaceSnapshot(),
             },
             runtime_schedules_count: runtimeSchedulesCount,
             pending_schedule_approvals_count: pendingScheduleApprovalsCount,
-            runtime_schedules: runtimeSchedules.snapshot(),
+            runtime_schedules: runtimeScheduleSnapshot,
           };
         },
       },
@@ -336,6 +352,13 @@ export async function serve(): Promise<ServeShutdown> {
         list: async () => residentNotificationSnapshot(),
       },
       operators: {
+        daily: {
+          getSnapshot: async () => dailySurfaceSnapshot({
+            env: process.env,
+            scheduled_tasks: cron.snapshot(),
+            runtime_schedules: runtimeSchedules.snapshot(),
+          }),
+        },
         writing: {
           getSnapshot: async () => writingSurfaceSnapshot(),
         },

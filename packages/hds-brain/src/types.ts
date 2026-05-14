@@ -11,7 +11,7 @@ export type TrustLevel = "owner" | "trusted" | "limited" | "untrusted";
 export type ProcessKind = "chat" | "tool" | "approval" | "cron" | "webhook" | "system";
 export type MemorySource = "hds_ltm" | "authority" | "audit";
 export type MemoryRetrievalMode = "exact" | "tag" | "recent";
-export type OperatorSurfaceId = "writing";
+export type OperatorSurfaceId = "writing" | "daily";
 
 export interface OperatorSurfaceRef {
   id: OperatorSurfaceId;

@@ -39,6 +39,11 @@
   - L1 / L2 / L3 operation boundary declaration
   - digest-only invocation trace helpers
   - no raw authority capability declaration
+- `packages/operator-daily/test/daily.test.ts`
+  - Daily Operator surface registration
+  - backward-compatible `BLUE_TANUKI_DAILY_BRIEF_*` env snapshot
+  - L1 read, L2 reminder draft, and L3 schedule / Google write boundary declaration
+  - no raw authority capability declaration
 - `packages/hds-brain/test/operator_surface.test.ts`
   - Writing Operator frame recognition
   - untrusted metadata does not select a surface
@@ -48,6 +53,8 @@
 - `packages/channel-webchat/test/webchat.test.ts`
   - Writing Operator Control Center endpoints require inbound auth
   - Writing Operator invoke enters the existing inbound handler with gateway-owned surface metadata
+  - Daily Operator Control Center endpoints require inbound auth
+  - Daily Operator invoke enters the existing inbound handler with gateway-owned surface metadata
 - `apps/gateway/test/doctor.test.ts`
   - doctor が manifest / compatibility matrix / schedule config の release gate を表示すること
 

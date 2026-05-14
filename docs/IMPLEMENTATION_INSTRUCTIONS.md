@@ -1908,6 +1908,57 @@ CHANGELOG.md
 
 ---
 
+# Phase 11-S7 - Daily Operator Implementation
+
+## Objective
+
+Implement the Daily Operator first-party surface as a Layer A downstream device under HDS-BRAIN authority.
+
+## Scope
+
+Create:
+
+```txt
+packages/operator-daily/
+docs/phase11-s7-daily-operator.md
+```
+
+Update:
+
+```txt
+apps/gateway/src/serve.ts
+packages/channel-webchat/src/webchat.ts
+packages/hds-brain/src/frame.ts
+packages/hds-brain/src/types.ts
+docs/operator-surfaces/DAILY_OPERATOR.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+CHANGELOG.md
+```
+
+## Non-Goals
+
+- Writing Operator implementation changes beyond shared endpoint support
+- Developer Operator implementation
+- new raw authority, Google, email, schedule, or channel-send capability
+- removal of `BLUE_TANUKI_DAILY_BRIEF_*` compatibility
+- Layer B plugin creation
+- version promotion
+
+## Completion Notes
+
+- Added `@blue-tanuki/operator-daily` with operation specs for Daily Brief status, Google read summaries, schedule list/create/update/delete, reminder drafting, Google writes, and Daily Brief channel-send.
+- Existing `BLUE_TANUKI_DAILY_BRIEF_*` environment variables remain the compatibility surface.
+- Daily Brief snapshots expose only safe metadata and do not expose content or credentials.
+- HDS-BRAIN frame recognition records Daily Operator binding while keeping the process under HDS authority.
+- WebChat runtime snapshot exposes `operator_surfaces.daily`.
+- WebChat exposes `GET /operators/daily` and `POST /operators/daily/invoke` using the existing inbound bearer token and inbound handler.
+- Conformance coverage records surface registration, Daily Brief env compatibility, metadata non-escalation, schedule final-review declaration, and plugin permission enforcement.
+- Active execution lane advances to Phase 11-S8 Developer Operator Implementation.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -1998,7 +2049,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S7 Daily Operator Implementation
+Phase 11-S8 Developer Operator Implementation
 ```
 
-Phase 11-S6 is complete. Proceed to Phase 11-S7 Daily Operator Implementation.
+Phase 11-S7 is complete. Proceed to Phase 11-S8 Developer Operator Implementation.

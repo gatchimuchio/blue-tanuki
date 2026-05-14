@@ -6,6 +6,8 @@ Daily Operator is the first-party surface for daily operational work: schedule r
 
 It is a Layer A surface and does not move authority into cron, Google services, or channel metadata.
 
+Phase 11-S7 implements this surface in `packages/operator-daily/` and exposes its state through the Gateway runtime snapshot and WebChat `/operators/daily` endpoints.
+
 ## 2. Scope (in-scope user goals)
 
 - inspect Daily Brief state
@@ -94,6 +96,13 @@ Phase 11-S7 must add tests for:
 - Daily Brief payload hash and no content exposure
 - final-review bypass denial
 
+Implementation evidence:
+
+- `packages/operator-daily/test/daily.test.ts`
+- `packages/hds-brain/test/operator_surface.test.ts`
+- `packages/channel-webchat/test/webchat.test.ts`
+- `apps/gateway/test/plugin_loader.test.ts`
+
 ## 11. Cross-References
 
 - [Shared Substrate](SHARED_SUBSTRATE.md)
@@ -101,3 +110,4 @@ Phase 11-S7 must add tests for:
 - [Credential Readiness Matrix](../CREDENTIAL_READINESS_MATRIX.md)
 - [Conformance](../CONFORMANCE.md)
 - [Runtime schedule tests](../CONFORMANCE.md#runtime-automation-tests)
+- [Phase 11-S7 Daily Operator Implementation](../phase11-s7-daily-operator.md)

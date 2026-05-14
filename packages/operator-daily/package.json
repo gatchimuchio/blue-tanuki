@@ -1,0 +1,27 @@
+{
+  "name": "@blue-tanuki/operator-daily",
+  "version": "1.0.0-rc.1",
+  "private": true,
+  "license": "MIT",
+  "description": "First-party Daily Operator surface for BLUE-TANUKI v1.0 RC",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
+    "typecheck": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "test": "node ../../node_modules/vitest/vitest.mjs run --passWithNoTests"
+  },
+  "dependencies": {
+    "@blue-tanuki/protocol": "workspace:*"
+  }
+}

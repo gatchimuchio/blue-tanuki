@@ -199,6 +199,7 @@ export interface WebChatNotificationSurface {
 
 export interface WebChatOperatorSurfaces {
   writing?: WebChatOperatorSurface;
+  daily?: WebChatOperatorSurface;
 }
 
 export interface WebChatOptions {
@@ -319,6 +320,8 @@ const RESUME_GLOBAL_KEY = "*";
  *   GET  /notifications auth:Bearer inbound-token
  *   GET  /operators/writing auth:Bearer inbound-token
  *   POST /operators/writing/invoke body:{user,content} auth:Bearer inbound-token
+ *   GET  /operators/daily auth:Bearer inbound-token
+ *   POST /operators/daily/invoke body:{user,content} auth:Bearer inbound-token
  *   GET  /ws         query:?ticket=...
  *   GET  /healthz    no auth, not rate-limited
  *
@@ -706,7 +709,12 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     }
 
     if (url.pathname === "/operators/writing" || url.pathname === "/operators/writing/invoke") {
-      await this.handleWritingOperator(req, res, url);
+      await this.handleOperator(req, res, url, "writing");
+      return;
+    }
+
+    if (url.pathname === "/operators/daily" || url.pathname === "/operators/daily/invoke") {
+      await this.handleOperator(req, res, url, "daily");
       return;
     }
 
@@ -1128,15 +1136,16 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     res.end(JSON.stringify({ notifications }));
   }
 
-  private async handleWritingOperator(
+  private async handleOperator(
     req: IncomingMessage,
     res: ServerResponse,
     url: URL,
+    surfaceName: "writing" | "daily",
   ): Promise<void> {
-    const surface = this.opts.operators?.writing;
+    const surface = this.opts.operators?.[surfaceName];
     if (!surface) {
       res.writeHead(404, { "content-type": "application/json" });
-      res.end(JSON.stringify({ error: "writing_operator_not_configured" }));
+      res.end(JSON.stringify({ error: `${surfaceName}_operator_not_configured` }));
       return;
     }
     if (!this.checkAuth(req, "inbound")) {
@@ -1145,7 +1154,7 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       return;
     }
 
-    if (url.pathname === "/operators/writing" && req.method === "GET") {
+    if (url.pathname === `/operators/${surfaceName}` && req.method === "GET") {
       const operator = await surface.getSnapshot();
       res.writeHead(200, {
         "content-type": "application/json",
@@ -1155,7 +1164,7 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       return;
     }
 
-    if (url.pathname === "/operators/writing/invoke" && req.method === "POST") {
+    if (url.pathname === `/operators/${surfaceName}/invoke` && req.method === "POST") {
       const body = await readJson(req);
       const user = typeof body?.user === "string" ? body.user : null;
       const content = typeof body?.content === "string" ? body.content : null;
@@ -1164,7 +1173,7 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
         res.end(JSON.stringify({ error: "user and content are required strings" }));
         return;
       }
-      if (!this.rateLimitOr429(this.buckets.inbound, `operator:writing:${user}`, res)) return;
+      if (!this.rateLimitOr429(this.buckets.inbound, `operator:${surfaceName}:${user}`, res)) return;
       const inboundReq: InboundRequest = {
         id: randomUUID(),
         channel: "webchat",
@@ -1174,12 +1183,12 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
         metadata: {
           reply_to: user,
           "blue_tanuki.authority_context": "gateway_internal_v1",
-          "blue_tanuki.operator_surface": "writing",
+          "blue_tanuki.operator_surface": surfaceName,
         },
       };
       this.handler?.(inboundReq).catch((e: unknown) => {
         // eslint-disable-next-line no-console
-        console.error("[webchat] writing operator handler error:", e);
+        console.error(`[webchat] ${surfaceName} operator handler error:`, e);
       });
       res.writeHead(202, { "content-type": "application/json" });
       res.end(JSON.stringify({ accepted: true, request_id: inboundReq.id }));

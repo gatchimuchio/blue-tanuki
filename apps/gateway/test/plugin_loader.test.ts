@@ -218,6 +218,29 @@ describe("plugin loader", () => {
     expect(surface()).toEqual({ surface: "writing", layer: "A" });
   });
 
+  it("loads Daily Operator surface exports after permission enforcement", async () => {
+    await writePackage("packages/operator-daily", {
+      name: "@blue-tanuki/operator-daily",
+      kind: "core",
+      exports: { surface: "getDailySurfaceSnapshot" },
+      permissions: ["tool:schedule.list", "schedule:read"],
+      module: `
+        export function getDailySurfaceSnapshot() {
+          return { surface: "daily", layer: "A" };
+        }
+      `,
+    });
+
+    const runtime = await loadPluginRuntime({ root });
+    const surface = runtime.getSurface<() => { surface: string; layer: string }>({
+      package_name: "@blue-tanuki/operator-daily",
+      required_permissions: ["tool:schedule.list", "schedule:read"],
+      action: "register daily operator surface",
+    });
+
+    expect(surface()).toEqual({ surface: "daily", layer: "A" });
+  });
+
   it("fails boot when provider secret env is not declared", async () => {
     await writePackage("packages/core", {
       name: "@blue-tanuki/core",
