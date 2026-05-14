@@ -4,6 +4,8 @@
 
 - [README](../README.md) - product surface, boundaries, and local quickstart
 - [Quickstart](../QUICKSTART.md) - shortest local startup path
+- [Strategy Frame](STRATEGY_FRAME.md) - Layer A/B, OpenClaw two-dimensional position, and Stage 1 strategy
+- [GA Bar Definition](GA_BAR_DEFINITION.md) - RC-to-GA promotion bar and public claim eligibility
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md) - first successful local operation
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md) - long-running owner operation
 - [v1.0 Release Candidate](v1.0-release-candidate.md) - release-candidate claim, validation, support boundary, and upgrade notes

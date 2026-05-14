@@ -49,12 +49,23 @@ Default Codex workflow for this repository:
 
 1. Work on `main`.
 2. Do not create feature branches or pull requests unless the owner explicitly asks.
-3. Before committing a completed work block, create a timestamped backup branch from the current `main` HEAD.
-   - Branch name format: `codex/backup-main-before-<slug>-<yyyymmdd-hhmmss>`.
-   - Push the backup branch to `origin` when credentials allow it.
-4. Commit the completed work block directly on `main` after validation.
-5. Push `main` to `origin` when credentials allow it.
-6. If backup creation, commit, or push cannot be completed, report the exact failed command and reason.
+3. Before committing a completed work block on `main`, rotate the two-generation backup pair:
+   - First, force-update `codex/backup-main-prev` to the current HEAD of `codex/backup-main` (demote the previous-latest backup to the prev slot).
+     - On the very first phase where `codex/backup-main` does not yet exist, skip this rotation step. `codex/backup-main-prev` will be created on the next phase.
+   - Then, force-update `codex/backup-main` to point at `main`'s current HEAD (pre-commit state of the new work block).
+4. Force push `codex/backup-main-prev` (when applicable) and then `codex/backup-main` to `origin` when credentials allow it.
+5. Commit the completed work block directly on `main` after validation.
+6. Push `main` to `origin` when credentials allow it.
+7. If backup creation, commit, or push cannot be completed, report the exact failed command and reason.
+
+The repository maintains exactly two backup branches:
+
+- `codex/backup-main` — most recent backup (pre-current-commit state, i.e. previous phase completion state)
+- `codex/backup-main-prev` — one phase older
+
+Older backups are intentionally not retained on a branch. Recovery beyond two phases falls back to `main` commit history.
+
+Do not create per-phase backup branches. Do not create a third or fourth generation (`codex/backup-main-prev-prev` etc.).
 
 Do not stage local secret files, generated runtime state, or `.blue-tanuki/` data when applying this policy.
 
@@ -129,6 +140,40 @@ The following are permanent usability risk classes:
 - multi-app ecosystem that increases support burden before the core product is stable
 
 Codex must convert these risks into BLUE-TANUKI tests, docs, UX gates, and release gates.
+
+### Two-Dimensional OpenClaw Position
+
+BLUE-TANUKI keeps the design-posture rejection dimension and the feature-coverage target dimension separate.
+
+The design-posture rejection remains unchanged: OpenClaw is not a design starting point.
+
+The feature-coverage target is selected-scope complete superiority, as defined in `docs/STRATEGY_FRAME.md`. This target does not weaken the rejection posture and does not mean implementing every OpenClaw feature.
+
+---
+
+## Strategic Frame Reference
+
+Canonical strategy frame: `docs/STRATEGY_FRAME.md`.
+
+BLUE-TANUKI separates Layer A (pre-installed responsibility: HDS-BRAIN authority, Approval, Audit, first-party channels, first-party operator surfaces, installer, Control Center, and resident app) from Layer B (third-party extension surface: Plugin API, Skill loader, third-party channel adapters, and Plugin Review Gate).
+
+Layer B must not reduce Layer A completion quality and must not bypass Layer A authority.
+
+The product experience image is iPhone-like comfort and BlackBerry-like robustness/safety. These are target experience images, not business-model references.
+
+In the strategic sequence, BLUE-TANUKI v1.0 GA is the Stage 1 artifact: proof that LLMs can be used completely as downstream tools under HDS authority.
+
+---
+
+## GA Bar Reference
+
+Canonical GA bar: `docs/GA_BAR_DEFINITION.md`.
+
+RC is not GA. `1.0.0-rc.1` means technical release candidate; GA means the repository has enough evidence to publicly claim OpenClaw complete superiority inside the selected scope.
+
+Until the GA bar passes and the owner explicitly decides GO, Codex must not add external-facing OpenClaw complete-superiority claims to README, QUICKSTART, CLAIM, or release copy.
+
+When Codex proposes or executes a new phase, it must check whether the change advances, preserves, or conflicts with the GA bar.
 
 ---
 
@@ -360,6 +405,149 @@ At each natural section boundary, Codex must:
 4. Re-review the touched files for consistency with repo conventions, docs, tests, error messages, and phase non-goals.
 
 This rule applies to code, tests, docs, manifests, scripts, and operational instructions. A section is not complete until this hygiene pass is done.
+
+---
+
+## Phase Completion Discipline
+
+各 Phase は次の 7 ステップをすべて完了して初めて完了とみなす。途中で停止することは Phase 未完了であり、次 Phase 着手前に必ず本ステップに戻る。
+
+このディシプリンは BLUE-TANUKI の健全化を常に更新し続けるための必須ゲートである。Phase 完了報告 (Final Report Format) は本ディシプリンの全ステップ完了後にのみ許可される。
+
+### Step 1 — Implementation Closure
+
+Phase 仕様の全要件を実装完了する。
+
+- Phase Execution Rule に従い Phase 内 sub-task (code + tests + docs + changelog + phase report) を連続実行する
+- 機能塊「内」を途中で切らない
+- Phase 仕様の Non-Goals に違反しないこと
+
+### Step 2 — Repository-Wide Integrity Check
+
+Phase で触った領域に関連するリポ整合性を確認する。
+
+対象範囲:
+
+- Phase で触ったファイルに関連する cross-reference / docs / 設定ファイル
+- AGENTS.md ルールとの整合性
+- compatibility-matrix.json / capability envelope manifest / plugin manifest と AGENTS.md 表記の一致
+- docs/INDEX.md / docs/ROADMAP.md / CHANGELOG.md と Phase 状態の一致
+- 関連する既存 docs (FIRST_RUN_CHECKLIST / PERMANENT_USE_CHECKLIST / SECURITY / AUDIT / CLAIM 等) との矛盾なし
+
+対象外:
+
+- Phase と無関係な領域の遡及整合 (Phase の肥大化を避けるため)
+
+整合違反を発見した場合は本 Phase 内で解消する。解消できない場合は Phase 完了せず、ブロッカーとして報告する。
+
+### Step 3 — Cleanup
+
+本 Phase で導入した不要要素を除去する。
+
+- debris / dead code / stale wording / 重複ロジック / 古い TODO の除去
+- 試行錯誤コミットの統合
+- 一時ファイル / 検証スクリプトの削除または明示的整理
+- 部分実装 / 失敗実装の残骸の除去
+
+Section Hygiene Rule の cleanup 項目を Phase 単位で適用する。
+
+### Step 4 — Slim Down
+
+本 Phase の変更を Phase 仕様を満たす最小形に絞る。
+
+- opportunistic expansion (機会的な範囲拡大) の除去
+- 無関係な churn (本 Phase と無関係な編集) の除去
+- 過度な抽象化 / 過度な汎化の除去
+- 「ついでに」の整理を排除し、Phase 仕様で要求された範囲のみ残す
+
+Section Hygiene Rule の slimming 項目を Phase 単位で適用する。
+
+### Step 5 — Safety Re-Review
+
+Phase の変更が安全境界を破っていないことを再確認する。
+
+- HDS authority 経路に介入していないこと
+- Approval Gate 5 軸 + final-review bypass なし
+- audit hash-chain 互換性維持
+- Runtime Invariants 全 PASS (Global Invariants 章 5 項目 + 追加 invariants)
+- containment property 維持 (HDS-BRAIN が LLM を呼ぶ経路を作っていない)
+- Layer A (pre-installed) / Layer B (third-party extension) 境界維持
+- channel / plugin / skill / external metadata からの authority 持ち込みなし
+
+Safety violation を発見した場合は本 Phase 内で解消する。解消できない場合は Phase 完了せず、ブロッカーとして報告する。
+
+### Step 6 — Validation
+
+検証コマンドを実行する。
+
+最低セット (全 Phase 共通):
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+pnpm docs:check
+```
+
+実装を含む Phase は追加で:
+
+```bash
+pnpm build
+pnpm run doctor
+pnpm validate:packaging
+```
+
+Release Phase は追加で:
+
+```bash
+pnpm release:bundle -- --dry-run
+pnpm release:bundle
+pnpm release:verify
+```
+
+既知環境失敗 (Known Environment Failures 章準拠):
+
+- `pnpm smoke:serve` / `pnpm smoke:resume` は本 Phase が root workspace 解決を扱わない限り実行しない
+- `pnpm smoke:live` は credentials 不在で SKIP 可
+
+失敗を隠蔽しないこと。失敗の分類 (本 Phase 起因 / pre-existing / 環境限定) を明示すること。
+
+### Step 7 — Git Closure
+
+Git Operation Policy に準拠して main 更新と backup 更新を行う。
+
+実行順序:
+
+1. work block を 1 commit にまとめる準備をする (まだ main に commit していない状態)
+2. backup branch 2 世代ローテーション:
+   - 現在の `codex/backup-main` HEAD を `codex/backup-main-prev` に **force-update** する (1 個前へ降格)
+   - 初回 (`codex/backup-main` 自体が存在しない場合) は本ステップ 2 を skip し、`codex/backup-main-prev` は作成しない
+3. `codex/backup-main-prev` を `origin` に force push (credentials 可能なら、初回 skip 時を除く)
+4. main の現在 HEAD (= 本 Phase commit 前 = 前 Phase 完了状態) を `codex/backup-main` に **force-update** する
+5. `codex/backup-main` を `origin` に force push (credentials 可能なら)
+6. main に本 Phase の work block を直接 commit
+7. main を `origin` に push (credentials 可能なら)
+8. backup / commit / push のいずれかが失敗した場合は失敗コマンドと理由を Final Report に記載
+
+backup branch 2 世代のセマンティクス:
+
+- `codex/backup-main` = 最新 backup (Phase N-1 完了状態 = 本 Phase commit 直前の main HEAD)
+- `codex/backup-main-prev` = 1 個前 backup (Phase N-2 完了状態)
+- それ以前の状態は main の commit history からのみ追跡可能
+- 新規 backup branch を積み上げない
+- backup branch は常にこの 2 本のみ。3 本目以降は作成しない
+
+stage 禁止:
+
+- secret / credentials / API キー
+- runtime state (`.blue-tanuki/`)
+- 一時ファイル / debug 出力
+
+### Completion Definition
+
+本ディシプリンの Step 1〜7 すべてが完了した時点で Phase 完了とみなす。Final Report Format での Phase 完了報告は本ディシプリンの全ステップ完了後にのみ許可される。
+
+途中ステップで未解消ブロッカーが発生した場合は Phase 完了せずブロッカー報告とする。
 
 ---
 
@@ -822,6 +1010,8 @@ Never hide failed tests.
 ---
 
 ## Final Report Format
+
+Every phase's Final Report must only be emitted after Phase Completion Discipline (Step 1 through Step 7) is fully complete. If any step is incomplete or blocked, do not emit a Final Report; emit a blocker report instead, naming the blocking step and the unresolved condition.
 
 Every implementation phase must end with:
 

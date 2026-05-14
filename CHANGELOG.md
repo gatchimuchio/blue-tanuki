@@ -29,6 +29,8 @@
 - Added CI placeholder env values so `pnpm run doctor` remains warning-free without enabling credentialed live smoke targets.
 - Reclassified root `smoke:serve` / `smoke:resume` as actionable CI/release checks after the root smoke dependency repair.
 - Fixed root workspace script delegation so `pnpm run setup -- --yes` and `pnpm run doctor` do not collide with pnpm built-ins.
+- Added Phase Completion Discipline to `AGENTS.md` and changed backup policy to the fixed two-generation `codex/backup-main` / `codex/backup-main-prev` model.
+- Added Phase 11-S3 strategic frame and GA bar closure docs, including Layer A/B strategy, OpenClaw two-dimensional position, and GA public-claim eligibility.
 
 ## 0.1.0 - 2026-05-06
 

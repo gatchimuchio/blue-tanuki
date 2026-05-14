@@ -215,3 +215,18 @@ The controlling rule remains:
 OpenClaw gives an agent hands.
 BLUE-TANUKI gives authority a body.
 ```
+
+## Two-Dimensional Position
+
+This document governs the design-posture rejection dimension.
+
+The feature-coverage target dimension is governed by [STRATEGY_FRAME.md](STRATEGY_FRAME.md), especially its OpenClaw Position section.
+
+These dimensions coexist independently:
+
+- design posture rejection remains unchanged;
+- selected-scope complete superiority is a coverage target;
+- the coverage target does not require implementing every OpenClaw feature;
+- the coverage target never weakens HDS authority, Approval Gate, audit, Runtime Invariants, or preview quarantine.
+
+OpenClaw remains rejected as a starting posture even when BLUE-TANUKI targets superiority inside the selected functional scope.

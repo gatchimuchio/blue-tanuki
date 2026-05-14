@@ -1648,6 +1648,75 @@ Prepare a v1.0 release candidate.
 
 ---
 
+# Phase 11-S3 — Strategic Frame and GA Bar Closure
+
+## Objective
+
+Close the repository-level strategy frame and v1.0 GA promotion bar.
+
+This phase is documentation-only. It defines Layer A / Layer B separation, product experience direction, OpenClaw two-dimensional position, platform strategy, Stage 1 role, and public claim eligibility.
+
+## Scope
+
+Create:
+
+```txt
+docs/STRATEGY_FRAME.md
+docs/GA_BAR_DEFINITION.md
+```
+
+Update:
+
+```txt
+AGENTS.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/OPENCLAW_REJECTION_AUDIT.md
+docs/INDEX.md
+CHANGELOG.md
+```
+
+## Non-Goals
+
+- implementation code changes
+- version promotion
+- README / QUICKSTART external OpenClaw complete-superiority claims
+- Writing / Daily / Developer Operator details
+- Plugin Review Gate implementation
+- installer, resident app, or LLM API setup implementation
+- GA promotion execution
+
+## Required Checks
+
+- `docs/STRATEGY_FRAME.md` exists and contains sections 1 through 8.
+- `docs/GA_BAR_DEFINITION.md` exists and contains sections 1 through 7.
+- `AGENTS.md` contains Strategic Frame Reference and GA Bar Reference.
+- `docs/OPENCLAW_REJECTION_AUDIT.md` contains Two-Dimensional Position.
+- `docs/INDEX.md` references both new docs.
+- `docs/ROADMAP.md` records Phase 11-S3 completion and identifies Phase 11-S4 as the current active phase.
+- `CHANGELOG.md` records Phase 11-S3.
+- Package versions remain `1.0.0-rc.1`.
+- README / QUICKSTART / CLAIM do not activate the external OpenClaw complete-superiority claim.
+
+## Validation Commands
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+pnpm docs:check
+```
+
+## Completion Notes
+
+- Created `docs/STRATEGY_FRAME.md`.
+- Created `docs/GA_BAR_DEFINITION.md`.
+- Recorded the OpenClaw two-dimensional position without weakening the design-posture rejection.
+- Public OpenClaw complete-superiority claims remain gated until Phase 11-S13.
+- Active execution lane advances to Phase 11-S4 First-Party Surface Specification.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -1666,19 +1735,19 @@ environment-limited if recovery fails.
 ```bash
 pnpm install --frozen-lockfile
 pnpm typecheck
-pnpm build
 pnpm test
-pnpm smoke:serve
-pnpm smoke:resume
-pnpm smoke:live
-pnpm run doctor
-pnpm validate:packaging
-pnpm release:bundle -- --dry-run
+pnpm docs:check
 ```
 
-For unrelated feature work, follow the active phase validation boundary. For CI,
-smoke, root workspace, release, and post-RC work, `pnpm smoke:serve` and
-`pnpm smoke:resume` are expected to run and pass.
+For implementation phases also run:
+
+```bash
+pnpm build
+pnpm run doctor
+pnpm validate:packaging
+```
+
+For unrelated feature work, follow the active phase validation boundary. `pnpm smoke:serve` and `pnpm smoke:resume` are skipped unless the phase targets root workspace resolution, smoke checks, CI, or release validation. `pnpm smoke:live` may SKIP when credentials are absent.
 
 For release phases also run:
 
@@ -1700,21 +1769,31 @@ Every phase must end with:
 
 ## Summary
 
-## Safety boundary impact
+## Strategic frame impact
 
-## Runtime Invariants impact
+## GA bar impact
+
+## Layer separation impact
+
+## HDS authority impact
 
 ## Approval Gate impact
 
-## Operator usability impact
+## Runtime Invariants impact
 
 ## Audit impact
 
+## Capability envelope impact
+
+## Conformance impact
+
 ## Tests / validation
+
+## Known environment failures
 
 ## Remaining risks
 
-## Recommended next task
+## Recommended next phase
 ```
 
 Do not hide failed tests.
@@ -1728,7 +1807,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-v1.0 RC complete - owner release decision
+Phase 11-S4 First-Party Surface Specification
 ```
 
-Phase 11-S2 is complete. Continue with owner release decision, release publication, or post-RC fixes.
+Phase 11-S3 is complete. Stop at the Phase 11-S4 audit boundary before implementing the first-party surface specifications.

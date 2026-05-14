@@ -87,6 +87,9 @@ Goal:
 - repeatable install
 - documented recovery
 - stable extension boundary
+- strategic frame closure
+- GA bar definition
+- public claim eligibility gating
 - security review checklist complete
 - permanent-use UX proven
 - v1.0 support / no-support boundary clear
@@ -114,14 +117,25 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 10-S3 | E | Distribution UX hardening | P1 | completed |
 | 11-S1 | F | v1.0 security review closure | P0 | completed |
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | completed |
+| 11-S3 | F | Strategic Frame and GA Bar Closure | P0 | completed |
+| 11-S4 | F | First-Party Surface Specification | P0 | active |
+| 11-S5 | F | Platform Extension Surface Specification | P0 | 11-S3 |
+| 11-S6 | F | Writing Operator Implementation | P0 | 11-S4 |
+| 11-S7 | F | Daily Operator Implementation | P0 | 11-S4 |
+| 11-S8 | F | Developer Operator Implementation | P0 | 11-S4 |
+| 11-S9 | F | Installer and Setup UX | P0 | 11-S6/11-S7/11-S8 |
+| 11-S10 | F | Resident Application Integration | P0 | 11-S9 |
+| 11-S11 | F | Channel First-Party Promotion | P0 | 11-S3 |
+| 11-S12 | F | Plugin Review Gate Implementation | P0 | 11-S5 |
+| 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
 
 ## 3. Current Active Phase
 
 ```txt
-v1.0 RC complete - owner release decision
+Phase 11-S4 First-Party Surface Specification
 ```
 
-Phase 11-S2 is complete. Next work is owner release decision, release publication, or post-RC fixes.
+Phase 11-S3 is complete. Next work is Phase 11-S4 First-Party Surface Specification.
 
 ## 4. Completed Phase Summaries
 
@@ -242,6 +256,14 @@ Phase 11-S2 is complete. Next work is owner release decision, release publicatio
 - Compatibility matrix advanced first-party channels to `v1.0` and preview channels to `v1.0-preview` without promoting previews to first-party
 - Release-candidate support/no-support boundary, upgrade notes, first-run proof, permanent-use proof, and validation matrix recorded
 - Post-RC closure review records bundle sidecar integrity, Windows `smoke:resume` proof, credentialed live-smoke blocker, preview-channel promotion decision, signed-installer decision, and updater decision
+
+### Phase 11-S3
+
+- Strategy frame created at `docs/STRATEGY_FRAME.md`
+- GA bar definition created at `docs/GA_BAR_DEFINITION.md`
+- Layer A / Layer B split, OpenClaw two-dimensional position, Stage 1 role, and public claim eligibility recorded
+- `AGENTS.md`, OpenClaw audit, docs index, roadmap, implementation instructions, and changelog aligned for the GA path
+- Active execution lane advances to Phase 11-S4 First-Party Surface Specification
 
 ## 5. Non-Goals
 
