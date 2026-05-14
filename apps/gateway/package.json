@@ -29,6 +29,7 @@
     "@blue-tanuki/channel-discord": "workspace:*",
     "@blue-tanuki/channel-telegram": "workspace:*",
     "@blue-tanuki/channel-teams": "workspace:*",
-    "@blue-tanuki/channel-line": "workspace:*"
+    "@blue-tanuki/channel-line": "workspace:*",
+    "@blue-tanuki/operator-writing": "workspace:*"
   }
 }

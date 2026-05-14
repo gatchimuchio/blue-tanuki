@@ -1,5 +1,5 @@
 import type { InboundRequest } from "@blue-tanuki/protocol";
-import type { ActorRef, FrameResult, HDSProcessDefinition, MemoryTrace, PolicyConfig } from "./types.js";
+import type { ActorRef, FrameResult, HDSProcessDefinition, MemoryTrace, OperatorSurfaceRef, PolicyConfig } from "./types.js";
 import { resolveActor, resolveProcess } from "./process.js";
 import { buildMemoryTrace, type MemoryReaderPort } from "./memory_trace.js";
 
@@ -53,6 +53,7 @@ export function frame(req: InboundRequest, config?: FrameConfig): FrameResult {
   const actor = config?.actor ?? resolveActor(req);
   const process = config?.process ?? resolveProcess(req, actor);
   const memory_trace: MemoryTrace = buildMemoryTrace(req, process, config?.memory_reader);
+  const operator_surface = resolveOperatorSurface(req);
   const problem_definition_id =
     config?.resolve?.(req) ?? config?.default_policy.problem_definition_id ?? "default_v1";
 
@@ -60,13 +61,45 @@ export function frame(req: InboundRequest, config?: FrameConfig): FrameResult {
     actor,
     process,
     memory_trace,
+    ...(operator_surface ? { operator_surface } : {}),
     goal: req.content.slice(0, 200),
     protected_values: config?.protected_values ?? DEFAULT_PROTECTED_VALUES,
     world_closure: {
-      x: [req.channel, req.user, actor.actor_kind, process.process_id],
-      r: ["request_response", "actor_process_binding"],
+      x: [req.channel, req.user, actor.actor_kind, process.process_id, ...(operator_surface ? [`surface:${operator_surface.id}`] : [])],
+      r: ["request_response", "actor_process_binding", ...(operator_surface ? ["operator_surface_binding"] : [])],
       m: ["text", "hds_authority_plane"],
     },
     problem_definition_id,
   };
+}
+
+function resolveOperatorSurface(req: InboundRequest): OperatorSurfaceRef | undefined {
+  const trimmed = req.content.trim().toLowerCase();
+  if (
+    trimmed.startsWith("/writing") ||
+    trimmed.startsWith("writing:") ||
+    trimmed.startsWith("operator:writing")
+  ) {
+    return {
+      id: "writing",
+      layer: "A",
+      source: "content_prefix",
+      authority: "downstream_device_only",
+    };
+  }
+
+  const meta = req.metadata ?? {};
+  if (
+    meta["blue_tanuki.authority_context"] === "gateway_internal_v1" &&
+    meta["blue_tanuki.operator_surface"] === "writing"
+  ) {
+    return {
+      id: "writing",
+      layer: "A",
+      source: "gateway_internal_metadata",
+      authority: "downstream_device_only",
+    };
+  }
+
+  return undefined;
 }

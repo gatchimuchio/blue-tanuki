@@ -15,6 +15,8 @@ export {
   type WebChatNotificationKind,
   type WebChatNotificationSeverity,
   type WebChatNotificationSurface,
+  type WebChatOperatorSurface,
+  type WebChatOperatorSurfaces,
 } from "./webchat.js";
 export {
   MemoryResumeApprovalTokenStore,

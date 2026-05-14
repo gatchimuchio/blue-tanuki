@@ -85,6 +85,11 @@ export interface WebChatRuntimeSurface {
   getSnapshot: () => Promise<unknown>;
 }
 
+export interface WebChatOperatorSurface {
+  /** Return a read-only operator surface snapshot. */
+  getSnapshot: () => Promise<unknown>;
+}
+
 export interface WebChatApprovalQueueItem {
   command_id: string;
   request_id: string;
@@ -192,6 +197,10 @@ export interface WebChatNotificationSurface {
   list: () => Promise<readonly WebChatNotificationItem[]>;
 }
 
+export interface WebChatOperatorSurfaces {
+  writing?: WebChatOperatorSurface;
+}
+
 export interface WebChatOptions {
   /** HTTP/WS port. Required. */
   port: number;
@@ -258,6 +267,8 @@ export interface WebChatOptions {
   authority?: WebChatAuthoritySurface;
   /** Optional display-only notification API surface. Uses the normal inbound bearer token. */
   notifications?: WebChatNotificationSurface;
+  /** Optional first-party operator endpoints. Uses the normal inbound bearer token. */
+  operators?: WebChatOperatorSurfaces;
   /**
    * Per-endpoint rate limit configuration. Pass `false` to disable
    * rate limiting entirely. Default: enabled with the per-endpoint
@@ -306,6 +317,8 @@ const RESUME_GLOBAL_KEY = "*";
  *   GET  /audit/dump auth:Bearer inbound-token
  *   GET  /authority/trace auth:Bearer inbound-token
  *   GET  /notifications auth:Bearer inbound-token
+ *   GET  /operators/writing auth:Bearer inbound-token
+ *   POST /operators/writing/invoke body:{user,content} auth:Bearer inbound-token
  *   GET  /ws         query:?ticket=...
  *   GET  /healthz    no auth, not rate-limited
  *
@@ -689,6 +702,11 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
 
     if (url.pathname === "/notifications") {
       await this.handleNotifications(req, res);
+      return;
+    }
+
+    if (url.pathname === "/operators/writing" || url.pathname === "/operators/writing/invoke") {
+      await this.handleWritingOperator(req, res, url);
       return;
     }
 
@@ -1108,6 +1126,68 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
       "cache-control": "no-store",
     });
     res.end(JSON.stringify({ notifications }));
+  }
+
+  private async handleWritingOperator(
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+  ): Promise<void> {
+    const surface = this.opts.operators?.writing;
+    if (!surface) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "writing_operator_not_configured" }));
+      return;
+    }
+    if (!this.checkAuth(req, "inbound")) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+
+    if (url.pathname === "/operators/writing" && req.method === "GET") {
+      const operator = await surface.getSnapshot();
+      res.writeHead(200, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      });
+      res.end(JSON.stringify({ operator }));
+      return;
+    }
+
+    if (url.pathname === "/operators/writing/invoke" && req.method === "POST") {
+      const body = await readJson(req);
+      const user = typeof body?.user === "string" ? body.user : null;
+      const content = typeof body?.content === "string" ? body.content : null;
+      if (!user || !content) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "user and content are required strings" }));
+        return;
+      }
+      if (!this.rateLimitOr429(this.buckets.inbound, `operator:writing:${user}`, res)) return;
+      const inboundReq: InboundRequest = {
+        id: randomUUID(),
+        channel: "webchat",
+        user,
+        content,
+        timestamp: Date.now(),
+        metadata: {
+          reply_to: user,
+          "blue_tanuki.authority_context": "gateway_internal_v1",
+          "blue_tanuki.operator_surface": "writing",
+        },
+      };
+      this.handler?.(inboundReq).catch((e: unknown) => {
+        // eslint-disable-next-line no-console
+        console.error("[webchat] writing operator handler error:", e);
+      });
+      res.writeHead(202, { "content-type": "application/json" });
+      res.end(JSON.stringify({ accepted: true, request_id: inboundReq.id }));
+      return;
+    }
+
+    res.writeHead(405, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "method_not_allowed" }));
   }
 
   private async handleSettingsPage(

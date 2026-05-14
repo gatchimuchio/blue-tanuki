@@ -33,6 +33,7 @@
 - Added Phase 11-S3 strategic frame and GA bar closure docs, including Layer A/B strategy, OpenClaw two-dimensional position, and GA public-claim eligibility.
 - Added Phase 11-S4 first-party operator surface specifications for Writing, Daily, and Developer Operator, plus shared substrate rules and AGENTS.md surface governance.
 - Added Phase 11-S5 platform extension surface specifications for Plugin Review Gate, Plugin HIG, and Skill Loader Contract, plus Layer B review cross-references.
+- Added Phase 11-S6 Writing Operator implementation with `@blue-tanuki/operator-writing`, HDS-BRAIN surface framing, Gateway surface export loading, runtime snapshot and `/operators/writing` exposure, and conformance coverage.
 
 ## 0.1.0 - 2026-05-06
 

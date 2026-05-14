@@ -11,6 +11,14 @@ export type TrustLevel = "owner" | "trusted" | "limited" | "untrusted";
 export type ProcessKind = "chat" | "tool" | "approval" | "cron" | "webhook" | "system";
 export type MemorySource = "hds_ltm" | "authority" | "audit";
 export type MemoryRetrievalMode = "exact" | "tag" | "recent";
+export type OperatorSurfaceId = "writing";
+
+export interface OperatorSurfaceRef {
+  id: OperatorSurfaceId;
+  layer: "A";
+  source: "content_prefix" | "gateway_internal_metadata";
+  authority: "downstream_device_only";
+}
 
 export interface ActorRef {
   actor_id: string;
@@ -83,6 +91,7 @@ export interface FrameResult {
   actor: ActorRef;
   process: HDSProcessDefinition;
   memory_trace: MemoryTrace;
+  operator_surface?: OperatorSurfaceRef;
   goal: string;
   protected_values: string[];
   world_closure: {

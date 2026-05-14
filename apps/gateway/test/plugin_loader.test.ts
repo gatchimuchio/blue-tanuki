@@ -195,6 +195,29 @@ describe("plugin loader", () => {
     expect(channel.opts.token).toBe("secret");
   });
 
+  it("loads first-party surface exports after permission enforcement", async () => {
+    await writePackage("packages/operator-writing", {
+      name: "@blue-tanuki/operator-writing",
+      kind: "core",
+      exports: { surface: "getWritingSurfaceSnapshot" },
+      permissions: ["tool:file.search", "fs:read"],
+      module: `
+        export function getWritingSurfaceSnapshot() {
+          return { surface: "writing", layer: "A" };
+        }
+      `,
+    });
+
+    const runtime = await loadPluginRuntime({ root });
+    const surface = runtime.getSurface<() => { surface: string; layer: string }>({
+      package_name: "@blue-tanuki/operator-writing",
+      required_permissions: ["tool:file.search", "fs:read"],
+      action: "register writing operator surface",
+    });
+
+    expect(surface()).toEqual({ surface: "writing", layer: "A" });
+  });
+
   it("fails boot when provider secret env is not declared", async () => {
     await writePackage("packages/core", {
       name: "@blue-tanuki/core",

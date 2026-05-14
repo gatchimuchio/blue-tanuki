@@ -56,6 +56,9 @@ importers:
       '@blue-tanuki/hds-brain':
         specifier: workspace:*
         version: link:../../packages/hds-brain
+      '@blue-tanuki/operator-writing':
+        specifier: workspace:*
+        version: link:../../packages/operator-writing
       '@blue-tanuki/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
@@ -140,6 +143,12 @@ importers:
         version: 8.18.1
 
   packages/hds-brain:
+    dependencies:
+      '@blue-tanuki/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
+  packages/operator-writing:
     dependencies:
       '@blue-tanuki/protocol':
         specifier: workspace:*

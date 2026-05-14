@@ -120,8 +120,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S3 | F | Strategic Frame and GA Bar Closure | P0 | completed |
 | 11-S4 | F | First-Party Surface Specification | P0 | completed |
 | 11-S5 | F | Platform Extension Surface Specification | P0 | completed |
-| 11-S6 | F | Writing Operator Implementation | P0 | active |
-| 11-S7 | F | Daily Operator Implementation | P0 | 11-S4 |
+| 11-S6 | F | Writing Operator Implementation | P0 | completed |
+| 11-S7 | F | Daily Operator Implementation | P0 | active |
 | 11-S8 | F | Developer Operator Implementation | P0 | 11-S4 |
 | 11-S9 | F | Installer and Setup UX | P0 | 11-S6/11-S7/11-S8 |
 | 11-S10 | F | Resident Application Integration | P0 | 11-S9 |
@@ -132,10 +132,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S6 Writing Operator Implementation
+Phase 11-S7 Daily Operator Implementation
 ```
 
-Phase 11-S5 is complete. Next work is Phase 11-S6 Writing Operator Implementation.
+Phase 11-S6 is complete. Next work is Phase 11-S7 Daily Operator Implementation.
 
 ## 4. Completed Phase Summaries
 
@@ -281,6 +281,16 @@ Phase 11-S5 is complete. Next work is Phase 11-S6 Writing Operator Implementatio
 - WhatsApp unofficial routes, agent-driven authority, emotion functionality, and 5-minute setup guarantee claims remain reject criteria
 - Active execution lane advances to Phase 11-S6 Writing Operator Implementation
 
+### Phase 11-S6
+
+- `@blue-tanuki/operator-writing` workspace package added as a Layer A first-party surface
+- Writing operation specs define L1 in-memory, L2 sandboxed local file, and L3 Gmail / Google Drive write boundaries
+- HDS-BRAIN frame recognition records Writing Operator surface binding without adding authority
+- Gateway plugin loader now supports first-party surface exports and exposes Writing Operator state in the runtime snapshot
+- WebChat exposes authenticated `/operators/writing` display and invoke endpoints through the existing inbound handler
+- Conformance evidence added for surface registration, metadata non-escalation, and permission-enforced surface loading
+- Active execution lane advances to Phase 11-S7 Daily Operator Implementation
+
 ## 5. Non-Goals
 
 Do not add:
@@ -307,6 +317,7 @@ Do not add:
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [v1.0 Release Candidate](v1.0-release-candidate.md)
 - [v1.0 Post-RC Closure Review](v1.0-post-rc-closure-review.md)
+- [Phase 11-S6 Writing Operator Implementation](phase11-s6-writing-operator.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

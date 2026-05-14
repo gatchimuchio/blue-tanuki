@@ -11,6 +11,7 @@ import {
   type WebChatAuditSurface,
   type WebChatAuthoritySurface,
   type WebChatNotificationSurface,
+  type WebChatOperatorSurfaces,
   type WebChatRuntimeSurface,
   type WebChatSettingsSurface,
 } from "../src/index.js";
@@ -48,6 +49,7 @@ function setup(
       audit?: WebChatAuditSurface;
       authority?: WebChatAuthoritySurface;
       notifications?: WebChatNotificationSurface;
+      operators?: WebChatOperatorSurfaces;
     }
   > = {},
 ): Ctx & { teardown: () => Promise<void> } {
@@ -70,6 +72,7 @@ function setup(
     audit: opts.audit,
     authority: opts.authority,
     notifications: opts.notifications,
+    operators: opts.operators,
     // Default: disable rate limiting in legacy tests so existing flows
     // keep working without thinking about bursts. Rate-limit behavior is
     // covered by its own describe() block below.
@@ -1478,6 +1481,76 @@ describe("WebChatChannel - resident notifications API", () => {
         { authorization: `Bearer ${TOKEN}` },
       );
       expect(r.status).toBe(405);
+    } finally {
+      await ctx.teardown();
+    }
+  });
+});
+
+describe("WebChatChannel - Writing Operator API", () => {
+  it("serves Writing Operator snapshot only with the inbound token", async () => {
+    const ctx = setup({
+      operators: {
+        writing: {
+          getSnapshot: async () => ({
+            surface: "writing",
+            layer: "A",
+            status: "enabled",
+          }),
+        },
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      expect((await getRaw(ctx.port, "/operators/writing")).status).toBe(401);
+      expect(
+        (await getRaw(ctx.port, "/operators/writing", {
+          authorization: `Bearer ${RESUME_TOKEN}`,
+        })).status,
+      ).toBe(401);
+
+      const ok = await getRaw(ctx.port, "/operators/writing", {
+        authorization: `Bearer ${TOKEN}`,
+      });
+      expect(ok.status).toBe(200);
+      expect(JSON.parse(ok.text)).toEqual({
+        operator: {
+          surface: "writing",
+          layer: "A",
+          status: "enabled",
+        },
+      });
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("invokes Writing Operator through the existing inbound handler with surface metadata", async () => {
+    const ctx = setup({
+      operators: {
+        writing: {
+          getSnapshot: async () => ({ surface: "writing" }),
+        },
+      },
+    });
+    await ctx.ch.start(async (req) => {
+      ctx.received.push(req);
+    });
+    try {
+      const r = await postJson(
+        ctx.port,
+        "/operators/writing/invoke",
+        { user: "writer", content: "draft this" },
+        { authorization: `Bearer ${TOKEN}` },
+      );
+      expect(r.status).toBe(202);
+      await new Promise((r) => setTimeout(r, 30));
+      expect(ctx.received).toHaveLength(1);
+      expect(ctx.received[0]?.metadata).toMatchObject({
+        reply_to: "writer",
+        "blue_tanuki.authority_context": "gateway_internal_v1",
+        "blue_tanuki.operator_surface": "writing",
+      });
     } finally {
       await ctx.teardown();
     }

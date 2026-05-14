@@ -38,6 +38,13 @@ export interface ChannelPluginOptions {
   action: string;
 }
 
+export interface SurfacePluginOptions {
+  package_name: string;
+  export_key?: string;
+  required_permissions: readonly string[];
+  action: string;
+}
+
 const CORE_PACKAGE = "@blue-tanuki/core";
 const HDS_PACKAGE = "@blue-tanuki/hds-brain";
 
@@ -380,6 +387,11 @@ export class PluginRuntime {
     return new (ctor as new (...args: unknown[]) => T)(
       ...(opts.constructor_args ?? []),
     );
+  }
+
+  getSurface<T>(opts: SurfacePluginOptions): T {
+    this.requirePermissions(opts.package_name, opts.required_permissions, opts.action);
+    return this.getExport(opts.package_name, opts.export_key ?? "surface") as T;
   }
 
   enforceSessionConfig(env: Env): void {

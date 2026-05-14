@@ -1857,6 +1857,57 @@ pnpm docs:check
 
 ---
 
+# Phase 11-S6 - Writing Operator Implementation
+
+## Objective
+
+Implement the Writing Operator first-party surface as a Layer A downstream device under HDS-BRAIN authority.
+
+## Scope
+
+Create:
+
+```txt
+packages/operator-writing/
+docs/phase11-s6-writing-operator.md
+```
+
+Update:
+
+```txt
+apps/gateway/src/plugin_loader.ts
+apps/gateway/src/serve.ts
+packages/hds-brain/src/frame.ts
+packages/hds-brain/src/types.ts
+docs/operator-surfaces/WRITING_OPERATOR.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+CHANGELOG.md
+```
+
+## Non-Goals
+
+- Daily Operator implementation
+- Developer Operator implementation
+- new raw authority, filesystem, network, credential, or external write capability
+- Layer B plugin creation
+- installer or resident app implementation
+- version promotion
+
+## Completion Notes
+
+- Added `@blue-tanuki/operator-writing` with operation specs for drafting, proofreading, summarization, translation, sandboxed file read/write/edit, Gmail write, and Google Drive write.
+- L1 / L2 / L3 boundaries are explicit in the surface package.
+- HDS-BRAIN frame recognition records Writing Operator binding while keeping the process under HDS authority.
+- Gateway plugin loader now supports first-party surface exports after manifest permission checks.
+- WebChat runtime snapshot exposes `operator_surfaces.writing`.
+- WebChat exposes `GET /operators/writing` and `POST /operators/writing/invoke` using the existing inbound bearer token and inbound handler.
+- Conformance coverage records surface registration, metadata non-escalation, digest-only invocation traces, and plugin permission enforcement.
+- Active execution lane advances to Phase 11-S7 Daily Operator Implementation.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -1947,7 +1998,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S6 Writing Operator Implementation
+Phase 11-S7 Daily Operator Implementation
 ```
 
-Phase 11-S5 is complete. Stop at the Phase 11-S6 audit boundary before implementing the Writing Operator.
+Phase 11-S6 is complete. Proceed to Phase 11-S7 Daily Operator Implementation.

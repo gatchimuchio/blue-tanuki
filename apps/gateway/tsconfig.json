@@ -14,6 +14,7 @@
     { "path": "../../packages/channel-webchat" },
     { "path": "../../packages/channel-slack" },
     { "path": "../../packages/channel-discord" },
-    { "path": "../../packages/channel-telegram" }
+    { "path": "../../packages/channel-telegram" },
+    { "path": "../../packages/operator-writing" }
   ]
 }

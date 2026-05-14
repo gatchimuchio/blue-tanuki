@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "name": "@blue-tanuki/operator-writing",
+  "version": "1.0.0-rc.1",
+  "kind": "core",
+  "entry": "./dist/index.js",
+  "permissions": [
+    "tool:file.search",
+    "fs:read",
+    "tool:file.write",
+    "tool:file.edit",
+    "fs:write",
+    "tool:gmail.write",
+    "tool:google.drive.write",
+    "network:googleapis.com",
+    "secrets:GOOGLE_ACCESS_TOKEN",
+    "secrets:GMAIL_ACCESS_TOKEN",
+    "secrets:GOOGLE_DRIVE_ACCESS_TOKEN",
+    "google:gmail.write",
+    "google:drive.write",
+    "external:send",
+    "email:send"
+  ],
+  "exports": {
+    "default": "getWritingSurfaceSnapshot",
+    "surface": "getWritingSurfaceSnapshot"
+  },
+  "description": "Layer A Writing Operator surface. It declares only existing downstream file, Google, Gmail, and LLM-adjacent capabilities; it does not add authority."
+}

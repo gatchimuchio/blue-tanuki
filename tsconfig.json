@@ -12,6 +12,7 @@
     { "path": "./packages/channel-telegram" },
     { "path": "./packages/channel-teams" },
     { "path": "./packages/channel-line" },
+    { "path": "./packages/operator-writing" },
     { "path": "./apps/gateway" }
   ]
 }

@@ -34,6 +34,20 @@
   - `ApprovalRisk` は `low | medium | high` の3段階であること
   - `ApprovalLevel` が L1/L2/L3 として authority trace に残ること
   - full access / reusable grant が L3 final-review を bypass しないこと
+- `packages/operator-writing/test/writing.test.ts`
+  - Writing Operator surface registration
+  - L1 / L2 / L3 operation boundary declaration
+  - digest-only invocation trace helpers
+  - no raw authority capability declaration
+- `packages/hds-brain/test/operator_surface.test.ts`
+  - Writing Operator frame recognition
+  - untrusted metadata does not select a surface
+  - surface recognition leaves the process as HDS-owned downstream chat
+- `apps/gateway/test/plugin_loader.test.ts`
+  - first-party surface exports are loaded only after manifest permission checks
+- `packages/channel-webchat/test/webchat.test.ts`
+  - Writing Operator Control Center endpoints require inbound auth
+  - Writing Operator invoke enters the existing inbound handler with gateway-owned surface metadata
 - `apps/gateway/test/doctor.test.ts`
   - doctor が manifest / compatibility matrix / schedule config の release gate を表示すること
 
@@ -46,6 +60,7 @@
 - Audit trace compatibility tests
 - Runtime invariant preservation tests
 - Runtime automation containment tests
+- First-party operator surface tests
 - Preview quarantine rule
 - Main release gate rule
 

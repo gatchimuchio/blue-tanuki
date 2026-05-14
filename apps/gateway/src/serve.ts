@@ -29,6 +29,10 @@ import type {
   WebChatAuthorityTraceItem,
   WebChatResumeContext,
 } from "@blue-tanuki/channel-webchat";
+import {
+  WRITING_OPERATOR_REQUIRED_PERMISSIONS,
+  type WritingSurfaceSnapshot,
+} from "@blue-tanuki/operator-writing";
 import { renderCommandOutput } from "./result_render.js";
 import { approvalDeniedFeedback, approvalRequiredMessage, buildApprovalRuntime } from "./approval_runtime.js";
 import { loadPluginRuntime } from "./plugin_loader.js";
@@ -89,6 +93,11 @@ export async function serve(): Promise<ServeShutdown> {
   plugins.enforceLLMConfig(process.env);
   plugins.enforceSessionConfig(process.env);
   plugins.enforceAuditConfig(process.env);
+  const writingSurfaceSnapshot = plugins.getSurface<() => WritingSurfaceSnapshot>({
+    package_name: "@blue-tanuki/operator-writing",
+    required_permissions: WRITING_OPERATOR_REQUIRED_PERMISSIONS,
+    action: "register writing operator surface",
+  });
 
   gatewayLog.info("BLUE-TANUKI starting (Phase 5-S2: plugin-loaded serve mode)");
   gatewayLog.info("LLM config", describeLLMConfig());
@@ -294,6 +303,9 @@ export async function serve(): Promise<ServeShutdown> {
             hds: hdsSnapshot,
             pending_approvals: pendingApprovals,
             scheduled_tasks: cron.snapshot(),
+            operator_surfaces: {
+              writing: writingSurfaceSnapshot(),
+            },
             runtime_schedules_count: runtimeSchedulesCount,
             pending_schedule_approvals_count: pendingScheduleApprovalsCount,
             runtime_schedules: runtimeSchedules.snapshot(),
@@ -322,6 +334,11 @@ export async function serve(): Promise<ServeShutdown> {
       },
       notifications: {
         list: async () => residentNotificationSnapshot(),
+      },
+      operators: {
+        writing: {
+          getSnapshot: async () => writingSurfaceSnapshot(),
+        },
       },
       onResume: async (
         request_id: string,

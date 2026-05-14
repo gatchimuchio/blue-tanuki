@@ -6,6 +6,8 @@ Writing Operator is the first-party surface for drafting, editing, proofreading,
 
 It is a Layer A surface and a downstream device, not an authority source.
 
+Phase 11-S6 implements this surface in `packages/operator-writing/` and exposes its state through the Gateway runtime snapshot and WebChat `/operators/writing` endpoints.
+
 ## 2. Scope (in-scope user goals)
 
 - draft text
@@ -95,6 +97,13 @@ Phase 11-S6 must add tests for:
 - final-review bypass denial
 - capability envelope preservation
 
+Implementation evidence:
+
+- `packages/operator-writing/test/writing.test.ts`
+- `packages/hds-brain/test/operator_surface.test.ts`
+- `apps/gateway/test/plugin_loader.test.ts`
+- `packages/channel-webchat/test/webchat.test.ts`
+
 ## 11. Cross-References
 
 - [Shared Substrate](SHARED_SUBSTRATE.md)
@@ -102,3 +111,4 @@ Phase 11-S6 must add tests for:
 - [Conformance](../CONFORMANCE.md)
 - [Security](../../SECURITY.md)
 - [Configuration](../../CONFIG.md)
+- [Phase 11-S6 Writing Operator Implementation](../phase11-s6-writing-operator.md)
