@@ -58,3 +58,15 @@ Channel metadata must never escalate authority.
 ## 7. Audit Compatibility
 
 Adapter は audit hash-chain を壊さない。Adapter trace は request_id、channel、operation、capability、recoverability、approval state を追跡できる形にする。
+
+## 8. Layer B Review References
+
+Adapter / plugin / skill acceptance is governed by:
+
+- [Plugin Review Gate](PLUGIN_REVIEW_GATE.md)
+- [Plugin HIG](PLUGIN_HIG.md)
+- [Skill Loader Contract](SKILL_LOADER_CONTRACT.md)
+- [Capability Envelope](CAPABILITY_ENVELOPE.md)
+- [Conformance](CONFORMANCE.md)
+
+Adapters remain Layer B unless explicitly promoted through documented review. Layer B cannot modify Layer A authority, Approval Gate, Runtime Invariants, or audit format.

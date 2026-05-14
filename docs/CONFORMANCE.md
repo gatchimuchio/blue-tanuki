@@ -40,6 +40,8 @@
 ## Required Test Groups
 
 - Adapter conformance tests
+- Plugin review gate tests
+- Skill loader contract tests
 - Permission enforcement tests
 - Audit trace compatibility tests
 - Runtime invariant preservation tests
@@ -61,6 +63,27 @@ adapter は以下を test で示す。
 - manifest に宣言した capability だけを使う
 - undeclared network / fs / process / credential / memory / notification access は拒否される
 - capability 不足時は fail closed する
+
+## Plugin / Skill Conformance Tests
+
+Layer B plugin / skill submissions must include tests for:
+
+- manifest schema validation
+- declared capability use
+- undeclared capability hard reject
+- HDS authority non-bypass
+- Approval Gate non-bypass
+- audit trace compatibility
+- credential redaction
+- disable / revoke fail-closed behavior
+- no hot reload for skills
+- no external npm dynamic import at runtime
+
+Review docs:
+
+- [Plugin Review Gate](PLUGIN_REVIEW_GATE.md)
+- [Plugin HIG](PLUGIN_HIG.md)
+- [Skill Loader Contract](SKILL_LOADER_CONTRACT.md)
 
 ## Runtime Automation Tests
 

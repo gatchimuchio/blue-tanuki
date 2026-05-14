@@ -22,10 +22,11 @@ All errors must map to typed recoverable / non-recoverable errors.
 1. `AGENTS.md` を読む。
 2. `docs/ROADMAP.md` の Sacred Constraints を確認する。
 3. `docs/ADAPTER_CONTRACT.md` で adapter boundary を確認する。
-4. manifest に capability を宣言する。
-5. adapter を preview として実装する。
-6. `docs/CONFORMANCE.md` に沿って tests を追加する。
-7. main release gate を通るまで first-party main として扱わない。
+4. `docs/PLUGIN_REVIEW_GATE.md` / `docs/PLUGIN_HIG.md` / `docs/SKILL_LOADER_CONTRACT.md` で Layer B review boundary を確認する。
+5. manifest に capability を宣言する。
+6. adapter / plugin / skill を preview として実装する。
+7. `docs/CONFORMANCE.md` に沿って tests を追加する。
+8. main release gate を通るまで first-party main として扱わない。
 
 ## Prohibited Shortcuts
 
@@ -34,3 +35,17 @@ All errors must map to typed recoverable / non-recoverable errors.
 - memory 参照を permission escalation に使う
 - manifest にない secret / fs / network / process access を使う
 - preview code を support level 未記載で main release に入れる
+
+## Third-Party Plugin / Skill Development
+
+Third-party plugin and skill work belongs to Layer B.
+
+Before implementation, read:
+
+- [Plugin Review Gate](PLUGIN_REVIEW_GATE.md)
+- [Plugin HIG](PLUGIN_HIG.md)
+- [Skill Loader Contract](SKILL_LOADER_CONTRACT.md)
+- [Capability Envelope](CAPABILITY_ENVELOPE.md)
+- [Conformance](CONFORMANCE.md)
+
+Layer B code must be downstream-only, manifest-declared, fail-closed, audit-compatible, and readable enough for review. It may extend Layer A first-party surfaces, but it may not replace them or create a parallel authority path.

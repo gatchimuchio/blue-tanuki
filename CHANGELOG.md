@@ -32,6 +32,7 @@
 - Added Phase Completion Discipline to `AGENTS.md` and changed backup policy to the fixed two-generation `codex/backup-main` / `codex/backup-main-prev` model.
 - Added Phase 11-S3 strategic frame and GA bar closure docs, including Layer A/B strategy, OpenClaw two-dimensional position, and GA public-claim eligibility.
 - Added Phase 11-S4 first-party operator surface specifications for Writing, Daily, and Developer Operator, plus shared substrate rules and AGENTS.md surface governance.
+- Added Phase 11-S5 platform extension surface specifications for Plugin Review Gate, Plugin HIG, and Skill Loader Contract, plus Layer B review cross-references.
 
 ## 0.1.0 - 2026-05-06
 

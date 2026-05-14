@@ -1788,6 +1788,75 @@ pnpm docs:check
 
 ---
 
+# Phase 11-S5 — Platform Extension Surface Specification
+
+## Objective
+
+Specify the Layer B platform extension boundary: Plugin Review Gate, Plugin HIG, and Skill Loader Contract.
+
+This phase is documentation-only. Implementation comes in Phase 11-S12.
+
+## Scope
+
+Create:
+
+```txt
+docs/PLUGIN_REVIEW_GATE.md
+docs/PLUGIN_HIG.md
+docs/SKILL_LOADER_CONTRACT.md
+```
+
+Update:
+
+```txt
+AGENTS.md
+docs/INDEX.md
+docs/ADAPTER_CONTRACT.md
+docs/CAPABILITY_ENVELOPE.md
+docs/CONFORMANCE.md
+docs/LLM_DEVELOPMENT_GUIDE.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+CHANGELOG.md
+```
+
+## Non-Goals
+
+- Plugin Review Gate implementation
+- skill loader implementation
+- existing plugin loader changes
+- new plugin addition
+- version promotion
+- compatibility matrix changes
+
+## Required Checks
+
+- `docs/PLUGIN_REVIEW_GATE.md`, `docs/PLUGIN_HIG.md`, and `docs/SKILL_LOADER_CONTRACT.md` exist.
+- Each new document contains sections 1 through 10.
+- Adapter Contract, Capability Envelope, Conformance, and LLM Development Guide reference the new Layer B docs.
+- WhatsApp unofficial route rejection remains explicit.
+- AGENTS.md Adapter Rule contains Layer A / Layer B Boundary.
+- Implementation code is unchanged.
+- Package versions remain `1.0.0-rc.1`.
+
+## Validation Commands
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+pnpm docs:check
+```
+
+## Completion Notes
+
+- Created Layer B platform extension docs.
+- Added review boundary cross-references to existing adapter/capability/conformance/development docs.
+- Added AGENTS.md Layer A / Layer B Boundary under Adapter Rule.
+- Active execution lane advances to Phase 11-S6 Writing Operator Implementation.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -1878,7 +1947,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S5 Platform Extension Surface Specification
+Phase 11-S6 Writing Operator Implementation
 ```
 
-Phase 11-S4 is complete. Stop at the Phase 11-S5 audit boundary before specifying the platform extension surface.
+Phase 11-S5 is complete. Stop at the Phase 11-S6 audit boundary before implementing the Writing Operator.

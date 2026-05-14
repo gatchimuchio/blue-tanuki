@@ -119,8 +119,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | completed |
 | 11-S3 | F | Strategic Frame and GA Bar Closure | P0 | completed |
 | 11-S4 | F | First-Party Surface Specification | P0 | completed |
-| 11-S5 | F | Platform Extension Surface Specification | P0 | active |
-| 11-S6 | F | Writing Operator Implementation | P0 | 11-S4 |
+| 11-S5 | F | Platform Extension Surface Specification | P0 | completed |
+| 11-S6 | F | Writing Operator Implementation | P0 | active |
 | 11-S7 | F | Daily Operator Implementation | P0 | 11-S4 |
 | 11-S8 | F | Developer Operator Implementation | P0 | 11-S4 |
 | 11-S9 | F | Installer and Setup UX | P0 | 11-S6/11-S7/11-S8 |
@@ -132,10 +132,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S5 Platform Extension Surface Specification
+Phase 11-S6 Writing Operator Implementation
 ```
 
-Phase 11-S4 is complete. Next work is Phase 11-S5 Platform Extension Surface Specification.
+Phase 11-S5 is complete. Next work is Phase 11-S6 Writing Operator Implementation.
 
 ## 4. Completed Phase Summaries
 
@@ -272,6 +272,14 @@ Phase 11-S4 is complete. Next work is Phase 11-S5 Platform Extension Surface Spe
 - Shared substrate for HDS-BRAIN authority, Approval Gate, audit, Runtime Invariants, and downstream tool dispatch documented
 - `AGENTS.md` now includes the First-Party Surface Rule before Adapter Rule
 - Active execution lane advances to Phase 11-S5 Platform Extension Surface Specification
+
+### Phase 11-S5
+
+- Plugin Review Gate, Plugin HIG, and Skill Loader Contract docs created
+- Layer B review boundary connected to Adapter Contract, Capability Envelope, Conformance, and LLM Development Guide
+- AGENTS.md Adapter Rule now records the Layer A / Layer B Boundary references
+- WhatsApp unofficial routes, agent-driven authority, emotion functionality, and 5-minute setup guarantee claims remain reject criteria
+- Active execution lane advances to Phase 11-S6 Writing Operator Implementation
 
 ## 5. Non-Goals
 

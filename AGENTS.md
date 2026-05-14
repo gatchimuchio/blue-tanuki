@@ -841,6 +841,23 @@ Adapters must not:
 
 (Memory non-authority rules are covered by the Memory / F-reference Rule above and apply to adapters as well.)
 
+### Layer A / Layer B Boundary
+
+Adapter / plugin / skill は Layer B (third-party extension surface) に属する。
+
+Layer A (pre-installed responsibility) は HDS-BRAIN authority / Approval / Audit / first-party channels / first-party operator surfaces / installer / Control Center / resident application から構成され、Layer B 経路で Layer A authority が破られることは禁止である。
+
+Layer B の境界は次の文書群で確定する:
+
+- `docs/PLUGIN_REVIEW_GATE.md`
+- `docs/PLUGIN_HIG.md`
+- `docs/SKILL_LOADER_CONTRACT.md`
+- `docs/ADAPTER_CONTRACT.md`
+- `docs/CAPABILITY_ENVELOPE.md`
+- `docs/CONFORMANCE.md`
+
+新規 plugin / skill / adapter を作成・受け入れる際は本群を通読し、認められない受け入れは reject する。
+
 ---
 
 ## Channel Policy

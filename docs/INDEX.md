@@ -28,6 +28,14 @@
 - [Conformance](CONFORMANCE.md)
 - [Security Review Checklist](SECURITY_REVIEW_CHECKLIST.md)
 
+## Platform Extension Surface
+
+- [Plugin Review Gate](PLUGIN_REVIEW_GATE.md)
+- [Plugin HIG](PLUGIN_HIG.md)
+- [Skill Loader Contract](SKILL_LOADER_CONTRACT.md)
+- [Adapter Contract](ADAPTER_CONTRACT.md)
+- [LLM Development Guide](LLM_DEVELOPMENT_GUIDE.md)
+
 ## Operation
 
 - [Configuration](../CONFIG.md)
