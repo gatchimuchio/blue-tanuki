@@ -1717,6 +1717,77 @@ pnpm docs:check
 
 ---
 
+# Phase 11-S4 — First-Party Surface Specification
+
+## Objective
+
+Specify the three v1.0 GA first-party operator surfaces without implementing them.
+
+The surfaces are Writing Operator, Daily Operator, and Developer Operator. They are equal Layer A surfaces with no priority order.
+
+## Scope
+
+Create:
+
+```txt
+docs/operator-surfaces/INDEX.md
+docs/operator-surfaces/SHARED_SUBSTRATE.md
+docs/operator-surfaces/WRITING_OPERATOR.md
+docs/operator-surfaces/DAILY_OPERATOR.md
+docs/operator-surfaces/DEVELOPER_OPERATOR.md
+```
+
+Update:
+
+```txt
+AGENTS.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+CHANGELOG.md
+```
+
+## Non-Goals
+
+- implementation code changes
+- new operator packages
+- new tool definitions
+- Approval policy structure changes
+- Plugin Review Gate specification or implementation
+- version promotion
+
+## Required Checks
+
+- All five operator-surface docs exist.
+- Each surface spec contains sections 1 through 11.
+- The three surfaces are described as equal with no priority ordering.
+- Existing downstream tools are referenced accurately.
+- Each surface records Layer A / Layer B boundaries.
+- `AGENTS.md` contains First-Party Surface Rule before Adapter Rule.
+- Adapter Rule remains intact.
+- `docs/INDEX.md` references `docs/operator-surfaces/INDEX.md`.
+- `docs/ROADMAP.md` records Phase 11-S4 completion and identifies Phase 11-S5 as current active phase.
+- `CHANGELOG.md` records Phase 11-S4.
+
+## Validation Commands
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+pnpm docs:check
+```
+
+## Completion Notes
+
+- Created `docs/operator-surfaces/`.
+- Defined Writing Operator, Daily Operator, and Developer Operator as equal first-party surfaces.
+- Defined shared substrate usage for HDS-BRAIN authority, Approval Gate, audit, Runtime Invariants, and downstream tools.
+- Added AGENTS.md First-Party Surface Rule.
+- Active execution lane advances to Phase 11-S5 Platform Extension Surface Specification.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -1807,7 +1878,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S4 First-Party Surface Specification
+Phase 11-S5 Platform Extension Surface Specification
 ```
 
-Phase 11-S3 is complete. Stop at the Phase 11-S4 audit boundary before implementing the first-party surface specifications.
+Phase 11-S4 is complete. Stop at the Phase 11-S5 audit boundary before specifying the platform extension surface.

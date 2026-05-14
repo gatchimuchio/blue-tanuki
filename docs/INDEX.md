@@ -11,6 +11,14 @@
 - [v1.0 Release Candidate](v1.0-release-candidate.md) - release-candidate claim, validation, support boundary, and upgrade notes
 - [v1.0 Post-RC Closure Review](v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions
 
+## First-Party Surfaces
+
+- [Operator Surfaces Index](operator-surfaces/INDEX.md) - Writing / Daily / Developer surface overview
+- [Shared Operator Substrate](operator-surfaces/SHARED_SUBSTRATE.md)
+- [Writing Operator](operator-surfaces/WRITING_OPERATOR.md)
+- [Daily Operator](operator-surfaces/DAILY_OPERATOR.md)
+- [Developer Operator](operator-surfaces/DEVELOPER_OPERATOR.md)
+
 ## Security and Authority
 
 - [Security](../SECURITY.md) - HDS authority model and final-review boundary

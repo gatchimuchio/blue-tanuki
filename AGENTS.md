@@ -787,6 +787,35 @@ Any future memory authority change must be a standalone security phase. Do not b
 
 ---
 
+## First-Party Surface Rule
+
+BLUE-TANUKI の first-party operator surface は次の 3 surface である。3 surface は同格、優先順位なし。
+
+- Writing Operator
+- Daily Operator
+- Developer Operator
+
+詳細仕様は `docs/operator-surfaces/` 配下を参照。
+
+Surface 追加 / 変更時の制約:
+
+- Surface は HDS-BRAIN downstream device として実装する
+- Surface 経由で authority 経路を作らない
+- Surface は既存 tool (`file.*` / `shell.*` / `github.*` / `google.*` / `cron.process` / `channel_send` / LLM tool) を downstream として利用し、新規 raw 権限を追加しない
+- L1 / L2 / L3 ApprovalLevel を operation 単位で明示する
+- L3 final-review bypass を作らない
+- audit hash-chain への記録を遵守する
+- containment property を破らない
+- Layer A (プリインストール責任範囲) 内のモジュールであり、Layer B プラグインは surface 機能を拡張できるが置き換えられない
+
+Surface 追加判断:
+
+- 新規 surface の追加は Owner 決定事項
+- v1.0 GA 範囲では 3 surface 固定
+- v1.1 以降の追加は別途 Phase で扱う
+
+---
+
 ## Adapter Rule
 
 A channel / plugin / skill adapter is downstream only.

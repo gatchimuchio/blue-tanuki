@@ -118,8 +118,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S1 | F | v1.0 security review closure | P0 | completed |
 | 11-S2 | F | v1.0 permanent-use release candidate | P0 | completed |
 | 11-S3 | F | Strategic Frame and GA Bar Closure | P0 | completed |
-| 11-S4 | F | First-Party Surface Specification | P0 | active |
-| 11-S5 | F | Platform Extension Surface Specification | P0 | 11-S3 |
+| 11-S4 | F | First-Party Surface Specification | P0 | completed |
+| 11-S5 | F | Platform Extension Surface Specification | P0 | active |
 | 11-S6 | F | Writing Operator Implementation | P0 | 11-S4 |
 | 11-S7 | F | Daily Operator Implementation | P0 | 11-S4 |
 | 11-S8 | F | Developer Operator Implementation | P0 | 11-S4 |
@@ -132,10 +132,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S4 First-Party Surface Specification
+Phase 11-S5 Platform Extension Surface Specification
 ```
 
-Phase 11-S3 is complete. Next work is Phase 11-S4 First-Party Surface Specification.
+Phase 11-S4 is complete. Next work is Phase 11-S5 Platform Extension Surface Specification.
 
 ## 4. Completed Phase Summaries
 
@@ -264,6 +264,14 @@ Phase 11-S3 is complete. Next work is Phase 11-S4 First-Party Surface Specificat
 - Layer A / Layer B split, OpenClaw two-dimensional position, Stage 1 role, and public claim eligibility recorded
 - `AGENTS.md`, OpenClaw audit, docs index, roadmap, implementation instructions, and changelog aligned for the GA path
 - Active execution lane advances to Phase 11-S4 First-Party Surface Specification
+
+### Phase 11-S4
+
+- First-party operator surface specs created under `docs/operator-surfaces/`
+- Writing Operator, Daily Operator, and Developer Operator defined as equal Layer A surfaces
+- Shared substrate for HDS-BRAIN authority, Approval Gate, audit, Runtime Invariants, and downstream tool dispatch documented
+- `AGENTS.md` now includes the First-Party Surface Rule before Adapter Rule
+- Active execution lane advances to Phase 11-S5 Platform Extension Surface Specification
 
 ## 5. Non-Goals
 
