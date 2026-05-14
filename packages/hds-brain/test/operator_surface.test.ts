@@ -92,4 +92,41 @@ describe("operator surface framing", () => {
       authority: "downstream_device_only",
     });
   });
+
+  it("recognizes Developer Operator without changing process authority", () => {
+    const prefixed = frame(
+      {
+        id: "req-6",
+        channel: "webchat",
+        user: "alice",
+        content: "developer: inspect the failing test",
+        timestamp: 1,
+      },
+      { default_policy: DEFAULT_POLICY },
+    );
+    expect(prefixed.operator_surface?.id).toBe("developer");
+    expect(prefixed.process.process_kind).toBe("chat");
+    expect(prefixed.world_closure.x).toContain("surface:developer");
+
+    const trusted = frame(
+      {
+        id: "req-7",
+        channel: "webchat",
+        user: "alice",
+        content: "inspect the repo",
+        timestamp: 1,
+        metadata: {
+          "blue_tanuki.authority_context": "gateway_internal_v1",
+          "blue_tanuki.operator_surface": "developer",
+        },
+      },
+      { default_policy: DEFAULT_POLICY },
+    );
+    expect(trusted.operator_surface).toEqual({
+      id: "developer",
+      layer: "A",
+      source: "gateway_internal_metadata",
+      authority: "downstream_device_only",
+    });
+  });
 });

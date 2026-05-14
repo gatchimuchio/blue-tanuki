@@ -16,6 +16,7 @@
     { "path": "../../packages/channel-discord" },
     { "path": "../../packages/channel-telegram" },
     { "path": "../../packages/operator-daily" },
+    { "path": "../../packages/operator-developer" },
     { "path": "../../packages/operator-writing" }
   ]
 }

@@ -1,5 +1,7 @@
 # Developer Operator
 
+Phase 11-S8 implements this surface in `packages/operator-developer/` and exposes its state through the Gateway runtime snapshot and WebChat `/operators/developer` endpoints.
+
 ## 1. Purpose
 
 Developer Operator is the first-party surface for code-reading, code-editing support, local file work, guarded shell execution, GitHub operations, and browser preview work under HDS-BRAIN authority.
@@ -89,7 +91,7 @@ Developer Operator uses the shared substrate for:
 
 ## 10. Conformance Test Requirements (Phase 11-S8 target)
 
-Phase 11-S8 must add tests for:
+Phase 11-S8 adds tests for:
 
 - Developer surface registration
 - L1 file/GitHub read paths
@@ -106,4 +108,5 @@ Phase 11-S8 must add tests for:
 - [Capability Envelope](../CAPABILITY_ENVELOPE.md)
 - [Conformance](../CONFORMANCE.md)
 - [GitHub write phase](../phase8-s4-github-write.md)
+- [Phase 11-S8 Developer Operator Implementation](../phase11-s8-developer-operator.md)
 - [Security](../../SECURITY.md)

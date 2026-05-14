@@ -122,8 +122,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S5 | F | Platform Extension Surface Specification | P0 | completed |
 | 11-S6 | F | Writing Operator Implementation | P0 | completed |
 | 11-S7 | F | Daily Operator Implementation | P0 | completed |
-| 11-S8 | F | Developer Operator Implementation | P0 | active |
-| 11-S9 | F | Installer and Setup UX | P0 | 11-S6/11-S7/11-S8 |
+| 11-S8 | F | Developer Operator Implementation | P0 | completed |
+| 11-S9 | F | Installer and Setup UX | P0 | active |
 | 11-S10 | F | Resident Application Integration | P0 | 11-S9 |
 | 11-S11 | F | Channel First-Party Promotion | P0 | 11-S3 |
 | 11-S12 | F | Plugin Review Gate Implementation | P0 | 11-S5 |
@@ -132,10 +132,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S8 Developer Operator Implementation
+Phase 11-S9 Installer and Setup UX
 ```
 
-Phase 11-S7 is complete. Next work is Phase 11-S8 Developer Operator Implementation.
+Phase 11-S8 is complete. Next work is Phase 11-S9 Installer and Setup UX.
 
 ## 4. Completed Phase Summaries
 
@@ -301,6 +301,16 @@ Phase 11-S7 is complete. Next work is Phase 11-S8 Developer Operator Implementat
 - Conformance evidence added for Daily Brief env compatibility, metadata non-escalation, schedule mutation final-review declaration, and permission-enforced surface loading
 - Active execution lane advances to Phase 11-S8 Developer Operator Implementation
 
+### Phase 11-S8
+
+- `@blue-tanuki/operator-developer` workspace package added as a Layer A first-party surface
+- Developer operation specs define L1 file/GitHub read, L2 local file write/edit and browser snapshot, and L3 shell / GitHub write / browser automation boundaries
+- Browser automation remains preview and disabled-by-default behind `BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW=1`
+- HDS-BRAIN frame recognition records Developer Operator surface binding without adding authority
+- Gateway exposes Developer Operator state in the runtime snapshot, and WebChat exposes authenticated `/operators/developer` display and invoke endpoints
+- Conformance evidence added for Developer surface registration, preview quarantine preservation, metadata non-escalation, and permission-enforced surface loading
+- Active execution lane advances to Phase 11-S9 Installer and Setup UX
+
 ## 5. Non-Goals
 
 Do not add:
@@ -329,6 +339,7 @@ Do not add:
 - [v1.0 Post-RC Closure Review](v1.0-post-rc-closure-review.md)
 - [Phase 11-S6 Writing Operator Implementation](phase11-s6-writing-operator.md)
 - [Phase 11-S7 Daily Operator Implementation](phase11-s7-daily-operator.md)
+- [Phase 11-S8 Developer Operator Implementation](phase11-s8-developer-operator.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

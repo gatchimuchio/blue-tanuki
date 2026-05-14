@@ -31,6 +31,7 @@
     "@blue-tanuki/channel-teams": "workspace:*",
     "@blue-tanuki/channel-line": "workspace:*",
     "@blue-tanuki/operator-daily": "workspace:*",
+    "@blue-tanuki/operator-developer": "workspace:*",
     "@blue-tanuki/operator-writing": "workspace:*"
   }
 }

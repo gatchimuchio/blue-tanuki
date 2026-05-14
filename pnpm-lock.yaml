@@ -59,6 +59,9 @@ importers:
       '@blue-tanuki/operator-daily':
         specifier: workspace:*
         version: link:../../packages/operator-daily
+      '@blue-tanuki/operator-developer':
+        specifier: workspace:*
+        version: link:../../packages/operator-developer
       '@blue-tanuki/operator-writing':
         specifier: workspace:*
         version: link:../../packages/operator-writing
@@ -152,6 +155,12 @@ importers:
         version: link:../protocol
 
   packages/operator-daily:
+    dependencies:
+      '@blue-tanuki/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
+  packages/operator-developer:
     dependencies:
       '@blue-tanuki/protocol':
         specifier: workspace:*

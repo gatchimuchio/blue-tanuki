@@ -20,6 +20,7 @@
 - [Developer Operator](operator-surfaces/DEVELOPER_OPERATOR.md)
 - [Phase 11-S6 Writing Operator Implementation](phase11-s6-writing-operator.md)
 - [Phase 11-S7 Daily Operator Implementation](phase11-s7-daily-operator.md)
+- [Phase 11-S8 Developer Operator Implementation](phase11-s8-developer-operator.md)
 
 ## Security and Authority
 

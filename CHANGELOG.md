@@ -35,6 +35,7 @@
 - Added Phase 11-S5 platform extension surface specifications for Plugin Review Gate, Plugin HIG, and Skill Loader Contract, plus Layer B review cross-references.
 - Added Phase 11-S6 Writing Operator implementation with `@blue-tanuki/operator-writing`, HDS-BRAIN surface framing, Gateway surface export loading, runtime snapshot and `/operators/writing` exposure, and conformance coverage.
 - Added Phase 11-S7 Daily Operator implementation with `@blue-tanuki/operator-daily`, Daily Brief env compatibility snapshots, HDS-BRAIN surface framing, runtime snapshot and `/operators/daily` exposure, and conformance coverage.
+- Added Phase 11-S8 Developer Operator implementation with `@blue-tanuki/operator-developer`, browser-preview quarantine preservation, HDS-BRAIN surface framing, runtime snapshot and `/operators/developer` exposure, and conformance coverage.
 
 ## 0.1.0 - 2026-05-06
 

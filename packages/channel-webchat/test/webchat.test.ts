@@ -1626,3 +1626,73 @@ describe("WebChatChannel - Daily Operator API", () => {
     }
   });
 });
+
+describe("WebChatChannel - Developer Operator API", () => {
+  it("serves Developer Operator snapshot only with the inbound token", async () => {
+    const ctx = setup({
+      operators: {
+        developer: {
+          getSnapshot: async () => ({
+            surface: "developer",
+            layer: "A",
+            status: "enabled",
+          }),
+        },
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      expect((await getRaw(ctx.port, "/operators/developer")).status).toBe(401);
+      expect(
+        (await getRaw(ctx.port, "/operators/developer", {
+          authorization: `Bearer ${RESUME_TOKEN}`,
+        })).status,
+      ).toBe(401);
+
+      const ok = await getRaw(ctx.port, "/operators/developer", {
+        authorization: `Bearer ${TOKEN}`,
+      });
+      expect(ok.status).toBe(200);
+      expect(JSON.parse(ok.text)).toEqual({
+        operator: {
+          surface: "developer",
+          layer: "A",
+          status: "enabled",
+        },
+      });
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("invokes Developer Operator through the existing inbound handler with surface metadata", async () => {
+    const ctx = setup({
+      operators: {
+        developer: {
+          getSnapshot: async () => ({ surface: "developer" }),
+        },
+      },
+    });
+    await ctx.ch.start(async (req) => {
+      ctx.received.push(req);
+    });
+    try {
+      const r = await postJson(
+        ctx.port,
+        "/operators/developer/invoke",
+        { user: "developer-user", content: "inspect failing test" },
+        { authorization: `Bearer ${TOKEN}` },
+      );
+      expect(r.status).toBe(202);
+      await new Promise((r) => setTimeout(r, 30));
+      expect(ctx.received).toHaveLength(1);
+      expect(ctx.received[0]?.metadata).toMatchObject({
+        reply_to: "developer-user",
+        "blue_tanuki.authority_context": "gateway_internal_v1",
+        "blue_tanuki.operator_surface": "developer",
+      });
+    } finally {
+      await ctx.teardown();
+    }
+  });
+});

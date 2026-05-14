@@ -27,6 +27,10 @@ import {
   DAILY_OPERATOR_REQUIRED_PERMISSIONS,
   type DailySurfaceSnapshot,
 } from "@blue-tanuki/operator-daily";
+import {
+  DEVELOPER_OPERATOR_REQUIRED_PERMISSIONS,
+  type DeveloperSurfaceSnapshot,
+} from "@blue-tanuki/operator-developer";
 import type {
   WebChatChannel,
   WebChatApprovalQueueItem,
@@ -101,6 +105,11 @@ export async function serve(): Promise<ServeShutdown> {
     package_name: "@blue-tanuki/operator-daily",
     required_permissions: DAILY_OPERATOR_REQUIRED_PERMISSIONS,
     action: "register daily operator surface",
+  });
+  const developerSurfaceSnapshot = plugins.getSurface<() => DeveloperSurfaceSnapshot>({
+    package_name: "@blue-tanuki/operator-developer",
+    required_permissions: DEVELOPER_OPERATOR_REQUIRED_PERMISSIONS,
+    action: "register developer operator surface",
   });
   const writingSurfaceSnapshot = plugins.getSurface<() => WritingSurfaceSnapshot>({
     package_name: "@blue-tanuki/operator-writing",
@@ -320,6 +329,7 @@ export async function serve(): Promise<ServeShutdown> {
                 scheduled_tasks: scheduledTasks,
                 runtime_schedules: runtimeScheduleSnapshot,
               }) satisfies DailySurfaceSnapshot,
+              developer: developerSurfaceSnapshot(),
               writing: writingSurfaceSnapshot(),
             },
             runtime_schedules_count: runtimeSchedulesCount,
@@ -358,6 +368,9 @@ export async function serve(): Promise<ServeShutdown> {
             scheduled_tasks: cron.snapshot(),
             runtime_schedules: runtimeSchedules.snapshot(),
           }),
+        },
+        developer: {
+          getSnapshot: async () => developerSurfaceSnapshot(),
         },
         writing: {
           getSnapshot: async () => writingSurfaceSnapshot(),

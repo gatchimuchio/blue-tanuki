@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "name": "@blue-tanuki/operator-developer",
+  "version": "1.0.0-rc.1",
+  "kind": "core",
+  "entry": "./dist/index.js",
+  "permissions": [
+    "tool:file.search",
+    "fs:read",
+    "tool:file.write",
+    "tool:file.edit",
+    "fs:write",
+    "tool:github.read",
+    "tool:github.write",
+    "network:github.com",
+    "secrets:GITHUB_TOKEN",
+    "github:issue.write",
+    "github:pr.write",
+    "github:comment.write",
+    "tool:browser.snapshot",
+    "tool:browser.automation",
+    "browser:snapshot",
+    "browser:act",
+    "network:http",
+    "tool:shell.exec",
+    "shell:exec"
+  ],
+  "exports": {
+    "default": "getDeveloperSurfaceSnapshot",
+    "surface": "getDeveloperSurfaceSnapshot"
+  },
+  "description": "Layer A Developer Operator surface. It declares only existing downstream file, shell, GitHub, and browser-preview capabilities; it does not add authority."
+}

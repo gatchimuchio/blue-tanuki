@@ -13,6 +13,7 @@
     { "path": "./packages/channel-teams" },
     { "path": "./packages/channel-line" },
     { "path": "./packages/operator-daily" },
+    { "path": "./packages/operator-developer" },
     { "path": "./packages/operator-writing" },
     { "path": "./apps/gateway" }
   ]

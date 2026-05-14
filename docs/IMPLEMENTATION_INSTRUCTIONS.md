@@ -1959,6 +1959,58 @@ CHANGELOG.md
 
 ---
 
+# Phase 11-S8 - Developer Operator Implementation
+
+## Objective
+
+Implement the Developer Operator first-party surface as a Layer A downstream device under HDS-BRAIN authority.
+
+## Scope
+
+Create:
+
+```txt
+packages/operator-developer/
+docs/phase11-s8-developer-operator.md
+```
+
+Update:
+
+```txt
+apps/gateway/src/serve.ts
+packages/channel-webchat/src/webchat.ts
+packages/hds-brain/src/frame.ts
+packages/hds-brain/src/types.ts
+docs/operator-surfaces/DEVELOPER_OPERATOR.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+CHANGELOG.md
+```
+
+## Non-Goals
+
+- Writing Operator or Daily Operator behavior changes beyond shared endpoint support
+- new raw authority, filesystem, process, GitHub, browser, credential, or external write capability
+- browser automation promotion out of disabled-by-default preview
+- shell or GitHub write final-review relaxation
+- Layer B plugin creation
+- version promotion
+
+## Completion Notes
+
+- Added `@blue-tanuki/operator-developer` with operation specs for file read/write/edit, GitHub read/write, browser snapshot/automation, and shell exec.
+- L1 / L2 / L3 boundaries are explicit in the surface package.
+- Browser automation remains preview and disabled-by-default behind `BLUE_TANUKI_BROWSER_AUTOMATION_PREVIEW=1`.
+- HDS-BRAIN frame recognition records Developer Operator binding while keeping the process under HDS authority.
+- Gateway plugin loader registers the Developer Operator surface only after manifest permission checks.
+- WebChat runtime snapshot exposes `operator_surfaces.developer`.
+- WebChat exposes `GET /operators/developer` and `POST /operators/developer/invoke` using the existing inbound bearer token and inbound handler.
+- Conformance coverage records surface registration, metadata non-escalation, preview quarantine preservation, digest-only traces, and plugin permission enforcement.
+- Active execution lane advances to Phase 11-S9 Installer and Setup UX.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2049,7 +2101,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S8 Developer Operator Implementation
+Phase 11-S9 Installer and Setup UX
 ```
 
-Phase 11-S7 is complete. Proceed to Phase 11-S8 Developer Operator Implementation.
+Phase 11-S8 is complete. Proceed to Phase 11-S9 Installer and Setup UX.

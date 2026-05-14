@@ -200,6 +200,7 @@ export interface WebChatNotificationSurface {
 export interface WebChatOperatorSurfaces {
   writing?: WebChatOperatorSurface;
   daily?: WebChatOperatorSurface;
+  developer?: WebChatOperatorSurface;
 }
 
 export interface WebChatOptions {
@@ -322,6 +323,8 @@ const RESUME_GLOBAL_KEY = "*";
  *   POST /operators/writing/invoke body:{user,content} auth:Bearer inbound-token
  *   GET  /operators/daily auth:Bearer inbound-token
  *   POST /operators/daily/invoke body:{user,content} auth:Bearer inbound-token
+ *   GET  /operators/developer auth:Bearer inbound-token
+ *   POST /operators/developer/invoke body:{user,content} auth:Bearer inbound-token
  *   GET  /ws         query:?ticket=...
  *   GET  /healthz    no auth, not rate-limited
  *
@@ -715,6 +718,10 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
 
     if (url.pathname === "/operators/daily" || url.pathname === "/operators/daily/invoke") {
       await this.handleOperator(req, res, url, "daily");
+      return;
+    }
+    if (url.pathname === "/operators/developer" || url.pathname === "/operators/developer/invoke") {
+      await this.handleOperator(req, res, url, "developer");
       return;
     }
 
@@ -1140,7 +1147,7 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     req: IncomingMessage,
     res: ServerResponse,
     url: URL,
-    surfaceName: "writing" | "daily",
+    surfaceName: "writing" | "daily" | "developer",
   ): Promise<void> {
     const surface = this.opts.operators?.[surfaceName];
     if (!surface) {

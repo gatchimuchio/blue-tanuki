@@ -99,12 +99,25 @@ function resolveOperatorSurface(req: InboundRequest): OperatorSurfaceRef | undef
       authority: "downstream_device_only",
     };
   }
+  if (
+    trimmed.startsWith("/developer") ||
+    trimmed.startsWith("developer:") ||
+    trimmed.startsWith("operator:developer")
+  ) {
+    return {
+      id: "developer",
+      layer: "A",
+      source: "content_prefix",
+      authority: "downstream_device_only",
+    };
+  }
 
   const meta = req.metadata ?? {};
   if (
     meta["blue_tanuki.authority_context"] === "gateway_internal_v1" &&
     (meta["blue_tanuki.operator_surface"] === "writing" ||
-      meta["blue_tanuki.operator_surface"] === "daily")
+      meta["blue_tanuki.operator_surface"] === "daily" ||
+      meta["blue_tanuki.operator_surface"] === "developer")
   ) {
     return {
       id: meta["blue_tanuki.operator_surface"],
