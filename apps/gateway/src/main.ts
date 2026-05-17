@@ -175,6 +175,7 @@ async function runCli(): Promise<void> {
     const feedback = approvalDeniedFeedback(command, approvalEval.reason);
     coreLog.info("approval", { command: command.id.slice(0, 8), decision: approvalEval.decision, operation: approvalEval.context.operation, risk: approvalEval.risk, reason: approvalEval.reason });
     const output = renderCommandOutput(command, feedback);
+    hds.onOutputAudit({ command, feedback, rendered_output: output, target_surface: "cli", request_id: inbound.id });
     if (output) coreLog.info("command.output", { content: output });
     auditLog.info("summary", { entries: hds.getAudit().size(), chain_valid: hds.getAudit().verify() });
     return;
@@ -187,6 +188,10 @@ async function runCli(): Promise<void> {
     status: feedback.status,
     duration_ms: feedback.metrics.duration_ms,
   });
+
+  const output = renderCommandOutput(command, feedback);
+  hds.onFeedback(feedback);
+  hds.onOutputAudit({ command, feedback, rendered_output: output, target_surface: "cli", request_id: inbound.id });
 
   if (feedback.status === "success" && command.type === "llm_call") {
     const result = feedback.result as {
@@ -203,12 +208,9 @@ async function runCli(): Promise<void> {
     coreLog.error("error", { error: feedback.error });
   }
 
-  const output = renderCommandOutput(command, feedback);
   if (output && command.type !== "llm_call") {
     coreLog.info("command.output", { content: output });
   }
-
-  hds.onFeedback(feedback);
 
   auditLog.info("summary", {
     entries: hds.getAudit().size(),

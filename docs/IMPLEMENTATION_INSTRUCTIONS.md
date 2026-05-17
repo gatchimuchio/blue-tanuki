@@ -2133,6 +2133,57 @@ docs/IMPLEMENTATION_INSTRUCTIONS.md
 
 ---
 
+# Phase 12-S1 - HDS-BRAIN Output / Result Audit Plane
+
+## Objective
+
+Route downstream results through HDS-BRAIN's audit plane before final user-visible output or external result handoff.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/src/output_audit.ts
+packages/hds-brain/test/output_audit.test.ts
+docs/hds-brain-output-audit-plane.md
+docs/phase12-s1-output-result-audit-plane.md
+```
+
+Update:
+
+```txt
+packages/hds-brain/src/types.ts
+packages/hds-brain/src/controller.ts
+packages/hds-brain/src/index.ts
+apps/gateway/src/main.ts
+apps/gateway/src/serve.ts
+apps/gateway/src/audit_dump.ts
+apps/gateway/test/audit_dump.test.ts
+packages/channel-webchat/src/webchat.ts
+AGENTS.md
+SECURITY.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+```
+
+## Completion Notes
+
+- Added standalone `OutputAudit` classification and digest module.
+- Added `output_audit` audit record into the HDS hash-chain union.
+- Added `HDSUpperController.onOutputAudit`.
+- Gateway CLI and serve mode now call output audit before final operator log or channel dispatch.
+- Audit dump and authority trace project output audit records without raw output.
+- Active execution lane advances to Phase 12-S2 Local Complete History Substrate.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2223,7 +2274,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S1 HDS-BRAIN Output / Result Audit Plane
+Phase 12-S2 Local Complete History Substrate
 ```
 
-Phase 12-S0 is complete. Proceed to Phase 12-S1 HDS-BRAIN Output / Result Audit Plane before resuming resident application integration.
+Phase 12-S1 is complete. Proceed to Phase 12-S2 Local Complete History Substrate before resuming resident application integration.

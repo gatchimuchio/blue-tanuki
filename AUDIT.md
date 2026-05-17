@@ -54,6 +54,22 @@ Audit expectations:
 - policy, detector, approval, and history updates require L3 final review;
 - Trinity `M` closure failures are suspend conditions, not silent allow conditions.
 
+## Output / result audit
+
+Phase 12-S1 adds `output_audit` records before final user-visible output or external result handoff.
+
+`output_audit` records:
+
+- command id and upstream commit hash;
+- output kind (`llm_raw_output`, `tool_result`, `external_action_result`, `scheduler_result`, `plugin_result`, `noop_result`);
+- feedback status;
+- result digest and rendered output digest when present;
+- target surface;
+- user-visible and external-side-effect flags;
+- `used_for_authority=false`.
+
+Raw LLM/tool output content is not stored in the audit entry. Complete raw history is reserved for the later CompleteHistoryStore phase.
+
 ## Audit dump
 
 ```bash

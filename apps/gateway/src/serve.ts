@@ -242,6 +242,7 @@ export async function serve(): Promise<ServeShutdown> {
         hds.onCommandLifecycle(cmd.id, "approval_rejected", { actor: opts.actor ?? origin.user, reason: evaluation.reason });
         const fb = approvalDeniedFeedback(cmd, evaluation.reason);
         const content = renderCommandOutput(cmd, fb);
+        hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
         if (content) await dispatcher.dispatch({ channel: origin.channel, target: replyTarget(origin), content }, { command_id: cmd.id, upstream_commit_hash: log.commit.hash });
         return { status: "approval_denied" };
       }
@@ -251,6 +252,7 @@ export async function serve(): Promise<ServeShutdown> {
     hds.onFeedback(fb);
     coreLog.info("command", { command: cmd.id.slice(0, 8), status: fb.status, duration_ms: fb.metrics.duration_ms });
     const content = renderCommandOutput(cmd, fb);
+    hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
     if (content) await dispatcher.dispatch({ channel: origin.channel, target: replyTarget(origin), content }, { command_id: cmd.id, upstream_commit_hash: log.commit.hash });
     return { status: fb.status };
   }
@@ -515,6 +517,24 @@ export async function serve(): Promise<ServeShutdown> {
           known_command: log.known_command,
           source_process_kind: source?.source_process_kind,
           source_channel: source?.source_channel,
+        });
+        continue;
+      }
+
+      if (log.kind === "output_audit") {
+        const source = log.request_id
+          ? requestSources.get(log.request_id)
+          : undefined;
+        items.push({
+          ...base,
+          kind: "output_audit",
+          event: `output.${log.output_kind}`,
+          command_id: log.command_id,
+          status: log.status,
+          source_process_kind: source?.source_process_kind,
+          source_channel: source?.source_channel,
+          used_for_authority: log.used_for_authority,
+          reason: log.reason,
         });
         continue;
       }

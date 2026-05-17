@@ -130,8 +130,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
 | 12-S-1 | G | HDS-BRAIN Standalone Completeness Lock | P0 | completed |
 | 12-S0 | G | Boundary Definition Lock | P0 | completed |
-| 12-S1 | G | HDS-BRAIN Output / Result Audit Plane | P0 | 12-S0 active next |
-| 12-S2 | G | Local Complete History Substrate | P0 | 12-S1 |
+| 12-S1 | G | HDS-BRAIN Output / Result Audit Plane | P0 | completed |
+| 12-S2 | G | Local Complete History Substrate | P0 | 12-S1 active next |
 | 12-S3 | G | Runtime Invariants Evidence Upgrade | P0 | 12-S2 |
 | 12-S4 | G | Final-review Operation Single Source of Truth | P0 | 12-S3 |
 | 12-S5 | G | Approval / Notification / History / Replay UI Completion | P0 | 12-S4 |
@@ -142,10 +142,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 12-S1 HDS-BRAIN Output / Result Audit Plane
+Phase 12-S2 Local Complete History Substrate
 ```
 
-Phase 12-S0 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S1 HDS-BRAIN Output / Result Audit Plane.
+Phase 12-S1 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S2 Local Complete History Substrate.
 
 ## 4. Completed Phase Summaries
 
@@ -350,6 +350,15 @@ Phase 12-S0 is complete. Phase 11-S10 Resident Application Integration is paused
 - Trinity M policy model documented as deterministic identity, boundary, judgement, log, and suspend rules
 - Active execution lane advances to Phase 12-S1 HDS-BRAIN Output / Result Audit Plane
 
+### Phase 12-S1
+
+- Standalone OutputAudit module added inside `packages/hds-brain`
+- HDS hash-chain audit now includes `output_audit` records
+- Gateway CLI and serve mode audit rendered command output before operator log or channel dispatch
+- Audit dump and Control Center authority trace project output audit records without raw output content
+- Output result material remains `used_for_authority=false`
+- Active execution lane advances to Phase 12-S2 Local Complete History Substrate
+
 ## 5. Non-Goals
 
 Do not add:
@@ -388,6 +397,8 @@ Do not add:
 - [HDS-BRAIN Unknown Escalation Policy](hds-brain-unknown-escalation-policy.md)
 - [HDS-BRAIN Trinity M Policy Model](hds-brain-trinity-m-policy-model.md)
 - [Phase 12-S0 Boundary Definition Lock](phase12-s0-boundary-definition-lock.md)
+- [HDS-BRAIN Output / Result Audit Plane](hds-brain-output-audit-plane.md)
+- [Phase 12-S1 Output / Result Audit Plane](phase12-s1-output-result-audit-plane.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

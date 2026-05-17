@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AuditLog } from "@blue-tanuki/hds-brain";
+import { AuditLog, buildOutputAuditLog } from "@blue-tanuki/hds-brain";
 import {
   runAuditDump,
   auditDumpReportFromLog,
@@ -12,6 +12,7 @@ import {
 } from "../src/audit_dump.js";
 import { AUDIT_FILENAME } from "../src/audit_config.js";
 import type { DecisionLog } from "@blue-tanuki/hds-brain";
+import type { ExecuteCommand, ExecuteFeedback } from "@blue-tanuki/protocol";
 
 function makeLog(id: string): DecisionLog {
   return {
@@ -34,6 +35,31 @@ function makeLog(id: string): DecisionLog {
       triggered_thresholds: [],
     },
     timestamp: 0,
+  };
+}
+
+const upstream = {
+  frame_goal: "g",
+  model_abstraction: "m",
+  commit_hash: "h",
+  commit_decision: "ASSERT" as const,
+};
+
+function llmCommand(): ExecuteCommand {
+  return {
+    id: "cmd-output",
+    type: "llm_call",
+    payload: { messages: [{ role: "user", content: "hi" }] },
+    upstream_decision: upstream,
+  };
+}
+
+function outputFeedback(): ExecuteFeedback {
+  return {
+    command_id: "cmd-output",
+    status: "success",
+    result: { content: "hello" },
+    metrics: { duration_ms: 1 },
   };
 }
 
@@ -131,6 +157,24 @@ describe("audit-dump format", () => {
     expect(txt).toMatch(/chain_valid: true/);
     expect(txt).toMatch(/\[0000\] ASSERT/);
     expect(txt).toMatch(/Exit code: 0/);
+  });
+
+  it("text format includes output audit entries without raw output", () => {
+    const log = new AuditLog();
+    log.append(makeLog("r-output"));
+    log.append(buildOutputAuditLog({
+      command: llmCommand(),
+      feedback: outputFeedback(),
+      rendered_output: "hello",
+      target_surface: "cli",
+      request_id: "r-output",
+      timestamp: 1,
+    }));
+
+    const txt = formatAuditTextReport(auditDumpReportFromLog(log));
+    expect(txt).toMatch(/OUTPUT:llm_raw_output/);
+    expect(txt).toMatch(/surface=cli visible=true/);
+    expect(txt).not.toContain("hello");
   });
 
   it("text format for setup_error", () => {

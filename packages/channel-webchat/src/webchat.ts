@@ -126,6 +126,7 @@ export interface WebChatAuthorityTraceItem {
     | "authority_event"
     | "command_lifecycle"
     | "executor_feedback"
+    | "output_audit"
     | "schedule_lifecycle"
     | "memory_reference";
   event: string;

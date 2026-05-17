@@ -398,6 +398,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/hds-brain-unknown-escalation-policy.md](./docs/hds-brain-unknown-escalation-policy.md) - unknown/ambiguous/unclassified escalation policy
 - [docs/hds-brain-trinity-m-policy-model.md](./docs/hds-brain-trinity-m-policy-model.md) - Trinity M policy model
 - [docs/phase12-s0-boundary-definition-lock.md](./docs/phase12-s0-boundary-definition-lock.md) - Phase 12-S0 boundary definition lock
+- [docs/hds-brain-output-audit-plane.md](./docs/hds-brain-output-audit-plane.md) - output/result audit plane boundary
+- [docs/phase12-s1-output-result-audit-plane.md](./docs/phase12-s1-output-result-audit-plane.md) - Phase 12-S1 output/result audit plane
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions

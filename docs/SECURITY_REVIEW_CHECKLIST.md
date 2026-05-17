@@ -14,6 +14,7 @@
 - Does this change let downstream limbs decide authority, substitute approval, or escalate privileges?
 - Does this change let `unknown`, `tool.call`, ambiguous, or unclassified operations auto-allow?
 - Does this change provide Trinity `M` from LLM output, memory, session, channel metadata, or plugin metadata?
+- Does this change send user-visible output or external result handoff without an `output_audit` record?
 
 追加確認:
 
@@ -21,6 +22,7 @@
 - missing capability は fail closed するか
 - policy / detector / approval / history update は L3 final-review を通るか
 - HDS-BRAIN fail-safe が downstream authority fallback になっていないか
+- LLM/tool/scheduler/plugin/external result は raw content ではなく digest/metadata として audit されるか
 - external send / shell / delete / credential / schedule は final-review boundary を通るか
 - Runtime Invariants は外部から inspect 可能なままか
 - F-reference は audit trace に残るか

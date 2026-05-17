@@ -1,4 +1,5 @@
 import type { CommandConstraints, Decision, ExecuteCommand, ExecuteFeedback } from "@blue-tanuki/protocol";
+import type { OutputAuditLog } from "./output_audit.js";
 import type { ApprovalEvaluation } from "./approval_policy.js";
 
 /**
@@ -291,6 +292,7 @@ export interface CommandLifecycleLog {
 export type AuditRecord =
   | DecisionLog
   | ExecutorFeedbackLog
+  | OutputAuditLog
   | ApprovalGateLog
   | AuthorityEventLog
   | MemoryReferenceLog

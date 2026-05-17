@@ -33,6 +33,11 @@ import {
 import { DEFAULT_POLICY } from "./policy.js";
 import { routeAction } from "./action_router.js";
 import type { ApprovalEvaluation } from "./approval_policy.js";
+import {
+  buildOutputAuditLog,
+  type OutputAuditInput,
+  type OutputAuditLog,
+} from "./output_audit.js";
 import { fReferenceForId } from "./f_reference.js";
 
 interface LongTermMemoryPort {
@@ -542,6 +547,17 @@ export class HDSUpperController {
     if (sourceLog) {
       this.inflight.delete(fb.command_id);
     }
+  }
+
+  /** Record result/output release before a user-visible or external handoff. */
+  onOutputAudit(input: Omit<OutputAuditInput, "request_id"> & { request_id?: string | null }): OutputAuditLog {
+    const sourceLog = this.inflight.get(input.command.id);
+    const log = buildOutputAuditLog({
+      ...input,
+      request_id: input.request_id ?? sourceLog?.request_id ?? null,
+    });
+    this.audit.append(log);
+    return log;
   }
 
   getState(): ControllerState {

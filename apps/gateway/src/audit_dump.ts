@@ -190,6 +190,10 @@ export function formatAuditTextReport(report: AuditDumpReport): string {
         const reqId = e.log.request_id ?? "(unknown)";
         const known = e.log.known_command ? "known" : "unknown";
         lines.push(`  [${String(e.index).padStart(4, "0")}] ${status.padEnd(18)} ${hashShort}… request_id=${reqId} command_id=${e.log.command_id} ${known}`);
+      } else if (e.log.kind === "output_audit") {
+        const status = `OUTPUT:${e.log.output_kind}`;
+        const reqId = e.log.request_id ?? "(unknown)";
+        lines.push(`  [${String(e.index).padStart(4, "0")}] ${status.padEnd(18)} ${hashShort}… request_id=${reqId} command_id=${e.log.command_id} surface=${e.log.target_surface} visible=${e.log.user_visible_output}`);
       } else if (e.log.kind === "approval_gate") {
         const ev = e.log.evaluation;
         const status = `APPROVAL:${ev.decision}`;

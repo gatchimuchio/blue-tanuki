@@ -279,6 +279,16 @@ Phase 12-S0 fixes the boundary model before later output audit/history/UI phases
 - HDS-BRAIN fail-safe is `SUSPEND`, not fallback authority.
 - Trinity `M` is deterministic policy: identity, boundary, judgement, log, and suspend rules.
 
+### Output / Result Audit Plane Rule
+
+Downstream results must pass through HDS-BRAIN output audit before final user-visible output or external result handoff.
+
+- `OutputAudit` must live in `packages/hds-brain` and remain standalone.
+- Gateway, executor, UI, channels, LLM backends, tools, plugins, and external APIs are adapters or downstream devices, not output authority.
+- Output audit records digests and release metadata, not raw content.
+- LLM output, tool result, scheduler result, plugin result, external result, and rendered output remain `used_for_authority=false`.
+- Output audit must not approve, execute, classify risk, bypass final review, or create a second authority path.
+
 ---
 
 ## Global Invariants

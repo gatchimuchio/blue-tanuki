@@ -76,6 +76,14 @@ Phase 12-S0 fixes these authority boundaries:
 - HDS-BRAIN fail-safe is `SUSPEND`; it does not delegate authority to downstream devices.
 - Trinity `M` is the deterministic policy layer: identity, boundary, judgement, log, and suspend rules.
 
+## Output / result audit plane
+
+Phase 12-S1 adds `OutputAudit` inside `packages/hds-brain`.
+
+Gateway and other product surfaces must create an `output_audit` record before final user-visible output or external result handoff. The audit record stores command/result/rendered-output digests and release metadata, not raw content.
+
+OutputAudit covers LLM raw output, tool results, scheduler results, plugin results, external action results, and noop results. These outputs remain `used_for_authority=false` and cannot classify risk, approve themselves, bypass final review, or create a second authority path.
+
 ## Hard invariants
 
 The Runtime Invariants endpoint exposes the current values for the core containment checks. Each invariant is also labeled by the kind of guarantee BLUE-TANUKI currently provides:

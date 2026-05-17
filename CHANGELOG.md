@@ -39,6 +39,7 @@
 - Added Phase 11-S9 Installer and Setup UX with `pnpm installer:verify`, guided `pnpm installer:run`, token-gated Settings `Verify LLM`, installer docs, doctor distribution readiness coverage, and packaging validation.
 - Added Phase 12-S-1 HDS-BRAIN Standalone Completeness Lock with standalone harness, downstream port types, HDSBrainHealth baseline, dependency boundary tests, `pnpm hds:standalone`, standalone boundary docs, and Downstream Limbs Doctrine documentation.
 - Added Phase 12-S0 Boundary Definition Lock with deterministic boundary policy tests, unknown/unclassified L3 escalation, reference/non-authority boundaries, fail-safe policy, and Trinity M policy model docs.
+- Added Phase 12-S1 Output / Result Audit Plane with standalone OutputAudit records, gateway pre-release output audit calls, audit dump projection, and conformance/security docs.
 
 ## 0.1.0 - 2026-05-06
 

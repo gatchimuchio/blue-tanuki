@@ -16,6 +16,15 @@ export {
   type AuditOptions,
 } from "./audit.js";
 export {
+  buildOutputAuditLog,
+  classifyOutputKind,
+  type OutputAuditInput,
+  type OutputAuditKind,
+  type OutputAuditLog,
+  type OutputTargetSurface,
+} from "./output_audit.js";
+
+export {
   HDS_BOUNDARY_POLICY_VERSION,
   TRINITY_M_POLICY_MODEL,
   classifyBoundaryUpdate,
