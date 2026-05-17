@@ -25,9 +25,22 @@ Expected invariant fields:
   "process_policy_enforced": true,
   "external_metadata_can_escalate_authority": false,
   "memory_used_for_authority": false,
+  "complete_history_used_for_authority": false,
   "final_review_boundary_enforced_by_approval_gate": true
 }
 ```
+
+## HDS-BRAIN standalone audit
+
+HDS-BRAIN は gateway なしでも in-memory `AuditLog` を生成・検証できる。
+
+```bash
+pnpm hds:standalone
+```
+
+The standalone smoke appends the HDS decision and approval evaluation to an HDS-owned hash-chain audit log, then reports `audit_chain_valid=true` when the chain verifies. The smoke does not execute LLMs, tools, channels, browser automation, or external APIs.
+
+Downstream limbs return result / feedback / event material. That material is audit evidence only; it does not become authority, approval, or privilege escalation.
 
 ## Audit dump
 

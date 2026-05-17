@@ -203,6 +203,7 @@ These must remain true:
   "process_policy_enforced": true,
   "external_metadata_can_escalate_authority": false,
   "memory_used_for_authority": false,
+  "complete_history_used_for_authority": false,
   "final_review_boundary_enforced_by_approval_gate": true
 }
 ```
@@ -2023,6 +2024,67 @@ CHANGELOG.md
 
 ---
 
+# Phase 12-S-1 - HDS-BRAIN Standalone Completeness Lock
+
+## Objective
+
+Lock HDS-BRAIN as a standalone authority control kernel before continuing resident application integration.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/src/ports.ts
+packages/hds-brain/src/health.ts
+packages/hds-brain/src/standalone_harness.ts
+packages/hds-brain/test/standalone_boundary.test.ts
+examples/hds-brain-standalone.ts
+docs/hds-brain-standalone-boundary.md
+docs/phase12-s-1-hds-brain-standalone-completeness.md
+```
+
+Update:
+
+```txt
+packages/hds-brain/src/index.ts
+package.json
+AGENTS.md
+SECURITY.md
+AUDIT.md
+CONFIG.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+```
+
+## Non-Goals
+
+- OutputAudit implementation
+- CompleteHistoryStore implementation
+- UI changes
+- SQLite / SQLCipher
+- external API integration
+- LLM backend implementation
+- plugin execution
+
+## Completion Notes
+
+- Added `runStandaloneHDSBrain` for standalone `InboundRequest` decision smoke.
+- Added `HDSBrainHealth` baseline from runtime snapshot evidence.
+- Added downstream port type declarations without binding HDS-BRAIN to downstream implementations.
+- Added dependency boundary tests that reject gateway/core/channel/operator/plugin-loader/downstream-client references from `packages/hds-brain`.
+- Added `pnpm hds:standalone`.
+- Added standalone boundary docs and Phase 12-S-1 report.
+- Recorded Downstream Limbs Doctrine: downstream devices may sense, generate, execute, store, display, or report, but cannot decide authority or substitute approval.
+- Active execution lane advances to Phase 12-S0 Boundary Definition Lock.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2113,7 +2175,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S10 Resident Application Integration
+Phase 12-S0 Boundary Definition Lock
 ```
 
-Phase 11-S9 is complete. Proceed to Phase 11-S10 Resident Application Integration.
+Phase 12-S-1 is complete. Proceed to Phase 12-S0 Boundary Definition Lock before resuming resident application integration.

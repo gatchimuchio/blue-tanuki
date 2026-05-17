@@ -42,6 +42,29 @@ InboundRequest
 
 HDS-BRAIN owns authority. LLMs, tools, channels, plugins, skills, memory, cron, browser automation, UI, onboarding, update flows, companion apps, and external services are downstream devices.
 
+## HDS-BRAIN standalone boundary
+
+HDS-BRAIN is a standalone authority control kernel before it is embedded in BLUE-TANUKI.
+
+`packages/hds-brain` must be importable, instantiable, and testable without `apps/gateway`, the executor, channel packages, first-party operator packages, plugin loading, Control Center UI, LLM backends, browser implementations, GitHub clients, or Google clients.
+
+Allowed dependencies are Node built-ins, `@blue-tanuki/protocol`, and local pure HDS-BRAIN modules. External systems connect through command envelopes and ports.
+
+Standalone smoke:
+
+```bash
+pnpm hds:standalone
+pnpm --filter @blue-tanuki/hds-brain test
+```
+
+## Downstream Limbs Doctrine
+
+Downstream devices are limbs, not authority.
+
+LLMs, tools, plugins, skills, channels, executors, schedulers, browser automation, external APIs, UI / Control Center, memory, history, session stores, audit viewers, and notification surfaces may sense, generate, execute, store, display, or report. They must not decide authority, substitute approval, escalate privileges, override risk classification, rewrite policy, bypass final review, or convert memory/history/session/tool results into authority.
+
+UI / Control Center is also downstream. It can display HDS-BRAIN decisions and submit owner input back to the existing Approval Gate, but it cannot become a second authority path.
+
 ## Hard invariants
 
 The Runtime Invariants endpoint exposes the current values for the core containment checks. Each invariant is also labeled by the kind of guarantee BLUE-TANUKI currently provides:
@@ -55,6 +78,7 @@ The Runtime Invariants endpoint exposes the current values for the core containm
 | HDS-BRAIN never trusts session history. | covered by `hds_calls_llm=false` and authority-path tests | Structural guarantee | Session history belongs to the downstream executor/session store. HDS-BRAIN receives only the current `InboundRequest`. |
 | External metadata cannot upgrade actor/process authority. | `external_metadata_can_escalate_authority=false` | Runtime guarantee | Channel metadata is ignored for actor/process upgrades unless gateway normalization marks it as internal; spoofed external metadata is covered by tests. |
 | MemoryTrace is `used_for_authority=false`. | `memory_used_for_authority=false` | Structural guarantee | `MemoryTrace.used_for_authority` is typed as the literal `false`; memory traces are context/audit inputs only. |
+| Complete history is not authority. | `complete_history_used_for_authority=false` | Structural guarantee | Complete history is reserved as replay/evidence material. It cannot substitute approval or become a current authority decision source. |
 | Process execution policy is enforced before command emission. | `process_policy_enforced=true` | Runtime guarantee | HDS-BRAIN evaluates actor/process policy and command execution policy before returning an executable command. |
 | final-review operations cannot be bypassed by full access. | `final_review_boundary_enforced_by_approval_gate=true` | Runtime guarantee | Approval Gate evaluation remains between HDS ASSERT and executor execution; full access and reusable grants cannot skip final-review operations. |
 | cron/webhook actors are not treated as humans. | covered by actor/process policy tests | Runtime guarantee | `cron` and `webhook` resolve to dedicated actor/process kinds with constrained execution policies. |

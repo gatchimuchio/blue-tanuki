@@ -124,18 +124,28 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S7 | F | Daily Operator Implementation | P0 | completed |
 | 11-S8 | F | Developer Operator Implementation | P0 | completed |
 | 11-S9 | F | Installer and Setup UX | P0 | completed |
-| 11-S10 | F | Resident Application Integration | P0 | active |
+| 11-S10 | F | Resident Application Integration | P0 | paused by Phase 12 HDS-BRAIN quality lock |
 | 11-S11 | F | Channel First-Party Promotion | P0 | 11-S3 |
 | 11-S12 | F | Plugin Review Gate Implementation | P0 | 11-S5 |
 | 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
+| 12-S-1 | G | HDS-BRAIN Standalone Completeness Lock | P0 | completed |
+| 12-S0 | G | Boundary Definition Lock | P0 | 12-S-1 active next |
+| 12-S1 | G | HDS-BRAIN Output / Result Audit Plane | P0 | 12-S0 |
+| 12-S2 | G | Local Complete History Substrate | P0 | 12-S1 |
+| 12-S3 | G | Runtime Invariants Evidence Upgrade | P0 | 12-S2 |
+| 12-S4 | G | Final-review Operation Single Source of Truth | P0 | 12-S3 |
+| 12-S5 | G | Approval / Notification / History / Replay UI Completion | P0 | 12-S4 |
+| 12-S6 | G | Root Full-access + Compound Attack Scenario Tests | P0 | 12-S5 |
+| 12-S7 | G | Detector Lifecycle and Unknown Pattern Escalation | P0 | 12-S6 |
+| 12-S8 | G | HDS-BRAIN Fail-safe / Self-health Policy | P0 | 12-S7 |
 
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S10 Resident Application Integration
+Phase 12-S0 Boundary Definition Lock
 ```
 
-Phase 11-S9 is complete. Next work is Phase 11-S10 Resident Application Integration.
+Phase 12-S-1 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S0 Boundary Definition Lock.
 
 ## 4. Completed Phase Summaries
 
@@ -320,6 +330,16 @@ Phase 11-S9 is complete. Next work is Phase 11-S10 Resident Application Integrat
 - Signed native installer, automatic updater, and verified 5-minute setup guarantee remain out of scope
 - Active execution lane advances to Phase 11-S10 Resident Application Integration
 
+### Phase 12-S-1
+
+- HDS-BRAIN standalone completeness locked as a package-level boundary
+- `runStandaloneHDSBrain` harness and `pnpm hds:standalone` smoke added
+- `HDSBrainHealth` baseline and downstream port types exported
+- Dependency boundary tests confirm no gateway/core/channel/operator dependency
+- Standalone tests cover controller decide, LLM/tool command envelopes, approval evaluation, audit verification, runtime snapshot, and health
+- Downstream Limbs Doctrine documented: downstream devices are limbs, not authority
+- Active execution lane advances to Phase 12-S0 Boundary Definition Lock
+
 ## 5. Non-Goals
 
 Do not add:
@@ -350,6 +370,8 @@ Do not add:
 - [Phase 11-S7 Daily Operator Implementation](phase11-s7-daily-operator.md)
 - [Phase 11-S8 Developer Operator Implementation](phase11-s8-developer-operator.md)
 - [Phase 11-S9 Installer and Setup UX](phase11-s9-installer-setup-ux.md)
+- [HDS-BRAIN Standalone Boundary](hds-brain-standalone-boundary.md)
+- [Phase 12-S-1 HDS-BRAIN Standalone Completeness](phase12-s-1-hds-brain-standalone-completeness.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

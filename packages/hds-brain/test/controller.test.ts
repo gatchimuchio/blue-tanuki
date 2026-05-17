@@ -1021,6 +1021,7 @@ describe("HDS process/memory authority hardening", () => {
       process_policy_enforced: true,
       external_metadata_can_escalate_authority: false,
       memory_used_for_authority: false,
+      complete_history_used_for_authority: false,
       final_review_boundary_enforced_by_approval_gate: true,
     });
   });

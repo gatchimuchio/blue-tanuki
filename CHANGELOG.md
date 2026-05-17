@@ -37,6 +37,7 @@
 - Added Phase 11-S7 Daily Operator implementation with `@blue-tanuki/operator-daily`, Daily Brief env compatibility snapshots, HDS-BRAIN surface framing, runtime snapshot and `/operators/daily` exposure, and conformance coverage.
 - Added Phase 11-S8 Developer Operator implementation with `@blue-tanuki/operator-developer`, browser-preview quarantine preservation, HDS-BRAIN surface framing, runtime snapshot and `/operators/developer` exposure, and conformance coverage.
 - Added Phase 11-S9 Installer and Setup UX with `pnpm installer:verify`, guided `pnpm installer:run`, token-gated Settings `Verify LLM`, installer docs, doctor distribution readiness coverage, and packaging validation.
+- Added Phase 12-S-1 HDS-BRAIN Standalone Completeness Lock with standalone harness, downstream port types, HDSBrainHealth baseline, dependency boundary tests, `pnpm hds:standalone`, standalone boundary docs, and Downstream Limbs Doctrine documentation.
 
 ## 0.1.0 - 2026-05-06
 

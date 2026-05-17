@@ -325,6 +325,7 @@ Expected invariants:
   "process_policy_enforced": true,
   "external_metadata_can_escalate_authority": false,
   "memory_used_for_authority": false,
+  "complete_history_used_for_authority": false,
   "final_review_boundary_enforced_by_approval_gate": true
 }
 ```
@@ -389,6 +390,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase10-s1-control-center-approval-ux.md](./docs/phase10-s1-control-center-approval-ux.md) - Control Center resident approval UX boundary
 - [docs/phase10-s2-resident-notifications.md](./docs/phase10-s2-resident-notifications.md) - resident notification center boundary
 - [docs/phase10-s3-distribution-ux-hardening.md](./docs/phase10-s3-distribution-ux-hardening.md) - install/update/uninstall distribution readiness boundary
+- [docs/hds-brain-standalone-boundary.md](./docs/hds-brain-standalone-boundary.md) - HDS-BRAIN standalone kernel and downstream limbs boundary
+- [docs/phase12-s-1-hds-brain-standalone-completeness.md](./docs/phase12-s-1-hds-brain-standalone-completeness.md) - Phase 12-S-1 standalone completeness lock
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions
@@ -422,7 +425,7 @@ Source packages live under `packages/`; runtime apps live under `apps/`. Root fi
 | Path | Package | Role |
 |---|---|---|
 | `packages/protocol` | `@blue-tanuki/protocol` | HDS-BRAIN -> Executor protocol |
-| `packages/hds-brain` | `@blue-tanuki/hds-brain` | upstream authority core |
+| `packages/hds-brain` | `@blue-tanuki/hds-brain` | standalone upstream authority control kernel |
 | `packages/blue-tanuki` | `@blue-tanuki/core` | executor, LLM backend, tools, sessions |
 | `packages/channel-base` | `@blue-tanuki/channel-base` | channel interfaces/router/dispatcher |
 | `packages/channel-webchat` | `@blue-tanuki/channel-webchat` | local Control Center + HTTP/WS channel |

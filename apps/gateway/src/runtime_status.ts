@@ -66,6 +66,7 @@ function runtimeInvariantsOk(snapshot: HDSRuntimeSnapshot): boolean {
     invariants.process_policy_enforced === true &&
     invariants.external_metadata_can_escalate_authority === false &&
     invariants.memory_used_for_authority === false &&
+    invariants.complete_history_used_for_authority === false &&
     invariants.final_review_boundary_enforced_by_approval_gate === true
   );
 }

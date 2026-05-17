@@ -10,6 +10,8 @@
 - Does this change break audit hash-chain compatibility?
 - Does this change add undeclared capabilities?
 - Does this change move preview code into main release?
+- Does this change make `packages/hds-brain` depend on gateway/core/channel/operator code?
+- Does this change let downstream limbs decide authority, substitute approval, or escalate privileges?
 
 追加確認:
 
@@ -19,3 +21,5 @@
 - Runtime Invariants は外部から inspect 可能なままか
 - F-reference は audit trace に残るか
 - WhatsApp first-party core 実装や専用 escape hatch を追加していないか
+- HDS-BRAIN standalone smoke / boundary tests は維持されているか
+- UI / Control Center / memory / history / session / tool result が authority に変換されていないか

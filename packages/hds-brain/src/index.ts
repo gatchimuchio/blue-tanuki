@@ -16,6 +16,25 @@ export {
   type AuditOptions,
 } from "./audit.js";
 export {
+  evaluateHDSBrainHealth,
+  type HDSBrainHealth,
+  type HDSBrainHealthStatus,
+} from "./health.js";
+export {
+  runStandaloneHDSBrain,
+  type StandaloneHDSBrainInput,
+  type StandaloneHDSBrainResult,
+} from "./standalone_harness.js";
+export {
+  type HDSAuditPort,
+  type HDSClockPort,
+  type HDSHistoryEvent,
+  type HDSHistoryPort,
+  type HDSLLMPort,
+  type HDSMemoryPort,
+  type HDSPolicyPort,
+} from "./ports.js";
+export {
   HDSUpperController,
   type ControllerOptions,
   type LLMCommandRoute,

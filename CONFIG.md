@@ -10,6 +10,17 @@ pnpm run setup -- --yes
 
 `pnpm run setup` は local env file を生成し、既存 file を上書きする場合は `.bak` backup を残す。secret 値は公開しない。
 
+## HDS-BRAIN standalone smoke
+
+HDS-BRAIN 単体境界は env なしで確認できる。
+
+```bash
+pnpm hds:standalone
+pnpm hds:standalone -- "tool:file.search root=. query=needle max_results=5"
+```
+
+この smoke は gateway / executor / channel / Control Center / LLM backend / external API を起動しない。HDS-BRAIN が `InboundRequest` を受け取り、command envelope、approval classification、audit verification、runtime invariants、health baseline を返せることだけを確認する。
+
 ## Required for serve
 
 ```bash

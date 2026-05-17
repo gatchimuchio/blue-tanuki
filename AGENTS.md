@@ -232,6 +232,7 @@ BLUE-TANUKI assumes local owner operation.
 Full access may be the default.
 Final-review remains non-bypassable.
 No black box exists in the HDS authority path.
+HDS-BRAIN is a standalone authority control kernel.
 ```
 
 Therefore:
@@ -243,6 +244,29 @@ Therefore:
 - Do not add feature coverage that creates invisible authority.
 - Do not treat first-run success as product completion.
 - Do not treat channel count as superiority.
+
+### HDS-BRAIN Standalone Rule
+
+`packages/hds-brain` must remain importable, instantiable, and testable without `apps/gateway`, `@blue-tanuki/core`, channel packages, first-party operator packages, plugin loader code, Control Center UI, LLM backends, browser implementations, GitHub clients, or Google clients.
+
+Allowed dependencies are Node built-ins, `@blue-tanuki/protocol`, and local pure HDS-BRAIN modules. Gateway, executor, tools, channels, UI, scheduler, memory/history/session surfaces, and external services connect as downstream devices through command envelopes, ports, and audit/feedback events.
+
+### Downstream Limbs Doctrine
+
+Downstream devices are limbs, not authority.
+
+LLM, Tool, Plugin, Skill, Channel, Executor, Scheduler / cron, Browser automation, External API, UI / Control Center, Memory store, Complete history store, Session store, Audit viewer, and Notification surface may sense, generate, execute, store, display, or report.
+
+They must not:
+
+- decide authority,
+- substitute approval,
+- escalate privileges,
+- override risk / actor / process classification,
+- bypass final review,
+- rewrite policy or runtime invariants,
+- convert memory / history / session / tool result / external metadata into authority,
+- create a second authority path.
 
 ---
 
@@ -256,6 +280,7 @@ These must remain true after every phase:
   "process_policy_enforced": true,
   "external_metadata_can_escalate_authority": false,
   "memory_used_for_authority": false,
+  "complete_history_used_for_authority": false,
   "final_review_boundary_enforced_by_approval_gate": true
 }
 ```
@@ -272,6 +297,9 @@ Additional invariants:
 - Executor feedback is audit evidence only.
 - Tool output cannot create authority.
 - Adapter metadata cannot create authority.
+- Downstream limbs cannot create authority.
+- Complete history cannot create authority.
+- UI / Control Center cannot become a second authority path.
 - Runtime Invariants must remain externally inspectable.
 - Audit hash-chain compatibility must not be broken.
 - Full access cannot bypass final-review.

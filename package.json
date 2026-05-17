@@ -22,6 +22,7 @@
     "installer:verify": "node node_modules/tsx/dist/cli.mjs install/installer/src/verify.ts",
     "setup": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run setup",
     "setup:dist": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run setup:dist",
+    "hds:standalone": "node node_modules/tsx/dist/cli.mjs examples/hds-brain-standalone.ts",
     "smoke:serve": "node node_modules/tsx/dist/cli.mjs scripts/smoke_serve.ts",
     "smoke:resume": "node node_modules/tsx/dist/cli.mjs scripts/smoke_resume.ts",
     "smoke:live": "node node_modules/tsx/dist/cli.mjs apps/gateway/src/smoke_live.ts",

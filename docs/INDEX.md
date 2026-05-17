@@ -26,6 +26,8 @@
 
 - [Security](../SECURITY.md) - HDS authority model and final-review boundary
 - [Audit](../AUDIT.md) - hash-chain audit, dump, and verification
+- [HDS-BRAIN Standalone Boundary](hds-brain-standalone-boundary.md)
+- [Phase 12-S-1 HDS-BRAIN Standalone Completeness](phase12-s-1-hds-brain-standalone-completeness.md)
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [Capability Envelope](CAPABILITY_ENVELOPE.md)
 - [Conformance](CONFORMANCE.md)
