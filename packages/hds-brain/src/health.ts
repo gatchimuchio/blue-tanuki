@@ -1,4 +1,8 @@
 import type { HDSRuntimeSnapshot } from "./controller.js";
+import {
+  runtimeInvariantReportOk,
+  runtimeInvariantValuesOk,
+} from "./runtime_invariants.js";
 
 export type HDSBrainHealthStatus = "ok" | "fail_safe";
 
@@ -18,12 +22,8 @@ export function evaluateHDSBrainHealth(
   opts: { now?: number } = {},
 ): HDSBrainHealth {
   const runtime_invariants_ok =
-    snapshot.invariants.hds_calls_llm === false &&
-    snapshot.invariants.process_policy_enforced === true &&
-    snapshot.invariants.external_metadata_can_escalate_authority === false &&
-    snapshot.invariants.memory_used_for_authority === false &&
-    snapshot.invariants.complete_history_used_for_authority === false &&
-    snapshot.invariants.final_review_boundary_enforced_by_approval_gate === true;
+    runtimeInvariantValuesOk(snapshot.invariants) &&
+    runtimeInvariantReportOk(snapshot.runtime_invariants);
   const memoryOk = snapshot.memory.chain_valid !== false;
   const ok = snapshot.audit.chain_valid && runtime_invariants_ok && memoryOk;
   return {

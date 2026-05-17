@@ -25,6 +25,21 @@ export {
 } from "./output_audit.js";
 
 export {
+  EXPECTED_RUNTIME_INVARIANTS,
+  RUNTIME_INVARIANTS_SCHEMA_VERSION,
+  buildRuntimeInvariantEvidence,
+  runtimeInvariantReportDigest,
+  runtimeInvariantReportOk,
+  runtimeInvariantValuesOk,
+  type RuntimeInvariantEvidenceItem,
+  type RuntimeInvariantEvidenceOptions,
+  type RuntimeInvariantEvidenceReport,
+  type RuntimeInvariantGuarantee,
+  type RuntimeInvariantKey,
+  type RuntimeInvariantValues,
+} from "./runtime_invariants.js";
+
+export {
   HDS_BOUNDARY_POLICY_VERSION,
   TRINITY_M_POLICY_MODEL,
   classifyBoundaryUpdate,

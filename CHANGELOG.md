@@ -41,6 +41,7 @@
 - Added Phase 12-S0 Boundary Definition Lock with deterministic boundary policy tests, unknown/unclassified L3 escalation, reference/non-authority boundaries, fail-safe policy, and Trinity M policy model docs.
 - Added Phase 12-S1 Output / Result Audit Plane with standalone OutputAudit records, gateway pre-release output audit calls, audit dump projection, and conformance/security docs.
 - Added Phase 12-S2 Local Complete History Substrate with standalone `CompleteHistoryStore`, JSONL append/verify/replay/export baseline, non-authority history records, and conformance/security docs.
+- Added Phase 12-S3 Runtime Invariants Evidence Upgrade with standalone evidence reports, audit-chain records, gateway snapshot integration, and conformance/security docs.
 
 ## 0.1.0 - 2026-05-06
 

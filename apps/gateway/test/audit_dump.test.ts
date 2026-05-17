@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AuditLog, buildOutputAuditLog } from "@blue-tanuki/hds-brain";
+import {
+  AuditLog,
+  buildOutputAuditLog,
+  buildRuntimeInvariantEvidence,
+} from "@blue-tanuki/hds-brain";
 import {
   runAuditDump,
   auditDumpReportFromLog,
@@ -175,6 +179,28 @@ describe("audit-dump format", () => {
     expect(txt).toMatch(/OUTPUT:llm_raw_output/);
     expect(txt).toMatch(/surface=cli visible=true/);
     expect(txt).not.toContain("hello");
+  });
+
+  it("text format includes runtime invariant evidence entries", () => {
+    const log = new AuditLog();
+    const report = buildRuntimeInvariantEvidence({ generated_at_ms: 1 });
+    log.append({
+      kind: "runtime_invariants",
+      event: "runtime_invariants.evidence",
+      request_id: null,
+      all_ok: report.all_ok,
+      report_digest: report.report_digest,
+      evidence_count: report.evidence.length,
+      values: report.values,
+      report,
+      used_for_authority: false,
+      reason: "test",
+      timestamp: 1,
+    });
+
+    const txt = formatAuditTextReport(auditDumpReportFromLog(log));
+    expect(txt).toMatch(/INVARIANTS:pass/);
+    expect(txt).toContain(report.report_digest);
   });
 
   it("text format for setup_error", () => {

@@ -117,6 +117,8 @@ describe("HDS-BRAIN standalone boundary", () => {
     expect(llm.audit_chain_valid).toBe(true);
     expect(llm.memory_used_for_authority).toBe(false);
     expect(llm.complete_history_used_for_authority).toBe(false);
+    expect(llm.runtime_invariants.all_ok).toBe(true);
+    expect(llm.runtime_invariants.runtime_invariants_used_for_authority).toBe(false);
     expect(llm.health.status).toBe("ok");
 
     const tool = runStandaloneHDSBrain({

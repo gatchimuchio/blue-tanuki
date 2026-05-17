@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { HDSRuntimeSnapshot } from "@blue-tanuki/hds-brain";
+import {
+  buildRuntimeInvariantEvidence,
+  type HDSRuntimeSnapshot,
+} from "@blue-tanuki/hds-brain";
 import { buildRuntimeStatusSnapshot } from "../src/runtime_status.js";
 
 function hdsSnapshot(
   overrides: Partial<HDSRuntimeSnapshot> = {},
 ): HDSRuntimeSnapshot {
-  return {
+  const base: Omit<HDSRuntimeSnapshot, "runtime_invariants"> = {
     state: "IDLE",
     suspended: [],
     inflight: [],
@@ -19,7 +22,14 @@ function hdsSnapshot(
       complete_history_used_for_authority: false,
       final_review_boundary_enforced_by_approval_gate: true,
     },
-    ...overrides,
+  };
+  const snapshot = { ...base, ...overrides };
+  return {
+    ...snapshot,
+    runtime_invariants: buildRuntimeInvariantEvidence({
+      actuals: snapshot.invariants,
+      generated_at_ms: 1,
+    }),
   };
 }
 

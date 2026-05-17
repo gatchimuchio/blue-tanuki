@@ -1,4 +1,8 @@
-import type { HDSRuntimeSnapshot } from "@blue-tanuki/hds-brain";
+import {
+  runtimeInvariantReportOk,
+  runtimeInvariantValuesOk,
+  type HDSRuntimeSnapshot,
+} from "@blue-tanuki/hds-brain";
 
 export type GatewayStatus = "running" | "starting" | "degraded";
 
@@ -60,15 +64,7 @@ export function buildRuntimeStatusSnapshot(
 }
 
 function runtimeInvariantsOk(snapshot: HDSRuntimeSnapshot): boolean {
-  const invariants = snapshot.invariants;
-  return (
-    invariants.hds_calls_llm === false &&
-    invariants.process_policy_enforced === true &&
-    invariants.external_metadata_can_escalate_authority === false &&
-    invariants.memory_used_for_authority === false &&
-    invariants.complete_history_used_for_authority === false &&
-    invariants.final_review_boundary_enforced_by_approval_gate === true
-  );
+  return runtimeInvariantValuesOk(snapshot.invariants) && runtimeInvariantReportOk(snapshot.runtime_invariants);
 }
 
 function nextRecommendedAction(input: {

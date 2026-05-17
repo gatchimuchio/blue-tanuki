@@ -300,6 +300,17 @@ Complete history stores original records and replay evidence. It is not authorit
 - Complete history entries and exports must keep `used_for_authority=false` / `complete_history_used_for_authority=false`.
 - Complete history must not classify risk, infer consent, substitute approval, bypass final review, rewrite policy, or create a second authority path.
 
+### Runtime Invariants Evidence Rule
+
+Runtime Invariants must be evidence-bearing and standalone.
+
+- Runtime Invariants evidence must live in `packages/hds-brain`.
+- Gateway runtime snapshot, Control Center, audit dump, and authority trace are downstream display/projection surfaces.
+- Evidence reports must include expected/actual values, pass/fail status, guarantee kind, evidence text, report digest, and non-authority flags.
+- Runtime Invariants evidence may be appended to the HDS hash-chain audit.
+- Runtime Invariants evidence must not approve commands, rewrite policy, classify risk, bypass final review, infer consent, or create fallback authority.
+- A failed invariant requires fail-safe inspection/remediation, not downstream continuation as authority.
+
 ---
 
 ## Global Invariants

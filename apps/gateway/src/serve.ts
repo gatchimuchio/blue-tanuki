@@ -130,6 +130,7 @@ export async function serve(): Promise<ServeShutdown> {
     memory: buildHDSMemoryStore(process.env),
     llm_route: buildLLMCommandRouteFromEnv(),
   });
+  hds.onRuntimeInvariantsEvidence({ reason: "gateway_startup" });
   const runtimeSchedules = await RuntimeScheduleManager.open({
     env: process.env,
     onLifecycle: (event, lifecycle) => {
@@ -535,6 +536,20 @@ export async function serve(): Promise<ServeShutdown> {
           source_channel: source?.source_channel,
           used_for_authority: log.used_for_authority,
           reason: log.reason,
+        });
+        continue;
+      }
+
+      if (log.kind === "runtime_invariants") {
+        items.push({
+          ...base,
+          kind: "runtime_invariants",
+          event: log.event,
+          used_for_authority: log.used_for_authority,
+          reason: log.reason,
+          status: log.all_ok ? "pass" : "fail",
+          report_digest: log.report_digest,
+          evidence_count: log.evidence_count,
         });
         continue;
       }

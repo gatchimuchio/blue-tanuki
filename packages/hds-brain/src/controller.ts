@@ -17,6 +17,7 @@ import type {
   PolicyConfig,
   ResumeAuditTrace,
   ResumeVerdict,
+  RuntimeInvariantsLog,
   ScheduleLifecycleEvent,
   ScheduleLifecycleLog,
   SuspendedRequest,
@@ -38,6 +39,12 @@ import {
   type OutputAuditInput,
   type OutputAuditLog,
 } from "./output_audit.js";
+import {
+  buildRuntimeInvariantEvidence,
+  type RuntimeInvariantEvidenceOptions,
+  type RuntimeInvariantEvidenceReport,
+  type RuntimeInvariantValues,
+} from "./runtime_invariants.js";
 import { fReferenceForId } from "./f_reference.js";
 
 interface LongTermMemoryPort {
@@ -60,14 +67,8 @@ export interface HDSRuntimeSnapshot {
   inflight: Array<{ command_id: string; request_id: string; commit_hash: string; decision: string }>;
   audit: { entries: number; chain_valid: boolean };
   memory: { configured: boolean; entries?: number; chain_valid?: boolean };
-  invariants: {
-    hds_calls_llm: false;
-    process_policy_enforced: true;
-    external_metadata_can_escalate_authority: false;
-    memory_used_for_authority: false;
-    complete_history_used_for_authority: false;
-    final_review_boundary_enforced_by_approval_gate: true;
-  };
+  invariants: RuntimeInvariantValues;
+  runtime_invariants: RuntimeInvariantEvidenceReport;
 }
 
 /**
@@ -560,6 +561,32 @@ export class HDSUpperController {
     return log;
   }
 
+  /** Build and append runtime invariant evidence into the HDS audit chain. */
+  onRuntimeInvariantsEvidence(opts: {
+    request_id?: string | null;
+    reason?: string;
+    report?: RuntimeInvariantEvidenceReport;
+    evidence_options?: RuntimeInvariantEvidenceOptions;
+    timestamp?: number;
+  } = {}): RuntimeInvariantsLog {
+    const report = opts.report ?? buildRuntimeInvariantEvidence(opts.evidence_options);
+    const log: RuntimeInvariantsLog = {
+      kind: "runtime_invariants",
+      request_id: opts.request_id ?? null,
+      event: "runtime_invariants.evidence",
+      all_ok: report.all_ok,
+      report_digest: report.report_digest,
+      evidence_count: report.evidence.length,
+      values: report.values,
+      report,
+      used_for_authority: false,
+      reason: opts.reason ?? "runtime_invariants_evidence",
+      timestamp: opts.timestamp ?? Date.now(),
+    };
+    this.audit.append(log);
+    return log;
+  }
+
   getState(): ControllerState {
     return this.state;
   }
@@ -575,7 +602,8 @@ export class HDSUpperController {
     return Array.from(this.suspended.values());
   }
 
-  getRuntimeSnapshot(): HDSRuntimeSnapshot {
+  getRuntimeSnapshot(opts: { runtime_invariants?: RuntimeInvariantEvidenceReport } = {}): HDSRuntimeSnapshot {
+    const runtime_invariants = opts.runtime_invariants ?? buildRuntimeInvariantEvidence();
     return {
       state: this.state,
       suspended: this.listSuspended(),
@@ -594,14 +622,8 @@ export class HDSUpperController {
         entries: this.memory?.size?.(),
         chain_valid: this.memory?.verify?.(),
       },
-      invariants: {
-        hds_calls_llm: false,
-        process_policy_enforced: true,
-        external_metadata_can_escalate_authority: false,
-        memory_used_for_authority: false,
-        complete_history_used_for_authority: false,
-        final_review_boundary_enforced_by_approval_gate: true,
-      },
+      invariants: runtime_invariants.values,
+      runtime_invariants,
     };
   }
 

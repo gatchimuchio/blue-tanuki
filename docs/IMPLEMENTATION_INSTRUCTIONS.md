@@ -2242,6 +2242,72 @@ docs/hds-brain-standalone-boundary.md
 
 ---
 
+# Phase 12-S3 - Runtime Invariants Evidence Upgrade
+
+## Objective
+
+Promote Runtime Invariants from fixed display values to HDS-BRAIN-owned evidence that can be inspected, verified, and audited.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/src/runtime_invariants.ts
+docs/hds-brain-runtime-invariants-evidence.md
+docs/phase12-s3-runtime-invariants-evidence.md
+```
+
+Update:
+
+```txt
+packages/hds-brain/src/controller.ts
+packages/hds-brain/src/health.ts
+packages/hds-brain/src/index.ts
+packages/hds-brain/src/standalone_harness.ts
+packages/hds-brain/src/types.ts
+packages/hds-brain/test/runtime_invariants.test.ts
+packages/hds-brain/test/standalone_boundary.test.ts
+apps/gateway/src/audit_dump.ts
+apps/gateway/src/runtime_status.ts
+apps/gateway/src/serve.ts
+apps/gateway/test/audit_dump.test.ts
+apps/gateway/test/runtime_status.test.ts
+packages/channel-webchat/src/webchat.ts
+AGENTS.md
+SECURITY.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+docs/hds-brain-standalone-boundary.md
+```
+
+## Non-Goals
+
+- final-review operation single-source refactor
+- fail-safe/self-health policy redesign
+- detector lifecycle implementation
+- Control Center visual redesign
+- authority use of Runtime Invariants evidence
+
+## Completion Notes
+
+- Added standalone Runtime Invariants evidence generation inside `packages/hds-brain`.
+- `HDSRuntimeSnapshot` preserves `invariants` and adds `runtime_invariants` evidence report.
+- Added expected/actual values, per-invariant evidence, guarantee kind, all-ok status, report digest, and non-authority flags.
+- Added `runtime_invariants` HDS audit record and `HDSUpperController.onRuntimeInvariantsEvidence`.
+- Standalone harness emits runtime invariant evidence and appends it to audit.
+- Gateway startup records runtime invariant evidence and runtime snapshot displays it as downstream data.
+- Audit dump and authority trace project runtime invariant evidence.
+- Active execution lane advances to Phase 12-S4 Final-review Operation Single Source of Truth.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2332,7 +2398,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S3 Runtime Invariants Evidence Upgrade
+Phase 12-S4 Final-review Operation Single Source of Truth
 ```
 
-Phase 12-S2 is complete. Proceed to Phase 12-S3 Runtime Invariants Evidence Upgrade before resuming resident application integration.
+Phase 12-S3 is complete. Proceed to Phase 12-S4 Final-review Operation Single Source of Truth before resuming resident application integration.

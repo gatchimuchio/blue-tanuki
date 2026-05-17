@@ -87,6 +87,7 @@ The package exports:
 - `LongTermMemoryStore`
 - `CompleteHistoryStore`
 - `OutputAudit`
+- `RuntimeInvariantEvidenceReport`
 - runtime snapshot types
 - `HDSBrainHealth`
 - `runStandaloneHDSBrain`
@@ -102,7 +103,7 @@ pnpm --filter @blue-tanuki/hds-brain test
 pnpm --filter @blue-tanuki/hds-brain build
 ```
 
-The default smoke sends a sample CLI `InboundRequest` to HDS-BRAIN and returns a JSON result containing decision, command envelope type, approval level, audit verification, health, and runtime invariants.
+The default smoke sends a sample CLI `InboundRequest` to HDS-BRAIN and returns a JSON result containing decision, command envelope type, approval level, audit verification, health, runtime invariants, and runtime invariant evidence.
 
 Tool-envelope smoke:
 

@@ -35,6 +35,7 @@ export interface StandaloneHDSBrainResult {
   memory_used_for_authority: false;
   complete_history_used_for_authority: false;
   invariants: HDSRuntimeSnapshot["invariants"];
+  runtime_invariants: HDSRuntimeSnapshot["runtime_invariants"];
   runtime_snapshot: HDSRuntimeSnapshot;
   health: HDSBrainHealth;
 }
@@ -58,7 +59,13 @@ export function runStandaloneHDSBrain(
     approval = evaluateApproval(command, [], { actor: input.user });
     controller.onApprovalEvaluation(approval, { request_id: req.id });
   }
-  const runtime_snapshot = controller.getRuntimeSnapshot();
+  const runtime_invariants_log = controller.onRuntimeInvariantsEvidence({
+    request_id: req.id,
+    reason: "standalone_harness",
+  });
+  const runtime_snapshot = controller.getRuntimeSnapshot({
+    runtime_invariants: runtime_invariants_log.report,
+  });
   return {
     decision: log.commit.decision,
     command_type: command?.type,
@@ -72,6 +79,7 @@ export function runStandaloneHDSBrain(
     memory_used_for_authority: false,
     complete_history_used_for_authority: false,
     invariants: runtime_snapshot.invariants,
+    runtime_invariants: runtime_snapshot.runtime_invariants,
     runtime_snapshot,
     health: evaluateHDSBrainHealth(runtime_snapshot),
   };

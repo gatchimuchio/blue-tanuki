@@ -132,8 +132,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 12-S0 | G | Boundary Definition Lock | P0 | completed |
 | 12-S1 | G | HDS-BRAIN Output / Result Audit Plane | P0 | completed |
 | 12-S2 | G | Local Complete History Substrate | P0 | completed |
-| 12-S3 | G | Runtime Invariants Evidence Upgrade | P0 | 12-S2 active next |
-| 12-S4 | G | Final-review Operation Single Source of Truth | P0 | 12-S3 |
+| 12-S3 | G | Runtime Invariants Evidence Upgrade | P0 | completed |
+| 12-S4 | G | Final-review Operation Single Source of Truth | P0 | 12-S3 active next |
 | 12-S5 | G | Approval / Notification / History / Replay UI Completion | P0 | 12-S4 |
 | 12-S6 | G | Root Full-access + Compound Attack Scenario Tests | P0 | 12-S5 |
 | 12-S7 | G | Detector Lifecycle and Unknown Pattern Escalation | P0 | 12-S6 |
@@ -142,10 +142,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 12-S3 Runtime Invariants Evidence Upgrade
+Phase 12-S4 Final-review Operation Single Source of Truth
 ```
 
-Phase 12-S2 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S3 Runtime Invariants Evidence Upgrade.
+Phase 12-S3 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S4 Final-review Operation Single Source of Truth.
 
 ## 4. Completed Phase Summaries
 
@@ -368,6 +368,15 @@ Phase 12-S2 is complete. Phase 11-S10 Resident Application Integration is paused
 - Complete history material remains `used_for_authority=false` and `complete_history_used_for_authority=false`
 - Active execution lane advances to Phase 12-S3 Runtime Invariants Evidence Upgrade
 
+### Phase 12-S3
+
+- Standalone Runtime Invariants evidence module added inside `packages/hds-brain`
+- `HDSRuntimeSnapshot` now includes `runtime_invariants` evidence while preserving legacy `invariants`
+- Runtime Invariants evidence can be appended as `runtime_invariants` records in the HDS hash-chain audit
+- Gateway startup records runtime invariant evidence and runtime snapshot exposes the report as downstream display data
+- Audit dump and authority trace project runtime invariant evidence without creating authority
+- Active execution lane advances to Phase 12-S4 Final-review Operation Single Source of Truth
+
 ## 5. Non-Goals
 
 Do not add:
@@ -410,6 +419,8 @@ Do not add:
 - [Phase 12-S1 Output / Result Audit Plane](phase12-s1-output-result-audit-plane.md)
 - [HDS-BRAIN Complete History Substrate](hds-brain-complete-history-substrate.md)
 - [Phase 12-S2 Local Complete History Substrate](phase12-s2-local-complete-history-substrate.md)
+- [HDS-BRAIN Runtime Invariants Evidence](hds-brain-runtime-invariants-evidence.md)
+- [Phase 12-S3 Runtime Invariants Evidence](phase12-s3-runtime-invariants-evidence.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

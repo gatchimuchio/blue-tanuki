@@ -1,5 +1,6 @@
 import type { CommandConstraints, Decision, ExecuteCommand, ExecuteFeedback } from "@blue-tanuki/protocol";
 import type { OutputAuditLog } from "./output_audit.js";
+import type { RuntimeInvariantEvidenceReport, RuntimeInvariantValues } from "./runtime_invariants.js";
 import type { ApprovalEvaluation } from "./approval_policy.js";
 
 /**
@@ -271,6 +272,20 @@ export interface MemoryReferenceLog {
   timestamp: number;
 }
 
+export interface RuntimeInvariantsLog {
+  kind: "runtime_invariants";
+  request_id: string | null;
+  event: "runtime_invariants.evidence";
+  all_ok: boolean;
+  report_digest: string;
+  evidence_count: number;
+  values: RuntimeInvariantValues;
+  report: RuntimeInvariantEvidenceReport;
+  used_for_authority: false;
+  reason: string;
+  timestamp: number;
+}
+
 export type CommandLifecyclePhase =
   | "approval_pending"
   | "approval_approved"
@@ -296,6 +311,7 @@ export type AuditRecord =
   | ApprovalGateLog
   | AuthorityEventLog
   | MemoryReferenceLog
+  | RuntimeInvariantsLog
   | CommandLifecycleLog
   | ScheduleLifecycleLog;
 

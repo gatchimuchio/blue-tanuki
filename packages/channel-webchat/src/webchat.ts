@@ -127,6 +127,7 @@ export interface WebChatAuthorityTraceItem {
     | "command_lifecycle"
     | "executor_feedback"
     | "output_audit"
+    | "runtime_invariants"
     | "schedule_lifecycle"
     | "memory_reference";
   event: string;
@@ -151,6 +152,8 @@ export interface WebChatAuthorityTraceItem {
   status?: string;
   error?: string;
   known_command?: boolean;
+  report_digest?: string;
+  evidence_count?: number;
   source_process_kind?: string;
   source_channel?: string;
   authority_trace?: unknown;

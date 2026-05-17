@@ -88,6 +88,22 @@ When a filepath is supplied, records are persisted as JSONL with payload digests
 
 This store is not the hash-chain authority audit log and is not an approval source. It is replay/evidence material only, with `used_for_authority=false` and `complete_history_used_for_authority=false`.
 
+## Runtime Invariants evidence audit
+
+Phase 12-S3 adds `runtime_invariants` records to the HDS hash-chain audit.
+
+`runtime_invariants` records contain:
+
+- all-ok status
+- report digest
+- evidence count
+- invariant values
+- full HDS-BRAIN evidence report
+- reason
+- `used_for_authority=false`
+
+Runtime Invariants evidence is inspectable audit material. It does not approve commands, classify risk, rewrite policy, bypass final review, infer consent, or create fallback authority.
+
 ## Audit dump
 
 ```bash
@@ -141,6 +157,7 @@ Exit code: 1
 - command lifecycle
 - executor feedback
 - unknown/stale feedback
+- runtime invariants evidence
 
 ## Schedule lifecycle audit
 
@@ -220,3 +237,4 @@ HDS long-term memory references are rendered as `F:<id>`.
 - F-reference / HDS long-term memory hit
 - downstream executor feedback
 - complete history replay/export material
+- runtime invariants evidence

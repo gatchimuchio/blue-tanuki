@@ -92,22 +92,32 @@ The store records original history material for user input, LLM history, HDS dec
 
 Complete history remains reference/evidence only. Gateway, Control Center, history UI, audit viewers, and replay tools may use it as adapters, but they cannot turn it into an authority path. Complete-history entries and exports carry `used_for_authority=false` / `complete_history_used_for_authority=false`.
 
+## Runtime Invariants evidence
+
+Phase 12-S3 adds `RuntimeInvariantEvidenceReport` inside `packages/hds-brain`.
+
+Runtime Invariants are no longer only fixed display values. HDS-BRAIN now produces an evidence-bearing report with expected/actual values, pass/fail status, guarantee kind, evidence text, report digest, and `runtime_invariants_used_for_authority=false`.
+
+Gateway runtime snapshot and Control Center display this report as downstream surfaces. They do not own or rewrite the evidence.
+
+HDS-BRAIN can append a `runtime_invariants` audit record to the hash-chain. That record is evidence only; it cannot approve commands, rewrite policy, bypass final review, or create fallback authority.
+
 ## Hard invariants
 
-The Runtime Invariants endpoint exposes the current values for the core containment checks. Each invariant is also labeled by the kind of guarantee BLUE-TANUKI currently provides:
+The Runtime Invariants endpoint exposes the current values and the HDS-BRAIN evidence report for the core containment checks. Each invariant is also labeled by the kind of guarantee BLUE-TANUKI currently provides:
 
 - **Structural guarantee**: the dependency graph, type shape, or module boundary makes the forbidden path physically absent from the authority path.
 - **Runtime guarantee**: the path exists as data or policy evaluation, and is denied by deterministic checks and tests. Runtime checks remain in place even when a structural guarantee exists.
 
-| Invariant | Runtime snapshot key | Current guarantee | Evidence |
+| Invariant | Runtime snapshot key | Current guarantee | Evidence report anchor |
 |---|---|---|---|
-| HDS-BRAIN never calls an LLM. | `hds_calls_llm=false` | Structural guarantee | `@blue-tanuki/hds-brain` emits `llm_call` commands but has no LLM client dependency. |
-| HDS-BRAIN never trusts session history. | covered by `hds_calls_llm=false` and authority-path tests | Structural guarantee | Session history belongs to the downstream executor/session store. HDS-BRAIN receives only the current `InboundRequest`. |
-| External metadata cannot upgrade actor/process authority. | `external_metadata_can_escalate_authority=false` | Runtime guarantee | Channel metadata is ignored for actor/process upgrades unless gateway normalization marks it as internal; spoofed external metadata is covered by tests. |
-| MemoryTrace is `used_for_authority=false`. | `memory_used_for_authority=false` | Structural guarantee | `MemoryTrace.used_for_authority` is typed as the literal `false`; memory traces are context/audit inputs only. |
-| Complete history is not authority. | `complete_history_used_for_authority=false` | Structural guarantee | `CompleteHistoryStore` is a standalone original-record/replay substrate. Entries and exports are typed as non-authority and cannot substitute approval or become a current authority decision source. |
-| Process execution policy is enforced before command emission. | `process_policy_enforced=true` | Runtime guarantee | HDS-BRAIN evaluates actor/process policy and command execution policy before returning an executable command. |
-| final-review operations cannot be bypassed by full access. | `final_review_boundary_enforced_by_approval_gate=true` | Runtime guarantee | Approval Gate evaluation remains between HDS ASSERT and executor execution; full access and reusable grants cannot skip final-review operations. |
+| HDS-BRAIN never calls an LLM. | `hds_calls_llm=false` | Structural guarantee | `runtime_invariants.evidence[hds_calls_llm]` |
+| HDS-BRAIN never trusts session history. | covered by `hds_calls_llm=false` and authority-path tests | Structural guarantee | HDS-BRAIN receives only the current `InboundRequest`; session history remains downstream. |
+| External metadata cannot upgrade actor/process authority. | `external_metadata_can_escalate_authority=false` | Runtime guarantee | `runtime_invariants.evidence[external_metadata_can_escalate_authority]` |
+| MemoryTrace is `used_for_authority=false`. | `memory_used_for_authority=false` | Structural guarantee | `runtime_invariants.evidence[memory_used_for_authority]` |
+| Complete history is not authority. | `complete_history_used_for_authority=false` | Structural guarantee | `runtime_invariants.evidence[complete_history_used_for_authority]` |
+| Process execution policy is enforced before command emission. | `process_policy_enforced=true` | Runtime guarantee | `runtime_invariants.evidence[process_policy_enforced]` |
+| final-review operations cannot be bypassed by full access. | `final_review_boundary_enforced_by_approval_gate=true` | Runtime guarantee | `runtime_invariants.evidence[final_review_boundary_enforced_by_approval_gate]` |
 | cron/webhook actors are not treated as humans. | covered by actor/process policy tests | Runtime guarantee | `cron` and `webhook` resolve to dedicated actor/process kinds with constrained execution policies. |
 | executor feedback is audit evidence, not an authority signal. | covered by audit/feedback tests | Structural guarantee | Feedback is appended as an audit entry and has no code path that resumes a suspended request or creates authority. |
 

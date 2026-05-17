@@ -21,6 +21,12 @@ const output = {
   complete_history_used_for_authority: result.complete_history_used_for_authority,
   health: result.health.status,
   invariants: result.invariants,
+  runtime_invariants: {
+    all_ok: result.runtime_invariants.all_ok,
+    report_digest: result.runtime_invariants.report_digest,
+    evidence_count: result.runtime_invariants.evidence.length,
+    runtime_invariants_used_for_authority: result.runtime_invariants.runtime_invariants_used_for_authority,
+  },
 };
 
 console.log(JSON.stringify(output, null, 2));

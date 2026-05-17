@@ -21,6 +21,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - HDS Process / Memory / Authority closure
 - deterministic `MemoryTrace` with `used_for_authority=false`
 - standalone `CompleteHistoryStore` with append / verify / replay / export and `used_for_authority=false`
+- standalone Runtime Invariants evidence reports with audit-chain projection
 - Approval Gate with final-review boundary
 - hash-chain audit logs
 - Telegram Bot API channel
@@ -331,6 +332,8 @@ Expected invariants:
 }
 ```
 
+The legacy `hds.invariants` object is paired with `hds.runtime_invariants`, an HDS-BRAIN evidence report containing expected/actual values, per-invariant evidence, `all_ok`, and a report digest.
+
 ## Approval queue
 
 ```bash
@@ -403,6 +406,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase12-s1-output-result-audit-plane.md](./docs/phase12-s1-output-result-audit-plane.md) - Phase 12-S1 output/result audit plane
 - [docs/hds-brain-complete-history-substrate.md](./docs/hds-brain-complete-history-substrate.md) - complete history substrate boundary
 - [docs/phase12-s2-local-complete-history-substrate.md](./docs/phase12-s2-local-complete-history-substrate.md) - Phase 12-S2 complete history substrate
+- [docs/hds-brain-runtime-invariants-evidence.md](./docs/hds-brain-runtime-invariants-evidence.md) - Runtime Invariants evidence boundary
+- [docs/phase12-s3-runtime-invariants-evidence.md](./docs/phase12-s3-runtime-invariants-evidence.md) - Phase 12-S3 Runtime Invariants evidence
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions
