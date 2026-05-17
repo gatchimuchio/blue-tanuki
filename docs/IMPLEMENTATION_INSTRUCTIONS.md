@@ -2360,6 +2360,66 @@ docs/SECURITY_REVIEW_CHECKLIST.md
 
 ---
 
+# Phase 12-S5 - Approval / Notification / History / Replay UI Completion
+
+## Objective
+
+Complete the resident UI/API surface for approval, notifications, complete history, and replay without creating a new authority path.
+
+## Scope
+
+Create:
+
+```txt
+docs/phase12-s5-approval-notification-history-replay-ui.md
+```
+
+Update:
+
+```txt
+apps/gateway/src/serve.ts
+packages/channel-webchat/src/webchat.ts
+packages/channel-webchat/src/index.ts
+packages/channel-webchat/src/control_center_html.ts
+packages/channel-webchat/test/webchat.test.ts
+AGENTS.md
+SECURITY.md
+AUDIT.md
+CONFIG.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+docs/hds-brain-complete-history-substrate.md
+```
+
+## Non-Goals
+
+- new approval authority
+- raw payload display
+- approval token display in history replay
+- Control Center mutation through history/replay
+- encrypted history storage
+- SQLite / SQLCipher
+- detector lifecycle implementation
+- root full-access attack scenario tests
+
+## Completion Notes
+
+- Added WebChat `WebChatHistorySurface`.
+- Added read-only `GET /history` and `GET /history/replay` using the inbound bearer token.
+- WebChat strips raw `payload` from history snapshots before serialization.
+- Control Center now displays Complete History / Replay entries with digest/metadata only.
+- Gateway serve mode records safe complete-history replay metadata for user input, HDS decisions, approvals, execution feedback, and final output.
+- Optional JSONL persistence is available through `BLUE_TANUKI_COMPLETE_HISTORY_FILE`; unset deployments keep process-local in-memory history.
+- `complete_history_used_for_authority=false` remains explicit.
+- Active execution lane advances to Phase 12-S6 Root Full-access + Compound Attack Scenario Tests.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2450,7 +2510,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S5 Approval / Notification / History / Replay UI Completion
+Phase 12-S6 Root Full-access + Compound Attack Scenario Tests
 ```
 
-Phase 12-S4 is complete. Proceed to Phase 12-S5 Approval / Notification / History / Replay UI Completion before resuming resident application integration.
+Phase 12-S5 is complete. Proceed to Phase 12-S6 Root Full-access + Compound Attack Scenario Tests before resuming resident application integration.

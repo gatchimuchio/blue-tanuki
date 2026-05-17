@@ -293,6 +293,7 @@ export function renderControlCenterHtml(): string {
       .queue-list,
       .notification-list,
       .schedule-list,
+      .history-list,
       .trace-list,
       .audit-list {
         display: grid;
@@ -302,6 +303,7 @@ export function renderControlCenterHtml(): string {
       .queue-item,
       .notification-item,
       .schedule-item,
+      .history-item,
       .trace-item,
       .audit-item {
         display: grid;
@@ -499,6 +501,26 @@ export function renderControlCenterHtml(): string {
 
         <section class="card">
           <div class="row">
+            <h2>Complete History / Replay</h2>
+            <span id="history-summary" class="badge warn">not loaded</span>
+          </div>
+          <div class="status-grid">
+            <div class="metric"><span>Entries</span><span id="history-entry-count">not loaded</span></div>
+            <div class="metric"><span>Chain Valid</span><span id="history-chain-valid">not loaded</span></div>
+            <div class="metric"><span>Authority</span><span id="history-authority-use">not loaded</span></div>
+            <div class="metric"><span>Skipped</span><span id="history-skipped-count">not loaded</span></div>
+          </div>
+          <input id="history-token" type="password" autocomplete="off" placeholder="webchat token" />
+          <div class="action-row">
+            <input id="history-kind" type="text" autocomplete="off" placeholder="kind filter" />
+            <button id="load-history" class="primary">Load</button>
+          </div>
+          <div id="history-list" class="history-list"></div>
+          <pre id="history-json">not loaded</pre>
+        </section>
+
+        <section class="card">
+          <div class="row">
             <h2>Authority Trace</h2>
             <span id="authority-summary" class="badge warn">not loaded</span>
           </div>
@@ -564,6 +586,8 @@ export function renderControlCenterHtml(): string {
         auditToken: sessionStorage.getItem("bt.auditToken") || "",
         authorityToken: sessionStorage.getItem("bt.authorityToken") || "",
         notificationsToken: sessionStorage.getItem("bt.notificationsToken") || "",
+        historyToken: sessionStorage.getItem("bt.historyToken") || "",
+        historyKind: sessionStorage.getItem("bt.historyKind") || "",
         approvalTokens: Object.create(null)
       };
 
@@ -662,6 +686,8 @@ export function renderControlCenterHtml(): string {
         byId("audit-token").value = state.auditToken;
         byId("authority-token").value = state.authorityToken;
         byId("notifications-token").value = state.notificationsToken;
+        byId("history-token").value = state.historyToken;
+        byId("history-kind").value = state.historyKind;
       }
 
       function severityTone(severity) {
@@ -926,6 +952,49 @@ export function renderControlCenterHtml(): string {
         setText("authority-json", compactJson(redactRuntimeValue(body)));
       }
 
+      function renderHistory(body) {
+        const history = body.history || body;
+        const entries = Array.isArray(history.entries) ? history.entries : [];
+        const chainValid = history.chain_valid === true;
+        const authorityUsed = history.complete_history_used_for_authority === true;
+
+        setText("history-entry-count", history.entries_count ?? entries.length);
+        setText("history-chain-valid", labelForBoolean(chainValid));
+        setText("history-authority-use", authorityUsed ? "unsafe" : "display only");
+        setText("history-skipped-count", history.skipped_count ?? 0);
+        setText("history-summary", String(entries.length) + " replay entries");
+        byId("history-summary").className = "badge " + (chainValid && !authorityUsed ? "good" : "bad");
+
+        if (entries.length === 0) {
+          setHtml("history-list", '<div class="history-item muted">no replay entries</div>');
+        } else {
+          setHtml(
+            "history-list",
+            entries
+              .slice(-12)
+              .reverse()
+              .map(function (entry) {
+                const safe = redactRuntimeValue(entry);
+                const authorityBadge = safe.used_for_authority === false ? badge("false", "good") : badge("unsafe", "bad");
+                return '<article class="history-item"><dl class="kv">' +
+                  '<dt>kind</dt><dd>' + escapeHtml(safe.kind || "unknown") + '</dd>' +
+                  '<dt>request</dt><dd class="mono">' + escapeHtml(safe.request_id || "none") + '</dd>' +
+                  '<dt>command</dt><dd class="mono">' + escapeHtml(safe.command_id || "none") + '</dd>' +
+                  '<dt>actor</dt><dd>' + escapeHtml(safe.actor || "unknown") + '</dd>' +
+                  '<dt>source</dt><dd>' + escapeHtml(safe.source || "unknown") + '</dd>' +
+                  '<dt>payload</dt><dd class="mono">' + escapeHtml(safe.payload_digest || "not recorded") + '</dd>' +
+                  '<dt>entry</dt><dd class="mono">' + escapeHtml(safe.entry_hash || "not recorded") + '</dd>' +
+                  '<dt>authority</dt><dd>' + authorityBadge + '</dd>' +
+                  '<dt>time</dt><dd>' + escapeHtml(formatDate(safe.timestamp)) + '</dd>' +
+                  '</dl></article>';
+              })
+              .join("")
+          );
+        }
+
+        setText("history-json", compactJson(redactRuntimeValue(history)));
+      }
+
       async function loadRuntime() {
         const token = byId("runtime-token").value.trim();
         state.runtimeToken = token;
@@ -1035,6 +1104,26 @@ export function renderControlCenterHtml(): string {
         }
       }
 
+      async function loadHistory() {
+        const token = byId("history-token").value.trim();
+        const kind = byId("history-kind").value.trim();
+        state.historyToken = token;
+        state.historyKind = kind;
+        sessionStorage.setItem("bt.historyToken", token);
+        sessionStorage.setItem("bt.historyKind", kind);
+        const params = new URLSearchParams({ limit: "50" });
+        if (kind) params.set("kind", kind);
+        try {
+          const body = await fetchJson("/history/replay?" + params.toString(), token);
+          renderHistory(body);
+        } catch (error) {
+          setText("history-json", error.message);
+          setHtml("history-list", '<div class="history-item">' + escapeHtml(error.message) + '</div>');
+          setText("history-summary", "error");
+          byId("history-summary").className = "badge bad";
+        }
+      }
+
       document.addEventListener("click", async (event) => {
         const target = event.target;
         if (!(target instanceof HTMLButtonElement)) return;
@@ -1057,6 +1146,7 @@ export function renderControlCenterHtml(): string {
       byId("load-audit").addEventListener("click", loadAuditText);
       byId("verify-audit").addEventListener("click", verifyAudit);
       byId("load-authority").addEventListener("click", loadAuthorityTrace);
+      byId("load-history").addEventListener("click", loadHistory);
 
       syncInputs();
     </script>

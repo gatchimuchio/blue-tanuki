@@ -92,6 +92,8 @@ The store records original history material for user input, LLM history, HDS dec
 
 Complete history remains reference/evidence only. Gateway, Control Center, history UI, audit viewers, and replay tools may use it as adapters, but they cannot turn it into an authority path. Complete-history entries and exports carry `used_for_authority=false` / `complete_history_used_for_authority=false`.
 
+Phase 12-S5 wires Gateway and Control Center to complete history as a read-only replay projection. The WebChat `/history` and `/history/replay` APIs require the normal inbound bearer token, reject mutation methods, strip raw `payload`, and expose only ids, kinds, request/command ids, digests, entry hashes, timestamps, actor/source metadata, and non-authority flags.
+
 ## Runtime Invariants evidence
 
 Phase 12-S3 adds `RuntimeInvariantEvidenceReport` inside `packages/hds-brain`.

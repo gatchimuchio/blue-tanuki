@@ -79,6 +79,10 @@
 - `apps/gateway/test/plugin_loader.test.ts`
   - first-party surface exports are loaded only after manifest permission checks
 - `packages/channel-webchat/test/webchat.test.ts`
+  - Complete History / Replay Control Center shell
+  - `/history` / `/history/replay` require inbound auth
+  - history replay strips raw payload before serialization
+  - history replay rejects mutation methods
   - Writing Operator Control Center endpoints require inbound auth
   - Writing Operator invoke enters the existing inbound handler with gateway-owned surface metadata
   - Daily Operator Control Center endpoints require inbound auth
@@ -106,6 +110,7 @@
 - HDS-BRAIN standalone boundary tests
 - HDS-BRAIN runtime invariant evidence tests
 - HDS-BRAIN complete history substrate tests
+- Complete history / replay UI tests
 - HDS-BRAIN final-review single-source tests
 - Runtime automation containment tests
 - First-party operator surface tests
@@ -223,6 +228,15 @@ runtime automation は未来の action を作るため、通常の tool より�
 - Replay and export expose copies, not mutable live records.
 - JSONL persistence verifies the complete chain before accepting existing history.
 - Complete history remains replay/evidence material and cannot substitute approval.
+
+## Complete History / Replay UI Tests
+
+- Control Center exposes Complete History / Replay without replacing Approval Queue or Notification Center.
+- `/history` and `/history/replay` are read-only and require the WebChat inbound bearer token.
+- WebChat strips raw `payload` from history snapshots before serialization.
+- History entries expose digest/metadata fields only.
+- `complete_history_used_for_authority=false` is preserved in the response.
+- History replay cannot approve, reject, execute, mutate audit, mutate history, or grant authority.
 
 ## Preview Quarantine Rule
 

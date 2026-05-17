@@ -15,6 +15,10 @@ export {
   type WebChatNotificationKind,
   type WebChatNotificationSeverity,
   type WebChatNotificationSurface,
+  type WebChatHistoryEntry,
+  type WebChatHistoryReplayFilter,
+  type WebChatHistorySnapshot,
+  type WebChatHistorySurface,
   type WebChatOperatorSurface,
   type WebChatOperatorSurfaces,
 } from "./webchat.js";

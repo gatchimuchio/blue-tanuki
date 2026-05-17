@@ -88,6 +88,8 @@ When a filepath is supplied, records are persisted as JSONL with payload digests
 
 This store is not the hash-chain authority audit log and is not an approval source. It is replay/evidence material only, with `used_for_authority=false` and `complete_history_used_for_authority=false`.
 
+Gateway serve mode now appends safe replay metadata into `CompleteHistoryStore` for user input, HDS decisions, approval evaluations, execution feedback, and final output audit. The Control Center `/history` and `/history/replay` APIs project only replay metadata and digests; raw payloads, approval tokens, credentials, command content, rendered output, and raw tool/LLM result values are not serialized through that API.
+
 ## Runtime Invariants evidence audit
 
 Phase 12-S3 adds `runtime_invariants` records to the HDS hash-chain audit.

@@ -298,6 +298,7 @@ Complete history stores original records and replay evidence. It is not authorit
 - It may record user input, LLM history, HDS decisions, approval history, execution history, audit history, and final output history.
 - Gateway, Control Center, history UI, audit viewers, and replay tools are adapters over this substrate.
 - Complete history entries and exports must keep `used_for_authority=false` / `complete_history_used_for_authority=false`.
+- Control Center history/replay projections must expose digests and metadata only; raw payloads, tokens, credentials, command content, and rendered output content must not be serialized to the UI/API.
 - Complete history must not classify risk, infer consent, substitute approval, bypass final review, rewrite policy, or create a second authority path.
 
 ### Runtime Invariants Evidence Rule

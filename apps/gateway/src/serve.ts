@@ -1,5 +1,18 @@
-import { HDSUpperController } from "@blue-tanuki/hds-brain";
-import type { ApprovalEvaluation, DecisionLog } from "@blue-tanuki/hds-brain";
+import { createHash } from "node:crypto";
+import {
+  COMPLETE_HISTORY_SCHEMA_VERSION,
+  CompleteHistoryStore,
+  HDSUpperController,
+} from "@blue-tanuki/hds-brain";
+import type {
+  ApprovalEvaluation,
+  CompleteHistoryAppendInput,
+  CompleteHistoryEntry,
+  CompleteHistoryKind,
+  CompleteHistoryReplayFilter,
+  DecisionLog,
+  OutputAuditLog,
+} from "@blue-tanuki/hds-brain";
 import {
   Executor,
   ToolRegistry,
@@ -21,6 +34,7 @@ import {
 } from "@blue-tanuki/channel-base";
 import type {
   ExecuteCommand,
+  ExecuteFeedback,
   InboundRequest,
 } from "@blue-tanuki/protocol";
 import {
@@ -35,6 +49,9 @@ import type {
   WebChatChannel,
   WebChatApprovalQueueItem,
   WebChatAuthorityTraceItem,
+  WebChatHistoryEntry,
+  WebChatHistoryReplayFilter,
+  WebChatHistorySnapshot,
   WebChatResumeContext,
 } from "@blue-tanuki/channel-webchat";
 import {
@@ -130,6 +147,17 @@ export async function serve(): Promise<ServeShutdown> {
     memory: buildHDSMemoryStore(process.env),
     llm_route: buildLLMCommandRouteFromEnv(),
   });
+  const completeHistoryFile = nonEmptyEnv(process.env.BLUE_TANUKI_COMPLETE_HISTORY_FILE);
+  const completeHistoryMaxEntries = parsePositiveInt(process.env.BLUE_TANUKI_COMPLETE_HISTORY_MAX_ENTRIES);
+  const completeHistory = new CompleteHistoryStore({
+    filepath: completeHistoryFile,
+    max_entries: completeHistoryMaxEntries,
+  });
+  gatewayLog.info("complete history", {
+    persistence: completeHistoryFile ? "jsonl" : "memory",
+    entries: completeHistory.size(),
+    max_entries: completeHistoryMaxEntries ?? "unbounded",
+  });
   hds.onRuntimeInvariantsEvidence({ reason: "gateway_startup" });
   const runtimeSchedules = await RuntimeScheduleManager.open({
     env: process.env,
@@ -192,6 +220,111 @@ export async function serve(): Promise<ServeShutdown> {
   let executor: Executor;
   let webchat: WebChatChannel;
 
+  function recordCompleteHistory(input: CompleteHistoryAppendInput): void {
+    try {
+      completeHistory.append(input);
+    } catch (e) {
+      gatewayLog.error("complete history append failed", {
+        kind: input.kind,
+        request_id: input.request_id ?? null,
+        command_id: input.command_id ?? null,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  function recordApprovalHistory(
+    event: string,
+    cmd: ExecuteCommand,
+    log: DecisionLog,
+    origin: InboundRequest,
+    actor: string,
+    evaluation: ApprovalEvaluation | null,
+    extra: Record<string, unknown> = {},
+  ): void {
+    recordCompleteHistory({
+      kind: "approval_history",
+      request_id: log.request_id,
+      command_id: cmd.id,
+      actor,
+      source: "approval_runtime",
+      timestamp: Date.now(),
+      payload: {
+        event,
+        command: commandHistoryDescriptor(cmd),
+        decision: evaluation?.decision ?? null,
+        risk: evaluation?.risk ?? null,
+        approval_level: evaluation?.approval_level ?? null,
+        final_review_required: evaluation?.final_review_required ?? false,
+        reason: evaluation?.reason ?? null,
+        operation: evaluation?.context.operation ?? commandOperation(cmd),
+        origin_channel: origin.channel,
+        ...extra,
+      },
+    });
+  }
+
+  function recordExecutionHistory(
+    cmd: ExecuteCommand,
+    log: DecisionLog,
+    origin: InboundRequest,
+    actor: string,
+    feedback: ExecuteFeedback,
+  ): void {
+    recordCompleteHistory({
+      kind: "execution_history",
+      request_id: log.request_id,
+      command_id: cmd.id,
+      actor,
+      source: "executor",
+      timestamp: Date.now(),
+      payload: {
+        command: commandHistoryDescriptor(cmd),
+        origin_channel: origin.channel,
+        status: feedback.status,
+        result_present: feedback.result !== undefined,
+        result_digest: feedback.result === undefined ? undefined : digestValue(feedback.result),
+        error: feedback.error,
+        metrics: feedback.metrics,
+      },
+    });
+  }
+
+  function recordFinalOutputHistory(
+    log: DecisionLog,
+    origin: InboundRequest,
+    actor: string,
+    output: OutputAuditLog,
+  ): void {
+    recordCompleteHistory({
+      kind: "final_output",
+      request_id: output.request_id ?? log.request_id,
+      command_id: output.command_id,
+      actor,
+      source: "output_audit",
+      timestamp: output.timestamp,
+      payload: {
+        origin_channel: origin.channel,
+        command_type: output.command_type,
+        upstream_commit_hash: output.upstream_commit_hash,
+        upstream_decision: output.upstream_decision,
+        output_kind: output.output_kind,
+        target_surface: output.target_surface,
+        status: output.status,
+        result_present: output.result_present,
+        result_digest: output.result_digest,
+        rendered_output_present: output.rendered_output_present,
+        rendered_output_digest: output.rendered_output_digest,
+        rendered_output_chars: output.rendered_output_chars,
+        user_visible_output: output.user_visible_output,
+        external_side_effect_result: output.external_side_effect_result,
+        used_for_authority: output.used_for_authority,
+        release_decision: output.release_decision,
+        reason: output.reason,
+      },
+    });
+  }
+
   /**
    * Run a command through the executor, then mirror user-visible command
    * output back to the originating channel as a channel_send.
@@ -202,19 +335,25 @@ export async function serve(): Promise<ServeShutdown> {
     origin: InboundRequest,
     opts: { skip_approval?: boolean; actor?: string } = {},
   ): Promise<{ status: string }> {
+    const actor = opts.actor ?? origin.user;
     if (!opts.skip_approval) {
-      const evaluation = approval.evaluate(cmd, opts.actor ?? origin.user);
+      const evaluation = approval.evaluate(cmd, actor);
       hds.onApprovalEvaluation(evaluation, { request_id: log.request_id });
+      recordApprovalHistory("policy_evaluation", cmd, log, origin, actor, evaluation);
       if (evaluation.decision === "ask") {
         if (runtimeScheduleMutationCommand(cmd)) {
           const prepared = runtimeSchedules.preparePending(cmd, evaluation, {
             request_id: log.request_id,
-            actor: opts.actor ?? origin.user,
+            actor,
           });
           if (!prepared.ok) {
             hds.onCommandLifecycle(cmd.id, "approval_rejected", {
-              actor: opts.actor ?? origin.user,
+              actor,
               reason: prepared.message,
+            });
+            recordApprovalHistory("schedule_approval_rejected", cmd, log, origin, actor, evaluation, {
+              prepared: false,
+              schedule_rejection_reason: prepared.message,
             });
             await dispatcher.dispatch(
               { channel: origin.channel, target: replyTarget(origin), content: prepared.message },
@@ -223,8 +362,12 @@ export async function serve(): Promise<ServeShutdown> {
             return { status: "schedule_rejected" };
           }
         }
-        hds.onCommandLifecycle(cmd.id, "approval_pending", { actor: opts.actor ?? origin.user, reason: evaluation.reason });
+        hds.onCommandLifecycle(cmd.id, "approval_pending", { actor, reason: evaluation.reason });
         const issued = await webchat.issueResumeApprovalToken(cmd.id);
+        recordApprovalHistory("approval_pending", cmd, log, origin, actor, evaluation, {
+          approval_token_issued: Boolean(issued?.token),
+          approval_token_expires_at_ms: issued?.expires_at_ms,
+        });
         pendingApprovals.set(cmd.id, {
           command: cmd,
           log,
@@ -240,20 +383,25 @@ export async function serve(): Promise<ServeShutdown> {
         return { status: "approval_required" };
       }
       if (evaluation.decision === "deny") {
-        hds.onCommandLifecycle(cmd.id, "approval_rejected", { actor: opts.actor ?? origin.user, reason: evaluation.reason });
+        hds.onCommandLifecycle(cmd.id, "approval_rejected", { actor, reason: evaluation.reason });
+        recordApprovalHistory("approval_denied", cmd, log, origin, actor, evaluation);
         const fb = approvalDeniedFeedback(cmd, evaluation.reason);
         const content = renderCommandOutput(cmd, fb);
-        hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
+        const output = hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
+        recordFinalOutputHistory(log, origin, actor, output);
         if (content) await dispatcher.dispatch({ channel: origin.channel, target: replyTarget(origin), content }, { command_id: cmd.id, upstream_commit_hash: log.commit.hash });
         return { status: "approval_denied" };
       }
-      hds.onCommandLifecycle(cmd.id, "approval_approved", { actor: opts.actor ?? origin.user, reason: evaluation.reason });
+      hds.onCommandLifecycle(cmd.id, "approval_approved", { actor, reason: evaluation.reason });
+      recordApprovalHistory("approval_approved", cmd, log, origin, actor, evaluation);
     }
     const fb = await executor.execute(cmd);
     hds.onFeedback(fb);
+    recordExecutionHistory(cmd, log, origin, actor, fb);
     coreLog.info("command", { command: cmd.id.slice(0, 8), status: fb.status, duration_ms: fb.metrics.duration_ms });
     const content = renderCommandOutput(cmd, fb);
-    hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
+    const output = hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
+    recordFinalOutputHistory(log, origin, actor, output);
     if (content) await dispatcher.dispatch({ channel: origin.channel, target: replyTarget(origin), content }, { command_id: cmd.id, upstream_commit_hash: log.commit.hash });
     return { status: fb.status };
   }
@@ -265,12 +413,20 @@ export async function serve(): Promise<ServeShutdown> {
     if (verdict !== "approve") {
       runtimeSchedules.rejectPending(command_id, ctx.actor, `human_approval:${verdict}`);
       hds.onCommandLifecycle(command_id, "approval_rejected", { actor: ctx.actor, reason: `human_approval:${verdict}` });
+      recordApprovalHistory("human_resume_rejected", pending.command, pending.log, pending.origin, ctx.actor, pending.evaluation, {
+        verdict,
+        token_kind: ctx.token_kind,
+      });
       await dispatcher.dispatch({ channel: pending.origin.channel, target: replyTarget(pending.origin), content: `[approval-${verdict}] command_id=${command_id}` }, { command_id: `approval-${verdict}-${command_id}`, upstream_commit_hash: pending.log.commit.hash });
       return { approval: verdict, executed: false };
     }
     if (runtimeScheduleMutationCommand(pending.command) && !runtimeSchedules.hasPending(command_id)) {
       const content = "[schedule-expired] approval expired before activation. activated=false can_fire=false next_action=Submit the schedule request again and approve the new command_id.";
       hds.onCommandLifecycle(command_id, "approval_rejected", { actor: ctx.actor, reason: "schedule_approval_expired" });
+      recordApprovalHistory("schedule_approval_expired", pending.command, pending.log, pending.origin, ctx.actor, pending.evaluation, {
+        verdict,
+        token_kind: ctx.token_kind,
+      });
       await dispatcher.dispatch({ channel: pending.origin.channel, target: replyTarget(pending.origin), content }, { command_id: `schedule-expired-${command_id}`, upstream_commit_hash: pending.log.commit.hash });
       return { approval: "approve", executed: false, status: "schedule_approval_expired" };
     }
@@ -286,6 +442,11 @@ export async function serve(): Promise<ServeShutdown> {
       });
     }
     hds.onCommandLifecycle(command_id, "approval_approved", { actor: ctx.actor, reason: "human_approval:approve" });
+    recordApprovalHistory("human_resume_approved", pending.command, pending.log, pending.origin, ctx.actor, pending.evaluation, {
+      verdict,
+      token_kind: ctx.token_kind,
+      remember_requested: Boolean(ctx.approval?.remember || ctx.approval?.mode),
+    });
     const r = await executeAndEcho(pending.command, pending.log, pending.origin, { skip_approval: true, actor: ctx.actor });
     return { approval: "approve", executed: true, status: r.status };
   }
@@ -364,6 +525,9 @@ export async function serve(): Promise<ServeShutdown> {
       notifications: {
         list: async () => residentNotificationSnapshot(),
       },
+      history: {
+        replay: async (filter: WebChatHistoryReplayFilter) => completeHistorySnapshot(filter),
+      },
       operators: {
         daily: {
           getSnapshot: async () => dailySurfaceSnapshot({
@@ -387,6 +551,20 @@ export async function serve(): Promise<ServeShutdown> {
         const pending = await resumePendingApproval(request_id, verdict, ctx);
         if (pending) return pending;
         const { log, command, request } = hds.resume(request_id, verdict, { actor: ctx.actor, token_kind: ctx.token_kind });
+        recordCompleteHistory({
+          kind: "hds_decision",
+          request_id: log.request_id,
+          command_id: command?.id,
+          actor: ctx.actor,
+          source: "hds-brain.resume",
+          timestamp: log.timestamp,
+          payload: {
+            ...hdsDecisionHistoryPayload(log, command),
+            resumed_request_id: request_id,
+            verdict,
+            token_kind: ctx.token_kind,
+          },
+        });
         if (command) {
           const r = await executeAndEcho(command, log, request, { actor: ctx.actor });
           return { decision: log.commit.decision, executed: true, status: r.status };
@@ -594,6 +772,35 @@ export async function serve(): Promise<ServeShutdown> {
     });
   }
 
+  function completeHistorySnapshot(filter: WebChatHistoryReplayFilter): WebChatHistorySnapshot {
+    const replayFilter: CompleteHistoryReplayFilter = {};
+    const invalidKind = filter.kind !== undefined && !isCompleteHistoryKind(filter.kind);
+    if (isCompleteHistoryKind(filter.kind)) replayFilter.kind = filter.kind;
+    if (filter.request_id !== undefined) replayFilter.request_id = filter.request_id;
+    if (filter.command_id !== undefined) replayFilter.command_id = filter.command_id;
+    const limit = Number.isInteger(filter.limit)
+      ? Math.min(500, Math.max(1, filter.limit!))
+      : 100;
+    const entries = invalidKind
+      ? []
+      : completeHistory
+          .replay(replayFilter)
+          .slice(-limit)
+          .map(projectCompleteHistoryEntry);
+    return {
+      schema_version: COMPLETE_HISTORY_SCHEMA_VERSION,
+      entries_count: completeHistory.size(),
+      skipped_count: completeHistory.skippedCount(),
+      chain_valid: completeHistory.verify(),
+      complete_history_used_for_authority: false,
+      replay_filter: {
+        ...filter,
+        limit,
+      },
+      entries,
+    };
+  }
+
   const telegramPermissions = [
     "network:api.telegram.org",
     "secrets:TELEGRAM_BOT_TOKEN",
@@ -713,7 +920,37 @@ export async function serve(): Promise<ServeShutdown> {
   });
 
   const handler = async (req: InboundRequest): Promise<void> => {
+    recordCompleteHistory({
+      kind: "user_input",
+      request_id: req.id,
+      actor: req.user,
+      source: req.channel,
+      timestamp: req.timestamp,
+      payload: {
+        channel: req.channel,
+        user: req.user,
+        content_digest: digestString(req.content),
+        content_chars: req.content.length,
+        metadata_keys: metadataKeys(req.metadata),
+        reply_to_present: typeof req.metadata?.["reply_to"] === "string",
+        webhook_source: typeof req.metadata?.["webhook_source"] === "string"
+          ? req.metadata["webhook_source"]
+          : undefined,
+        operator_surface: typeof req.metadata?.["blue_tanuki.operator_surface"] === "string"
+          ? req.metadata["blue_tanuki.operator_surface"]
+          : undefined,
+      },
+    });
     const { log, command } = hds.decide(req);
+    recordCompleteHistory({
+      kind: "hds_decision",
+      request_id: log.request_id,
+      command_id: command?.id,
+      actor: req.user,
+      source: "hds-brain",
+      timestamp: log.timestamp,
+      payload: hdsDecisionHistoryPayload(log, command),
+    });
     hdsLog.info("decision", {
       channel: req.channel,
       user: req.user,
@@ -767,6 +1004,189 @@ function parsePositiveInt(value: string | undefined): number | undefined {
   if (!value) return undefined;
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
+function nonEmptyEnv(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function metadataKeys(meta: Record<string, unknown> | undefined): string[] {
+  return Object.keys(meta ?? {}).sort();
+}
+
+function hdsDecisionHistoryPayload(
+  log: DecisionLog,
+  command: ExecuteCommand | null,
+): Record<string, unknown> {
+  return {
+    decision: log.commit.decision,
+    reason: log.commit.reason,
+    commit_hash: log.commit.hash,
+    triggered_thresholds: log.commit.triggered_thresholds,
+    input_changed: log.input?.changed ?? false,
+    normalized_content_digest: log.input?.normalized_content
+      ? digestString(log.input.normalized_content)
+      : undefined,
+    control_chars: log.input?.controls.map((control) => ({
+      index: control.index,
+      code_point: control.code_point,
+      kind: control.kind,
+      name: control.name,
+    })) ?? [],
+    actor: {
+      actor_kind: log.frame.actor.actor_kind,
+      channel: log.frame.actor.channel,
+      trust_level: log.frame.actor.trust_level,
+    },
+    process: {
+      process_id: log.frame.process.process_id,
+      process_kind: log.frame.process.process_kind,
+      trigger_kind: log.frame.process.trigger.kind,
+      approval_profile: log.frame.process.approval_profile,
+      execution_policy: {
+        allowed_command_types: log.frame.process.execution_policy.allowed_command_types,
+        allowed_tools: log.frame.process.execution_policy.allowed_tools,
+        allowed_capabilities: log.frame.process.execution_policy.allowed_capabilities,
+        timeout_ms: log.frame.process.execution_policy.timeout_ms,
+      },
+    },
+    operator_surface: log.frame.operator_surface,
+    memory_trace: {
+      policy_id: log.frame.memory_trace.policy_id,
+      hits: log.frame.memory_trace.hits.length,
+      used_for_authority: log.frame.memory_trace.used_for_authority,
+    },
+    model: {
+      abstraction: log.model.abstraction,
+      scoring_aggregate: log.model.scoring.aggregate,
+      axis_count: log.model.scoring.axis_scores.length,
+    },
+    command: command ? commandHistoryDescriptor(command) : null,
+  };
+}
+
+function commandHistoryDescriptor(command: ExecuteCommand): Record<string, unknown> {
+  const base = {
+    command_id: command.id,
+    type: command.type,
+    operation: commandOperation(command),
+    upstream_commit_hash: command.upstream_decision.commit_hash,
+    upstream_decision: command.upstream_decision.commit_decision,
+    constraints: {
+      max_tokens: command.constraints?.max_tokens,
+      timeout_ms: command.constraints?.timeout_ms,
+      allowed_tools: command.constraints?.allowed_tools,
+      allowed_capabilities: command.constraints?.allowed_capabilities,
+    },
+  };
+  if (command.type === "tool_call") {
+    return {
+      ...base,
+      payload: {
+        tool_name: command.payload.tool_name,
+        argument_keys: Object.keys(command.payload.arguments).sort(),
+        arguments_digest: digestValue(command.payload.arguments),
+      },
+    };
+  }
+  if (command.type === "llm_call") {
+    return {
+      ...base,
+      payload: {
+        messages_count: command.payload.messages.length,
+        message_roles: command.payload.messages.map((message) => message.role),
+        messages_digest: digestValue(command.payload.messages),
+        backend_hint: command.payload.backend_hint,
+        model: command.payload.model,
+        temperature: command.payload.temperature,
+        session_id_digest: command.payload.session_id
+          ? digestString(command.payload.session_id)
+          : undefined,
+      },
+    };
+  }
+  if (command.type === "channel_send") {
+    return {
+      ...base,
+      payload: {
+        channel: command.payload.channel,
+        target_digest: digestString(command.payload.target),
+        content_digest: digestString(command.payload.content),
+        content_chars: command.payload.content.length,
+      },
+    };
+  }
+  return {
+    ...base,
+    payload: {},
+  };
+}
+
+function commandOperation(command: ExecuteCommand): string {
+  if (command.type === "tool_call") return command.payload.tool_name;
+  if (command.type === "llm_call") return "llm_call";
+  if (command.type === "channel_send") return `channel_send:${command.payload.channel}`;
+  return "noop";
+}
+
+const COMPLETE_HISTORY_KINDS: readonly CompleteHistoryKind[] = [
+  "user_input",
+  "llm_history",
+  "hds_decision",
+  "approval_history",
+  "execution_history",
+  "audit_history",
+  "final_output",
+];
+
+function isCompleteHistoryKind(value: unknown): value is CompleteHistoryKind {
+  return typeof value === "string" && COMPLETE_HISTORY_KINDS.includes(value as CompleteHistoryKind);
+}
+
+function projectCompleteHistoryEntry(entry: CompleteHistoryEntry): WebChatHistoryEntry {
+  return {
+    schema_version: entry.schema_version,
+    index: entry.index,
+    id: entry.id,
+    kind: entry.kind,
+    request_id: entry.request_id,
+    command_id: entry.command_id,
+    actor: entry.actor,
+    source: entry.source,
+    payload_digest: entry.payload_digest,
+    used_for_authority: false,
+    timestamp: entry.timestamp,
+    prev_hash: entry.prev_hash,
+    entry_hash: entry.entry_hash,
+  };
+}
+
+function digestString(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function digestValue(value: unknown): string {
+  return createHash("sha256").update(stableJson(value)).digest("hex");
+}
+
+function stableJson(value: unknown): string {
+  const seen = new WeakSet<object>();
+  const normalize = (v: unknown, inArray = false): unknown => {
+    if (v === undefined) return inArray ? null : undefined;
+    if (typeof v === "bigint") return v.toString();
+    if (typeof v !== "object" || v === null) return v;
+    if (seen.has(v)) return "[circular]";
+    seen.add(v);
+    if (Array.isArray(v)) return v.map((item) => normalize(item, true));
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(v as Record<string, unknown>).sort()) {
+      const normalized = normalize((v as Record<string, unknown>)[key]);
+      if (normalized !== undefined) out[key] = normalized;
+    }
+    return out;
+  };
+  return JSON.stringify(normalize(value)) ?? "null";
 }
 
 function humanizeDecision(

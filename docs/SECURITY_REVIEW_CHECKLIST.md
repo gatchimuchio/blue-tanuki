@@ -16,6 +16,7 @@
 - Does this change provide Trinity `M` from LLM output, memory, session, channel metadata, or plugin metadata?
 - Does this change send user-visible output or external result handoff without an `output_audit` record?
 - Does this change let complete history become authority, approval, risk classification, or policy input?
+- Does this change expose complete-history raw payload, command content, rendered output, approval tokens, bearer tokens, or credentials through Control Center/history APIs?
 - Does this change turn Runtime Invariants evidence into authority, approval, policy mutation, or fallback execution?
 - Does this change duplicate or bypass `FINAL_REVIEW_OPERATION_LIST` instead of deriving from the HDS-BRAIN source of truth?
 
@@ -33,5 +34,6 @@
 - HDS-BRAIN standalone smoke / boundary tests は維持されているか
 - UI / Control Center / memory / history / session / tool result が authority に変換されていないか
 - CompleteHistoryStore が standalone append / verify / replay / export baseline を維持しているか
+- Control Center history/replay が digest/metadata only で raw payload を返していないか
 - Runtime Invariants evidence が HDS-BRAIN standalone で取得・監査できるか
 - final-review operation が `packages/hds-brain/src/approval_policy.ts` の単一ソースから派生しているか

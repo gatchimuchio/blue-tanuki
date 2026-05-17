@@ -11,6 +11,7 @@ import {
   type WebChatAuditSurface,
   type WebChatAuthoritySurface,
   type WebChatNotificationSurface,
+  type WebChatHistorySurface,
   type WebChatOperatorSurfaces,
   type WebChatRuntimeSurface,
   type WebChatSettingsSurface,
@@ -49,6 +50,7 @@ function setup(
       audit?: WebChatAuditSurface;
       authority?: WebChatAuthoritySurface;
       notifications?: WebChatNotificationSurface;
+      history?: WebChatHistorySurface;
       operators?: WebChatOperatorSurfaces;
     }
   > = {},
@@ -72,6 +74,7 @@ function setup(
     audit: opts.audit,
     authority: opts.authority,
     notifications: opts.notifications,
+    history: opts.history,
     operators: opts.operators,
     // Default: disable rate limiting in legacy tests so existing flows
     // keep working without thinking about bursts. Rate-limit behavior is
@@ -300,6 +303,9 @@ describe("WebChatChannel — Control Center shell", () => {
       expect(html).toContain("Final Review");
       expect(html).toContain("Notification Center");
       expect(html).toContain("load-notifications");
+      expect(html).toContain("Complete History / Replay");
+      expect(html).toContain("load-history");
+      expect(html).toContain("history-list");
       expect(html).toContain("runtime-schedule-list");
       expect(html).toContain("authority-trace-list");
       expect(html).toContain("redactRuntimeValue");
@@ -1510,6 +1516,104 @@ describe("WebChatChannel - resident notifications API", () => {
       const r = await postJson(
         ctx.port,
         "/notifications",
+        {},
+        { authorization: `Bearer ${TOKEN}` },
+      );
+      expect(r.status).toBe(405);
+    } finally {
+      await ctx.teardown();
+    }
+  });
+});
+
+describe("WebChatChannel - complete history replay API", () => {
+  it("serves read-only replay metadata only with the inbound token", async () => {
+    const filters: unknown[] = [];
+    const ctx = setup({
+      history: {
+        replay: async (filter) => {
+          filters.push(filter);
+          return {
+            schema_version: "phase12-s2-complete-history-v1",
+            entries_count: 1,
+            skipped_count: 0,
+            chain_valid: true,
+            complete_history_used_for_authority: false,
+            replay_filter: filter,
+            entries: [
+              {
+                schema_version: "phase12-s2-complete-history-v1",
+                index: 0,
+                id: "hist-1",
+                kind: "approval_history",
+                request_id: "req-1",
+                command_id: "cmd-1",
+                actor: "alice",
+                source: "gateway",
+                payload_digest: "payload-hash",
+                used_for_authority: false,
+                timestamp: 12345,
+                prev_hash: "GENESIS",
+                entry_hash: "entry-hash",
+                payload: "secret raw payload",
+              } as never,
+            ],
+          };
+        },
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      expect((await getRaw(ctx.port, "/history/replay")).status).toBe(401);
+      expect(
+        (await getRaw(ctx.port, "/history/replay", {
+          authorization: `Bearer ${RESUME_TOKEN}`,
+        })).status,
+      ).toBe(401);
+
+      const ok = await getRaw(ctx.port, "/history/replay?kind=approval_history&limit=10", {
+        authorization: `Bearer ${TOKEN}`,
+      });
+      expect(ok.status).toBe(200);
+      const body = JSON.parse(ok.text);
+      expect(body.history).toMatchObject({
+        entries_count: 1,
+        skipped_count: 0,
+        chain_valid: true,
+        complete_history_used_for_authority: false,
+      });
+      expect(body.history.entries[0]).toMatchObject({
+        kind: "approval_history",
+        request_id: "req-1",
+        command_id: "cmd-1",
+        payload_digest: "payload-hash",
+        used_for_authority: false,
+      });
+      expect(filters).toEqual([{ kind: "approval_history", limit: 10 }]);
+      expect(ok.text).not.toContain("secret raw payload");
+      expect(ok.text).not.toContain("\"payload\"");
+    } finally {
+      await ctx.teardown();
+    }
+  });
+
+  it("does not accept POST /history/replay", async () => {
+    const ctx = setup({
+      history: {
+        replay: async () => ({
+          entries_count: 0,
+          skipped_count: 0,
+          chain_valid: true,
+          complete_history_used_for_authority: false,
+          entries: [],
+        }),
+      },
+    });
+    await ctx.ch.start(async () => {});
+    try {
+      const r = await postJson(
+        ctx.port,
+        "/history/replay",
         {},
         { authorization: `Bearer ${TOKEN}` },
       );

@@ -339,7 +339,11 @@ BLUE_TANUKI_AUDIT_DIR=.blue-tanuki/audit
 BLUE_TANUKI_MEMORY_DIR=.blue-tanuki/memory
 BLUE_TANUKI_SESSION_DIR=.blue-tanuki/sessions
 BLUE_TANUKI_APPROVALS_FILE=.blue-tanuki/approvals/grants.json
+BLUE_TANUKI_COMPLETE_HISTORY_FILE=.blue-tanuki/history/complete-history.jsonl
+BLUE_TANUKI_COMPLETE_HISTORY_MAX_ENTRIES=10000
 ```
+
+Complete history persistence is optional. If `BLUE_TANUKI_COMPLETE_HISTORY_FILE` is unset, Gateway keeps the replay chain in memory for the current serve process. The Control Center history API remains read-only and returns digests/metadata only.
 
 ## Approval
 

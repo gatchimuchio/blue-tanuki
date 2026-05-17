@@ -203,6 +203,44 @@ export interface WebChatNotificationSurface {
   list: () => Promise<readonly WebChatNotificationItem[]>;
 }
 
+export interface WebChatHistoryReplayFilter {
+  kind?: string;
+  request_id?: string | null;
+  command_id?: string | null;
+  limit?: number;
+}
+
+export interface WebChatHistoryEntry {
+  schema_version?: string;
+  index: number;
+  id: string;
+  kind: string;
+  request_id: string | null;
+  command_id: string | null;
+  actor?: string;
+  source?: string;
+  payload_digest: string;
+  used_for_authority: false;
+  timestamp: number;
+  prev_hash?: string;
+  entry_hash: string;
+}
+
+export interface WebChatHistorySnapshot {
+  schema_version?: string;
+  entries_count: number;
+  skipped_count?: number;
+  chain_valid: boolean;
+  complete_history_used_for_authority: false;
+  replay_filter?: WebChatHistoryReplayFilter;
+  entries: readonly WebChatHistoryEntry[];
+}
+
+export interface WebChatHistorySurface {
+  /** Return read-only complete-history replay metadata; raw payloads are never exposed. */
+  replay: (filter: WebChatHistoryReplayFilter) => Promise<WebChatHistorySnapshot>;
+}
+
 export interface WebChatOperatorSurfaces {
   writing?: WebChatOperatorSurface;
   daily?: WebChatOperatorSurface;
@@ -275,6 +313,8 @@ export interface WebChatOptions {
   authority?: WebChatAuthoritySurface;
   /** Optional display-only notification API surface. Uses the normal inbound bearer token. */
   notifications?: WebChatNotificationSurface;
+  /** Optional read-only complete-history replay surface. Uses the normal inbound bearer token. */
+  history?: WebChatHistorySurface;
   /** Optional first-party operator endpoints. Uses the normal inbound bearer token. */
   operators?: WebChatOperatorSurfaces;
   /**
@@ -325,6 +365,8 @@ const RESUME_GLOBAL_KEY = "*";
  *   GET  /audit/dump auth:Bearer inbound-token
  *   GET  /authority/trace auth:Bearer inbound-token
  *   GET  /notifications auth:Bearer inbound-token
+ *   GET  /history auth:Bearer inbound-token
+ *   GET  /history/replay auth:Bearer inbound-token
  *   GET  /operators/writing auth:Bearer inbound-token
  *   POST /operators/writing/invoke body:{user,content} auth:Bearer inbound-token
  *   GET  /operators/daily auth:Bearer inbound-token
@@ -719,6 +761,11 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
 
     if (url.pathname === "/notifications") {
       await this.handleNotifications(req, res);
+      return;
+    }
+
+    if (url.pathname === "/history" || url.pathname === "/history/replay") {
+      await this.handleHistory(req, res, url);
       return;
     }
 
@@ -1154,6 +1201,36 @@ export class WebChatChannel implements InboundChannel, OutboundChannel {
     res.end(JSON.stringify({ notifications }));
   }
 
+  private async handleHistory(
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+  ): Promise<void> {
+    if (!this.opts.history) {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "history_not_configured" }));
+      return;
+    }
+    if (req.method !== "GET") {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    if (!this.checkAuth(req, "inbound")) {
+      res.writeHead(401, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "unauthorized" }));
+      return;
+    }
+    const history = sanitizeHistorySnapshot(
+      await this.opts.history.replay(readHistoryReplayFilter(url)),
+    );
+    res.writeHead(200, {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    });
+    res.end(JSON.stringify({ history }));
+  }
+
   private async handleOperator(
     req: IncomingMessage,
     res: ServerResponse,
@@ -1340,6 +1417,58 @@ function readResumeApprovalOptions(body: Record<string, unknown> | null): WebCha
   else if (typeof durationRaw === "string" && /^\d+$/.test(durationRaw)) duration_ms = Math.floor(Number(durationRaw));
   if (!remember && !mode && duration_ms === undefined) return undefined;
   return { remember, mode, duration_ms };
+}
+
+function readHistoryReplayFilter(url: URL): WebChatHistoryReplayFilter {
+  const filter: WebChatHistoryReplayFilter = {};
+  const kind = nonEmptyString(url.searchParams.get("kind"));
+  const request_id = url.searchParams.has("request_id")
+    ? url.searchParams.get("request_id")
+    : undefined;
+  const command_id = url.searchParams.has("command_id")
+    ? url.searchParams.get("command_id")
+    : undefined;
+  const limitRaw = url.searchParams.get("limit");
+  if (kind) filter.kind = kind;
+  if (request_id !== undefined) filter.request_id = request_id || null;
+  if (command_id !== undefined) filter.command_id = command_id || null;
+  if (limitRaw && /^\d+$/.test(limitRaw)) {
+    filter.limit = Math.min(500, Math.max(1, Number(limitRaw)));
+  }
+  return filter;
+}
+
+function sanitizeHistorySnapshot(snapshot: WebChatHistorySnapshot): WebChatHistorySnapshot {
+  return {
+    schema_version: snapshot.schema_version,
+    entries_count: Number.isFinite(snapshot.entries_count)
+      ? snapshot.entries_count
+      : 0,
+    skipped_count: snapshot.skipped_count,
+    chain_valid: snapshot.chain_valid === true,
+    complete_history_used_for_authority: false,
+    replay_filter: snapshot.replay_filter,
+    entries: Array.isArray(snapshot.entries)
+      ? snapshot.entries.map((entry) => {
+          const raw = entry as WebChatHistoryEntry & { payload?: unknown };
+          return {
+            schema_version: raw.schema_version,
+            index: raw.index,
+            id: raw.id,
+            kind: raw.kind,
+            request_id: raw.request_id ?? null,
+            command_id: raw.command_id ?? null,
+            actor: raw.actor,
+            source: raw.source,
+            payload_digest: raw.payload_digest,
+            used_for_authority: false,
+            timestamp: raw.timestamp,
+            prev_hash: raw.prev_hash,
+            entry_hash: raw.entry_hash,
+          };
+        })
+      : [],
+  };
 }
 
 function nonEmptyString(value: unknown): string | undefined {

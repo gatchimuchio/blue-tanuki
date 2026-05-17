@@ -67,3 +67,17 @@ It must not:
 - override actor or process classification
 
 Any future gateway/history/replay UI must treat complete-history material as reference/evidence with `complete_history_used_for_authority=false`.
+
+## Gateway / Control Center Projection
+
+Phase 12-S5 wires Gateway serve mode to this substrate and exposes a read-only Control Center history/replay projection.
+
+The projection is intentionally narrower than the store:
+
+- `GET /history` and `GET /history/replay` require the normal WebChat inbound token.
+- mutation methods are rejected.
+- raw `payload` is stripped before serialization.
+- the UI displays ids, kinds, request/command ids, actor/source, timestamps, payload digests, previous hashes, and entry hashes.
+- `complete_history_used_for_authority=false` remains explicit.
+
+Gateway replay records are digest/metadata records for resident inspection. They must not leak approval tokens, bearer tokens, credentials, command content, rendered output, or raw tool/LLM result values.

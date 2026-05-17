@@ -380,6 +380,15 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 
 `/notifications` is read-only and display-only. It projects approval-required, schedule fired/failed, connector failure, and audit warning notifications from existing runtime and audit state. Notifications cannot approve, reject, execute, mutate audit, or grant authority.
 
+## Complete history / replay HTTP
+
+```bash
+curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
+  "http://127.0.0.1:8787/history/replay?limit=50"
+```
+
+`/history` and `/history/replay` are read-only Control Center surfaces over `CompleteHistoryStore`. They expose replay metadata, payload digests, entry hashes, request ids, command ids, and `complete_history_used_for_authority=false`; they do not expose raw payloads, command content, rendered output, approval tokens, or credentials.
+
 ## Documents
 
 - [docs/ROADMAP.md](./docs/ROADMAP.md) - internal roadmap v9 and Sacred Constraints
@@ -409,6 +418,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/hds-brain-runtime-invariants-evidence.md](./docs/hds-brain-runtime-invariants-evidence.md) - Runtime Invariants evidence boundary
 - [docs/phase12-s3-runtime-invariants-evidence.md](./docs/phase12-s3-runtime-invariants-evidence.md) - Phase 12-S3 Runtime Invariants evidence
 - [docs/phase12-s4-final-review-single-source.md](./docs/phase12-s4-final-review-single-source.md) - Phase 12-S4 final-review operation source-of-truth lock
+- [docs/phase12-s5-approval-notification-history-replay-ui.md](./docs/phase12-s5-approval-notification-history-replay-ui.md) - Phase 12-S5 resident history/replay UI completion
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions
