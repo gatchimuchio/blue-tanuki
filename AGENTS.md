@@ -289,6 +289,17 @@ Downstream results must pass through HDS-BRAIN output audit before final user-vi
 - LLM output, tool result, scheduler result, plugin result, external result, and rendered output remain `used_for_authority=false`.
 - Output audit must not approve, execute, classify risk, bypass final review, or create a second authority path.
 
+### Complete History Substrate Rule
+
+Complete history stores original records and replay evidence. It is not authority.
+
+- `CompleteHistoryStore` must live in `packages/hds-brain` and remain standalone.
+- It must provide append / verify / replay / export baseline behavior without gateway, executor, UI, channel, plugin, or LLM backend dependencies.
+- It may record user input, LLM history, HDS decisions, approval history, execution history, audit history, and final output history.
+- Gateway, Control Center, history UI, audit viewers, and replay tools are adapters over this substrate.
+- Complete history entries and exports must keep `used_for_authority=false` / `complete_history_used_for_authority=false`.
+- Complete history must not classify risk, infer consent, substitute approval, bypass final review, rewrite policy, or create a second authority path.
+
 ---
 
 ## Global Invariants

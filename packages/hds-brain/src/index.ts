@@ -134,3 +134,17 @@ export {
   type MemoryProcessSnapshot,
   type MemoryStoreOptions,
 } from "./long-term-memory/index.js";
+
+export {
+  CompleteHistoryStore,
+  COMPLETE_HISTORY_SCHEMA_VERSION,
+  completeHistoryEntryHash,
+  decodeCompleteHistoryEntry,
+  encodeCompleteHistoryEntry,
+  type CompleteHistoryAppendInput,
+  type CompleteHistoryEntry,
+  type CompleteHistoryExport,
+  type CompleteHistoryKind,
+  type CompleteHistoryReplayFilter,
+  type CompleteHistoryStoreOptions,
+} from "./complete-history/index.js";

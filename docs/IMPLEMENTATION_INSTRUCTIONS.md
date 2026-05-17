@@ -2184,6 +2184,64 @@ docs/SECURITY_REVIEW_CHECKLIST.md
 
 ---
 
+# Phase 12-S2 - Local Complete History Substrate
+
+## Objective
+
+Keep user history, LLM history, HDS decision history, approval history, execution history, audit history, and final output history as original records.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/src/complete-history/types.ts
+packages/hds-brain/src/complete-history/codec.ts
+packages/hds-brain/src/complete-history/store.ts
+packages/hds-brain/src/complete-history/index.ts
+packages/hds-brain/test/complete_history.test.ts
+docs/hds-brain-complete-history-substrate.md
+docs/phase12-s2-local-complete-history-substrate.md
+```
+
+Update:
+
+```txt
+packages/hds-brain/src/index.ts
+AGENTS.md
+SECURITY.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+docs/hds-brain-standalone-boundary.md
+```
+
+## Non-Goals
+
+- Gateway adapter wiring
+- Control Center history / replay UI
+- SQLite / SQLCipher
+- encrypted history store
+- LLM backend integration
+- authority use of complete history
+
+## Completion Notes
+
+- Added standalone `CompleteHistoryStore` inside `packages/hds-brain`.
+- Added complete-history entry kinds for user input, LLM history, HDS decisions, approval history, execution history, audit history, and final output.
+- Added append / verify / replay / export / JSON export baseline.
+- Added JSONL persistence with load-time chain verification.
+- Public replay/export APIs return copies so callers cannot mutate the live in-memory chain.
+- Complete history remains original-record/replay evidence with `used_for_authority=false` and `complete_history_used_for_authority=false`.
+- Active execution lane advances to Phase 12-S3 Runtime Invariants Evidence Upgrade.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2274,7 +2332,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S2 Local Complete History Substrate
+Phase 12-S3 Runtime Invariants Evidence Upgrade
 ```
 
-Phase 12-S1 is complete. Proceed to Phase 12-S2 Local Complete History Substrate before resuming resident application integration.
+Phase 12-S2 is complete. Proceed to Phase 12-S3 Runtime Invariants Evidence Upgrade before resuming resident application integration.

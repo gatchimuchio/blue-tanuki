@@ -15,6 +15,7 @@
 - Does this change let `unknown`, `tool.call`, ambiguous, or unclassified operations auto-allow?
 - Does this change provide Trinity `M` from LLM output, memory, session, channel metadata, or plugin metadata?
 - Does this change send user-visible output or external result handoff without an `output_audit` record?
+- Does this change let complete history become authority, approval, risk classification, or policy input?
 
 追加確認:
 
@@ -29,3 +30,4 @@
 - WhatsApp first-party core 実装や専用 escape hatch を追加していないか
 - HDS-BRAIN standalone smoke / boundary tests は維持されているか
 - UI / Control Center / memory / history / session / tool result が authority に変換されていないか
+- CompleteHistoryStore が standalone append / verify / replay / export baseline を維持しているか

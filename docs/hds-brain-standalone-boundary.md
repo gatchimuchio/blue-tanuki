@@ -85,12 +85,12 @@ The package exports:
 - approval policy functions and types
 - `AuditLog`
 - `LongTermMemoryStore`
+- `CompleteHistoryStore`
+- `OutputAudit`
 - runtime snapshot types
 - `HDSBrainHealth`
 - `runStandaloneHDSBrain`
 - downstream port types
-
-`CompleteHistoryStore` and `OutputAudit` are not part of this phase. They are reserved for later Phase 12 work and must remain standalone when introduced.
 
 ## 7. Standalone Smoke
 

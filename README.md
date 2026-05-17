@@ -20,6 +20,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - SIM-like LLM API settings with token-gated `Verify LLM` before saving provider changes
 - HDS Process / Memory / Authority closure
 - deterministic `MemoryTrace` with `used_for_authority=false`
+- standalone `CompleteHistoryStore` with append / verify / replay / export and `used_for_authority=false`
 - Approval Gate with final-review boundary
 - hash-chain audit logs
 - Telegram Bot API channel
@@ -400,6 +401,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase12-s0-boundary-definition-lock.md](./docs/phase12-s0-boundary-definition-lock.md) - Phase 12-S0 boundary definition lock
 - [docs/hds-brain-output-audit-plane.md](./docs/hds-brain-output-audit-plane.md) - output/result audit plane boundary
 - [docs/phase12-s1-output-result-audit-plane.md](./docs/phase12-s1-output-result-audit-plane.md) - Phase 12-S1 output/result audit plane
+- [docs/hds-brain-complete-history-substrate.md](./docs/hds-brain-complete-history-substrate.md) - complete history substrate boundary
+- [docs/phase12-s2-local-complete-history-substrate.md](./docs/phase12-s2-local-complete-history-substrate.md) - Phase 12-S2 complete history substrate
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions

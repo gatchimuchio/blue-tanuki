@@ -84,6 +84,14 @@ Gateway and other product surfaces must create an `output_audit` record before f
 
 OutputAudit covers LLM raw output, tool results, scheduler results, plugin results, external action results, and noop results. These outputs remain `used_for_authority=false` and cannot classify risk, approve themselves, bypass final review, or create a second authority path.
 
+## Complete history substrate
+
+Phase 12-S2 adds `CompleteHistoryStore` inside `packages/hds-brain`.
+
+The store records original history material for user input, LLM history, HDS decisions, approvals, execution, audit, and final output. It provides standalone append, verify, replay, JSONL persistence, and export baseline behavior.
+
+Complete history remains reference/evidence only. Gateway, Control Center, history UI, audit viewers, and replay tools may use it as adapters, but they cannot turn it into an authority path. Complete-history entries and exports carry `used_for_authority=false` / `complete_history_used_for_authority=false`.
+
 ## Hard invariants
 
 The Runtime Invariants endpoint exposes the current values for the core containment checks. Each invariant is also labeled by the kind of guarantee BLUE-TANUKI currently provides:
@@ -97,7 +105,7 @@ The Runtime Invariants endpoint exposes the current values for the core containm
 | HDS-BRAIN never trusts session history. | covered by `hds_calls_llm=false` and authority-path tests | Structural guarantee | Session history belongs to the downstream executor/session store. HDS-BRAIN receives only the current `InboundRequest`. |
 | External metadata cannot upgrade actor/process authority. | `external_metadata_can_escalate_authority=false` | Runtime guarantee | Channel metadata is ignored for actor/process upgrades unless gateway normalization marks it as internal; spoofed external metadata is covered by tests. |
 | MemoryTrace is `used_for_authority=false`. | `memory_used_for_authority=false` | Structural guarantee | `MemoryTrace.used_for_authority` is typed as the literal `false`; memory traces are context/audit inputs only. |
-| Complete history is not authority. | `complete_history_used_for_authority=false` | Structural guarantee | Complete history is reserved as replay/evidence material. It cannot substitute approval or become a current authority decision source. |
+| Complete history is not authority. | `complete_history_used_for_authority=false` | Structural guarantee | `CompleteHistoryStore` is a standalone original-record/replay substrate. Entries and exports are typed as non-authority and cannot substitute approval or become a current authority decision source. |
 | Process execution policy is enforced before command emission. | `process_policy_enforced=true` | Runtime guarantee | HDS-BRAIN evaluates actor/process policy and command execution policy before returning an executable command. |
 | final-review operations cannot be bypassed by full access. | `final_review_boundary_enforced_by_approval_gate=true` | Runtime guarantee | Approval Gate evaluation remains between HDS ASSERT and executor execution; full access and reusable grants cannot skip final-review operations. |
 | cron/webhook actors are not treated as humans. | covered by actor/process policy tests | Runtime guarantee | `cron` and `webhook` resolve to dedicated actor/process kinds with constrained execution policies. |
@@ -238,7 +246,7 @@ Remaining draft point: owner identity for L3 is represented by gateway actor/tok
 
 ## Memory boundary
 
-There are four distinct stores:
+There are five distinct stores:
 
 | Store | Purpose | Authority use |
 |---|---|---|
@@ -246,6 +254,7 @@ There are four distinct stores:
 | Audit log | immutable evidence chain | evidence only |
 | Approval grant store | reusable owner grants | yes, via Approval Gate |
 | HDS long-term memory | structured past-decision snapshots | no |
+| Complete history store | original records and replay/export evidence | no |
 
 HDS long-term memory entries and hits use `F:<id>` audit references. The reference is a trace label only:
 

@@ -68,7 +68,25 @@ Phase 12-S1 adds `output_audit` records before final user-visible output or exte
 - user-visible and external-side-effect flags;
 - `used_for_authority=false`.
 
-Raw LLM/tool output content is not stored in the audit entry. Complete raw history is reserved for the later CompleteHistoryStore phase.
+Raw LLM/tool output content is not stored in the audit entry. Complete raw history belongs to the separate CompleteHistoryStore substrate and remains non-authority replay/evidence material.
+
+## Complete history substrate
+
+Phase 12-S2 adds `CompleteHistoryStore` as a standalone original-record substrate in `packages/hds-brain`.
+
+It can append, verify, replay, and export records for:
+
+- user input
+- LLM history
+- HDS decisions
+- approval history
+- execution history
+- audit history
+- final output
+
+When a filepath is supplied, records are persisted as JSONL with payload digests and entry hashes. Loading an existing file verifies the chain before accepting it.
+
+This store is not the hash-chain authority audit log and is not an approval source. It is replay/evidence material only, with `used_for_authority=false` and `complete_history_used_for_authority=false`.
 
 ## Audit dump
 
@@ -201,3 +219,4 @@ HDS long-term memory references are rendered as `F:<id>`.
 - semantic memory summary
 - F-reference / HDS long-term memory hit
 - downstream executor feedback
+- complete history replay/export material

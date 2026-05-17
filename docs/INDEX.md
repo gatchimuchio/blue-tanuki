@@ -36,6 +36,8 @@
 - [Phase 12-S0 Boundary Definition Lock](phase12-s0-boundary-definition-lock.md)
 - [HDS-BRAIN Output / Result Audit Plane](hds-brain-output-audit-plane.md)
 - [Phase 12-S1 Output / Result Audit Plane](phase12-s1-output-result-audit-plane.md)
+- [HDS-BRAIN Complete History Substrate](hds-brain-complete-history-substrate.md)
+- [Phase 12-S2 Local Complete History Substrate](phase12-s2-local-complete-history-substrate.md)
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [Capability Envelope](CAPABILITY_ENVELOPE.md)
 - [Conformance](CONFORMANCE.md)
