@@ -42,6 +42,18 @@ The standalone smoke appends the HDS decision and approval evaluation to an HDS-
 
 Downstream limbs return result / feedback / event material. That material is audit evidence only; it does not become authority, approval, or privilege escalation.
 
+## Boundary definition audit
+
+Phase 12-S0 adds a deterministic boundary policy surface in `packages/hds-brain/src/boundary_policy.ts`.
+
+Audit expectations:
+
+- unknown / unclassified command operations resolve to L3 final-review before execution;
+- memory, complete history, session, tool result, LLM output, and metadata remain reference/evidence only;
+- fail-safe states suspend downstream execution instead of delegating authority;
+- policy, detector, approval, and history updates require L3 final review;
+- Trinity `M` closure failures are suspend conditions, not silent allow conditions.
+
 ## Audit dump
 
 ```bash

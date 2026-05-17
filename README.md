@@ -392,6 +392,12 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase10-s3-distribution-ux-hardening.md](./docs/phase10-s3-distribution-ux-hardening.md) - install/update/uninstall distribution readiness boundary
 - [docs/hds-brain-standalone-boundary.md](./docs/hds-brain-standalone-boundary.md) - HDS-BRAIN standalone kernel and downstream limbs boundary
 - [docs/phase12-s-1-hds-brain-standalone-completeness.md](./docs/phase12-s-1-hds-brain-standalone-completeness.md) - Phase 12-S-1 standalone completeness lock
+- [docs/hds-brain-risk-approval-boundary.md](./docs/hds-brain-risk-approval-boundary.md) - L1/L2/L3 and unknown operation boundary
+- [docs/hds-brain-reference-boundary.md](./docs/hds-brain-reference-boundary.md) - memory/history/session/tool-result reference boundary
+- [docs/hds-brain-fail-safe-policy.md](./docs/hds-brain-fail-safe-policy.md) - HDS-BRAIN fail-safe suspend policy
+- [docs/hds-brain-unknown-escalation-policy.md](./docs/hds-brain-unknown-escalation-policy.md) - unknown/ambiguous/unclassified escalation policy
+- [docs/hds-brain-trinity-m-policy-model.md](./docs/hds-brain-trinity-m-policy-model.md) - Trinity M policy model
+- [docs/phase12-s0-boundary-definition-lock.md](./docs/phase12-s0-boundary-definition-lock.md) - Phase 12-S0 boundary definition lock
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions

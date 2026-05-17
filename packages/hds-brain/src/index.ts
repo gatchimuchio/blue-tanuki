@@ -16,6 +16,23 @@ export {
   type AuditOptions,
 } from "./audit.js";
 export {
+  HDS_BOUNDARY_POLICY_VERSION,
+  TRINITY_M_POLICY_MODEL,
+  classifyBoundaryUpdate,
+  evaluateFailSafeBoundary,
+  evaluateReferenceBoundary,
+  evaluateTrinityMClosure,
+  evaluateUnknownEscalation,
+  type BoundaryEvaluation,
+  type BoundaryReferenceSource,
+  type BoundaryRequestedUse,
+  type BoundaryUpdateTarget,
+  type FailSafeInput,
+  type TrinityMClosureInput,
+  type UnknownEscalationReason,
+} from "./boundary_policy.js";
+
+export {
   evaluateHDSBrainHealth,
   type HDSBrainHealth,
   type HDSBrainHealthStatus,

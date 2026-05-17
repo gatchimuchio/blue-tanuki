@@ -28,6 +28,12 @@
 - [Audit](../AUDIT.md) - hash-chain audit, dump, and verification
 - [HDS-BRAIN Standalone Boundary](hds-brain-standalone-boundary.md)
 - [Phase 12-S-1 HDS-BRAIN Standalone Completeness](phase12-s-1-hds-brain-standalone-completeness.md)
+- [HDS-BRAIN Risk / Approval Boundary](hds-brain-risk-approval-boundary.md)
+- [HDS-BRAIN Reference Boundary](hds-brain-reference-boundary.md)
+- [HDS-BRAIN Fail-safe Policy](hds-brain-fail-safe-policy.md)
+- [HDS-BRAIN Unknown Escalation Policy](hds-brain-unknown-escalation-policy.md)
+- [HDS-BRAIN Trinity M Policy Model](hds-brain-trinity-m-policy-model.md)
+- [Phase 12-S0 Boundary Definition Lock](phase12-s0-boundary-definition-lock.md)
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [Capability Envelope](CAPABILITY_ENVELOPE.md)
 - [Conformance](CONFORMANCE.md)

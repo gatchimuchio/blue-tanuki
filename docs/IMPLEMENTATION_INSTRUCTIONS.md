@@ -2085,6 +2085,54 @@ docs/IMPLEMENTATION_INSTRUCTIONS.md
 
 ---
 
+# Phase 12-S0 - Boundary Definition Lock
+
+## Objective
+
+Fix HDS-BRAIN's decision boundary before output audit, complete history, runtime invariant evidence, and resident UI phases.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/src/boundary_policy.ts
+packages/hds-brain/test/boundary_policy.test.ts
+docs/hds-brain-risk-approval-boundary.md
+docs/hds-brain-reference-boundary.md
+docs/hds-brain-fail-safe-policy.md
+docs/hds-brain-unknown-escalation-policy.md
+docs/hds-brain-trinity-m-policy-model.md
+docs/phase12-s0-boundary-definition-lock.md
+```
+
+Update:
+
+```txt
+packages/hds-brain/src/approval_policy.ts
+packages/hds-brain/src/index.ts
+AGENTS.md
+SECURITY.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+```
+
+## Completion Notes
+
+- Added a standalone deterministic boundary policy module.
+- Mapped `tool.call` and `unknown` to high-risk `L3_final_review`.
+- Added tests for reference/non-authority boundaries, unknown escalation, fail-safe suspend, policy/detector/approval/history update review, and Trinity M closure.
+- Added Risk/Approval, Reference, Fail-safe, Unknown Escalation, and Trinity M docs.
+- Active execution lane advances to Phase 12-S1 HDS-BRAIN Output / Result Audit Plane.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2175,7 +2223,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S0 Boundary Definition Lock
+Phase 12-S1 HDS-BRAIN Output / Result Audit Plane
 ```
 
-Phase 12-S-1 is complete. Proceed to Phase 12-S0 Boundary Definition Lock before resuming resident application integration.
+Phase 12-S0 is complete. Proceed to Phase 12-S1 HDS-BRAIN Output / Result Audit Plane before resuming resident application integration.

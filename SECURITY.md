@@ -65,6 +65,17 @@ LLMs, tools, plugins, skills, channels, executors, schedulers, browser automatio
 
 UI / Control Center is also downstream. It can display HDS-BRAIN decisions and submit owner input back to the existing Approval Gate, but it cannot become a second authority path.
 
+## Boundary definition lock
+
+Phase 12-S0 fixes these authority boundaries:
+
+- `tool.call` and `unknown` are high-risk `L3_final_review` operations.
+- Unknown, ambiguous, unclassified, missing capability, policy-version mismatch, reference ambiguity, approval ambiguity, external metadata conflict, and detector conflict never auto-allow.
+- Memory, complete history, session, tool result, LLM output, metadata, audit viewer output, and Control Center output are reference/evidence only.
+- Policy, detector, approval, and history updates require L3 final review.
+- HDS-BRAIN fail-safe is `SUSPEND`; it does not delegate authority to downstream devices.
+- Trinity `M` is the deterministic policy layer: identity, boundary, judgement, log, and suspend rules.
+
 ## Hard invariants
 
 The Runtime Invariants endpoint exposes the current values for the core containment checks. Each invariant is also labeled by the kind of guarantee BLUE-TANUKI currently provides:
@@ -97,7 +108,7 @@ The Runtime Invariants endpoint exposes the current values for the core containm
 |---|---|---|---|---|
 | L1 | observe gate | read-only/no-op/ordinary `llm.call` operations | auto-allow when policy permits; audit still records evaluation | `approvalLevelFromContext()` maps low-risk non-final-review operations to `L1_observe`. |
 | L2 | operate gate | ordinary state-changing operations outside final-review | reusable grants may apply | medium-risk non-final-review operations map to `L2_operate`; `ApprovalGrantStore` can match operation/scope/risk/actor/capability. |
-| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete / GitHub write / browser automation action | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
+| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete / GitHub write / browser automation action / unknown or unclassified tool call | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
 
 Operationally, HDS-BRAIN may ASSERT a command, but the executor must not run it until Approval Gate evaluation has completed. The Approval Gate result, `approval_level`, authority trace, and downstream lifecycle events are recorded into the same hash-chain audit log before executor feedback closes the loop.
 
@@ -114,6 +125,7 @@ These always require review regardless of full-access default:
 - schedule create
 - schedule update
 - schedule delete
+- unknown / unclassified tool call
 - GitHub issue/PR/comment write
 - browser automation action
 - Gmail / Google Calendar / Drive writes

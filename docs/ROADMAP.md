@@ -129,8 +129,8 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S12 | F | Plugin Review Gate Implementation | P0 | 11-S5 |
 | 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
 | 12-S-1 | G | HDS-BRAIN Standalone Completeness Lock | P0 | completed |
-| 12-S0 | G | Boundary Definition Lock | P0 | 12-S-1 active next |
-| 12-S1 | G | HDS-BRAIN Output / Result Audit Plane | P0 | 12-S0 |
+| 12-S0 | G | Boundary Definition Lock | P0 | completed |
+| 12-S1 | G | HDS-BRAIN Output / Result Audit Plane | P0 | 12-S0 active next |
 | 12-S2 | G | Local Complete History Substrate | P0 | 12-S1 |
 | 12-S3 | G | Runtime Invariants Evidence Upgrade | P0 | 12-S2 |
 | 12-S4 | G | Final-review Operation Single Source of Truth | P0 | 12-S3 |
@@ -142,10 +142,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 12-S0 Boundary Definition Lock
+Phase 12-S1 HDS-BRAIN Output / Result Audit Plane
 ```
 
-Phase 12-S-1 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S0 Boundary Definition Lock.
+Phase 12-S0 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S1 HDS-BRAIN Output / Result Audit Plane.
 
 ## 4. Completed Phase Summaries
 
@@ -340,6 +340,16 @@ Phase 12-S-1 is complete. Phase 11-S10 Resident Application Integration is pause
 - Downstream Limbs Doctrine documented: downstream devices are limbs, not authority
 - Active execution lane advances to Phase 12-S0 Boundary Definition Lock
 
+### Phase 12-S0
+
+- Boundary policy module added inside standalone `packages/hds-brain`
+- `tool.call` and `unknown` now map to high-risk `L3_final_review`
+- Reference/non-authority boundary locked for memory, complete history, session, tool result, LLM output, metadata, audit viewer, and Control Center
+- Unknown / ambiguous / unclassified / missing capability / mismatch / conflict states never auto-allow
+- Fail-safe policy suspends downstream execution when authority prerequisites are invalid
+- Trinity M policy model documented as deterministic identity, boundary, judgement, log, and suspend rules
+- Active execution lane advances to Phase 12-S1 HDS-BRAIN Output / Result Audit Plane
+
 ## 5. Non-Goals
 
 Do not add:
@@ -372,6 +382,12 @@ Do not add:
 - [Phase 11-S9 Installer and Setup UX](phase11-s9-installer-setup-ux.md)
 - [HDS-BRAIN Standalone Boundary](hds-brain-standalone-boundary.md)
 - [Phase 12-S-1 HDS-BRAIN Standalone Completeness](phase12-s-1-hds-brain-standalone-completeness.md)
+- [HDS-BRAIN Risk / Approval Boundary](hds-brain-risk-approval-boundary.md)
+- [HDS-BRAIN Reference Boundary](hds-brain-reference-boundary.md)
+- [HDS-BRAIN Fail-safe Policy](hds-brain-fail-safe-policy.md)
+- [HDS-BRAIN Unknown Escalation Policy](hds-brain-unknown-escalation-policy.md)
+- [HDS-BRAIN Trinity M Policy Model](hds-brain-trinity-m-policy-model.md)
+- [Phase 12-S0 Boundary Definition Lock](phase12-s0-boundary-definition-lock.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

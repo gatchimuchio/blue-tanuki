@@ -114,6 +114,7 @@ export interface ApprovalEvaluation {
 
 const RISK_ORDER: Record<ApprovalRisk, number> = { low: 1, medium: 2, high: 3 };
 export const FINAL_REVIEW_OPERATIONS = new Set<ApprovalOperation>([
+  "tool.call",
   "tool.file.delete",
   "tool.shell.exec",
   "external.send",
@@ -126,6 +127,7 @@ export const FINAL_REVIEW_OPERATIONS = new Set<ApprovalOperation>([
   "github.write",
   "google.write",
   "payment.charge",
+  "unknown",
 ]);
 
 export function approvalContextFromCommand(command: ExecuteCommand, opts: { actor?: string; now?: number } = {}): ApprovalContext {
@@ -197,6 +199,7 @@ export function operationFromCommand(command: ExecuteCommand, caps: readonly Too
 }
 
 export function riskForOperation(op: ApprovalOperation, caps: readonly ToolCapability[] = []): ApprovalRisk {
+  if (op === "tool.call" || op === "unknown") return "high";
   if (["credential.access", "payment.charge"].includes(op)) return "high";
   if (["tool.file.delete", "tool.shell.exec", "external.send", "settings.write", "schedule.create", "schedule.update", "schedule.delete", "browser.automation", "github.write", "google.write"].includes(op)) return "high";
   if (

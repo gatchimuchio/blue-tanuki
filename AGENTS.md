@@ -268,6 +268,17 @@ They must not:
 - convert memory / history / session / tool result / external metadata into authority,
 - create a second authority path.
 
+### Boundary Definition Lock Rule
+
+Phase 12-S0 fixes the boundary model before later output audit/history/UI phases.
+
+- `tool.call` and `unknown` are high-risk `L3_final_review` operations.
+- Unknown, ambiguous, unclassified, missing capability, policy-version mismatch, reference ambiguity, approval ambiguity, external metadata conflict, and detector conflict must not auto-allow.
+- Memory, complete history, session, tool result, LLM output, channel metadata, plugin metadata, external metadata, audit viewers, and Control Center projections are reference/evidence only.
+- Policy, detector, approval, and history updates require L3 final review.
+- HDS-BRAIN fail-safe is `SUSPEND`, not fallback authority.
+- Trinity `M` is deterministic policy: identity, boundary, judgement, log, and suspend rules.
+
 ---
 
 ## Global Invariants
@@ -300,6 +311,9 @@ Additional invariants:
 - Downstream limbs cannot create authority.
 - Complete history cannot create authority.
 - UI / Control Center cannot become a second authority path.
+- Unknown or unclassified operations cannot auto-allow.
+- HDS-BRAIN health failure cannot fall back to downstream authority.
+- Trinity `M` cannot be supplied by LLM output, memory, session, plugin metadata, or channel metadata.
 - Runtime Invariants must remain externally inspectable.
 - Audit hash-chain compatibility must not be broken.
 - Full access cannot bypass final-review.
@@ -606,6 +620,7 @@ Rules:
 - `ApprovalLevel` expresses approval workflow.
 - `high` risk always maps to `L3_final_review`.
 - final-review operations always map to `L3_final_review`.
+- `tool.call` and `unknown` map to high-risk `L3_final_review`.
 - `full_access` may auto-allow L1/L2, but never L3.
 - reusable grants may apply to L2, but never bypass L3.
 - schedule create/update/delete are L3.
@@ -626,6 +641,7 @@ The final-review set must include at least:
 - schedule create
 - schedule update
 - schedule delete
+- unknown / unclassified tool call
 - GitHub publish/write operations that mutate public/external state
 - browser automation operations that submit forms, click destructive controls, download files, upload files, or use credentials
 - integration writes to Gmail / Google Calendar / Drive / Teams / LINE
