@@ -168,6 +168,8 @@ These always require review regardless of full-access default:
 
 `payment.charge` is a defensive placeholder. The current release has no payment feature, but any future payment-class operation is L3 from the moment it is introduced.
 
+Phase 12-S6 adds compound attack scenario tests for the local root/full-access posture. These tests combine wildcard full-access grants, privileged tool envelopes, metadata spoofing, forged channel-send metadata, downstream feedback spoofing, and complete-history/history authority-conversion attempts. The expected result stays fixed: privileged operations remain `L3_final_review`, metadata cannot create authority, downstream feedback cannot lift suspension, and history remains non-authority.
+
 ## Browser automation preview boundary
 
 `browser.snapshot` and `browser.automation` are downstream preview tools. They do not create authority and cannot bypass Approval Gate.

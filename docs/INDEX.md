@@ -42,6 +42,7 @@
 - [Phase 12-S3 Runtime Invariants Evidence](phase12-s3-runtime-invariants-evidence.md)
 - [Phase 12-S4 Final-review Operation Single Source](phase12-s4-final-review-single-source.md)
 - [Phase 12-S5 Approval / Notification / History / Replay UI Completion](phase12-s5-approval-notification-history-replay-ui.md)
+- [Phase 12-S6 Root Full-access + Compound Attack Scenario Tests](phase12-s6-root-full-access-compound-attack-scenarios.md)
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [Capability Envelope](CAPABILITY_ENVELOPE.md)
 - [Conformance](CONFORMANCE.md)

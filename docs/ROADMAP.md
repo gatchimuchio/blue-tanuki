@@ -135,17 +135,17 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 12-S3 | G | Runtime Invariants Evidence Upgrade | P0 | completed |
 | 12-S4 | G | Final-review Operation Single Source of Truth | P0 | completed |
 | 12-S5 | G | Approval / Notification / History / Replay UI Completion | P0 | completed |
-| 12-S6 | G | Root Full-access + Compound Attack Scenario Tests | P0 | 12-S5 |
+| 12-S6 | G | Root Full-access + Compound Attack Scenario Tests | P0 | completed |
 | 12-S7 | G | Detector Lifecycle and Unknown Pattern Escalation | P0 | 12-S6 |
 | 12-S8 | G | HDS-BRAIN Fail-safe / Self-health Policy | P0 | 12-S7 |
 
 ## 3. Current Active Phase
 
 ```txt
-Phase 12-S6 Root Full-access + Compound Attack Scenario Tests
+Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation
 ```
 
-Phase 12-S5 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S6 Root Full-access + Compound Attack Scenario Tests.
+Phase 12-S6 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation.
 
 ## 4. Completed Phase Summaries
 
@@ -394,6 +394,16 @@ Phase 12-S5 is complete. Phase 11-S10 Resident Application Integration is paused
 - `complete_history_used_for_authority=false` remains explicit and history replay cannot approve, execute, mutate, or grant authority
 - Active execution lane advances to Phase 12-S6 Root Full-access + Compound Attack Scenario Tests
 
+### Phase 12-S6
+
+- Added compound attack scenario tests for root/full-access operation
+- Wildcard `full_access` grants cannot bypass L3 final-review for shell, schedule, GitHub, Google, or browser automation operations
+- External metadata spoofing cannot impersonate owner approval or approval process state
+- Forged channel-send metadata remains blocked by process execution policy
+- Executor feedback cannot lift suspended requests or substitute human resume
+- Complete-history references and history updates remain non-authority
+- Active execution lane advances to Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation
+
 ## 5. Non-Goals
 
 Do not add:
@@ -440,6 +450,7 @@ Do not add:
 - [Phase 12-S3 Runtime Invariants Evidence](phase12-s3-runtime-invariants-evidence.md)
 - [Phase 12-S4 Final-review Operation Single Source](phase12-s4-final-review-single-source.md)
 - [Phase 12-S5 Approval / Notification / History / Replay UI Completion](phase12-s5-approval-notification-history-replay-ui.md)
+- [Phase 12-S6 Root Full-access + Compound Attack Scenario Tests](phase12-s6-root-full-access-compound-attack-scenarios.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

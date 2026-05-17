@@ -2420,6 +2420,55 @@ docs/hds-brain-complete-history-substrate.md
 
 ---
 
+# Phase 12-S6 - Root Full-access + Compound Attack Scenario Tests
+
+## Objective
+
+Lock root/full-access operation against compound attack chains.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/test/compound_attack_scenarios.test.ts
+docs/phase12-s6-root-full-access-compound-attack-scenarios.md
+```
+
+Update:
+
+```txt
+SECURITY.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+```
+
+## Non-Goals
+
+- ApprovalRisk redesign
+- new `critical` risk level
+- full-access default change
+- Approval Gate UX changes
+- detector lifecycle implementation
+- fail-safe/self-health policy implementation
+
+## Completion Notes
+
+- Added compound attack scenario tests for wildcard full-access grants.
+- Covered shell exec, schedule mutation, GitHub write, Google write, and browser automation privileged envelopes.
+- Covered external metadata owner/approval spoofing.
+- Covered forged channel-send metadata against process execution policy.
+- Covered downstream feedback spoofing while a request is suspended.
+- Covered complete-history reference authority conversion and history update classification.
+- Active execution lane advances to Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2510,7 +2559,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S6 Root Full-access + Compound Attack Scenario Tests
+Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation
 ```
 
-Phase 12-S5 is complete. Proceed to Phase 12-S6 Root Full-access + Compound Attack Scenario Tests before resuming resident application integration.
+Phase 12-S6 is complete. Proceed to Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation before resuming resident application integration.

@@ -419,6 +419,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase12-s3-runtime-invariants-evidence.md](./docs/phase12-s3-runtime-invariants-evidence.md) - Phase 12-S3 Runtime Invariants evidence
 - [docs/phase12-s4-final-review-single-source.md](./docs/phase12-s4-final-review-single-source.md) - Phase 12-S4 final-review operation source-of-truth lock
 - [docs/phase12-s5-approval-notification-history-replay-ui.md](./docs/phase12-s5-approval-notification-history-replay-ui.md) - Phase 12-S5 resident history/replay UI completion
+- [docs/phase12-s6-root-full-access-compound-attack-scenarios.md](./docs/phase12-s6-root-full-access-compound-attack-scenarios.md) - Phase 12-S6 root full-access compound attack test lock
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions
