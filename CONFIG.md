@@ -349,3 +349,8 @@ BLUE_TANUKI_APPROVAL_MODE=full_access
 ```
 
 `full_access` remains final-review guarded.
+
+The canonical final-review operation source is `FINAL_REVIEW_OPERATION_LIST` in
+`packages/hds-brain/src/approval_policy.ts`. Gateway, UI, channels, plugins,
+operators, schedules, and executor surfaces display or route that HDS-BRAIN
+classification; they do not own a separate final-review policy list.

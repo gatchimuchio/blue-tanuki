@@ -104,6 +104,19 @@ Phase 12-S3 adds `runtime_invariants` records to the HDS hash-chain audit.
 
 Runtime Invariants evidence is inspectable audit material. It does not approve commands, classify risk, rewrite policy, bypass final review, infer consent, or create fallback authority.
 
+## Final-review boundary audit
+
+Phase 12-S4 makes `FINAL_REVIEW_OPERATION_LIST` in `packages/hds-brain/src/approval_policy.ts` the single source for final-review operations.
+
+The HDS audit surfaces this source through:
+
+- Approval Gate evaluations and authority traces;
+- process `approval_profile.final_review_operations`;
+- Runtime Invariants evidence metadata;
+- tests that compare those projections against the same HDS-BRAIN list.
+
+Audit viewers and Control Center projections may display this boundary, but they cannot mutate it or become a second authority path.
+
 ## Audit dump
 
 ```bash

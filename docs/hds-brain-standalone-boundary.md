@@ -83,6 +83,7 @@ The package exports:
 
 - `HDSUpperController`
 - approval policy functions and types
+- `FINAL_REVIEW_OPERATION_LIST`, `FINAL_REVIEW_OPERATIONS`, and `finalReviewOperationList()`
 - `AuditLog`
 - `LongTermMemoryStore`
 - `CompleteHistoryStore`

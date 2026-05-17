@@ -408,6 +408,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase12-s2-local-complete-history-substrate.md](./docs/phase12-s2-local-complete-history-substrate.md) - Phase 12-S2 complete history substrate
 - [docs/hds-brain-runtime-invariants-evidence.md](./docs/hds-brain-runtime-invariants-evidence.md) - Runtime Invariants evidence boundary
 - [docs/phase12-s3-runtime-invariants-evidence.md](./docs/phase12-s3-runtime-invariants-evidence.md) - Phase 12-S3 Runtime Invariants evidence
+- [docs/phase12-s4-final-review-single-source.md](./docs/phase12-s4-final-review-single-source.md) - Phase 12-S4 final-review operation source-of-truth lock
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions

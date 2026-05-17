@@ -662,6 +662,13 @@ Rules:
 
 ## Final-review Operations
 
+The canonical implementation source is `FINAL_REVIEW_OPERATION_LIST` in
+`packages/hds-brain/src/approval_policy.ts`. Approval Gate checks, process
+approval profiles, authority traces, and Runtime Invariants evidence must
+derive from that HDS-BRAIN-owned source. Gateway, UI, channels, plugins,
+operators, and other downstream limbs must not maintain a parallel
+final-review authority list.
+
 The final-review set must include at least:
 
 - file delete

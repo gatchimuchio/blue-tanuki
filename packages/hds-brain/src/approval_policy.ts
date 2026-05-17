@@ -113,7 +113,8 @@ export interface ApprovalEvaluation {
 }
 
 const RISK_ORDER: Record<ApprovalRisk, number> = { low: 1, medium: 2, high: 3 };
-export const FINAL_REVIEW_OPERATIONS = new Set<ApprovalOperation>([
+
+export const FINAL_REVIEW_OPERATION_LIST = [
   "tool.call",
   "tool.file.delete",
   "tool.shell.exec",
@@ -128,7 +129,14 @@ export const FINAL_REVIEW_OPERATIONS = new Set<ApprovalOperation>([
   "google.write",
   "payment.charge",
   "unknown",
-]);
+] as const satisfies readonly ApprovalOperation[];
+
+export const FINAL_REVIEW_OPERATIONS: ReadonlySet<ApprovalOperation> =
+  new Set<ApprovalOperation>(FINAL_REVIEW_OPERATION_LIST);
+
+export function finalReviewOperationList(): ApprovalOperation[] {
+  return [...FINAL_REVIEW_OPERATION_LIST];
+}
 
 export function approvalContextFromCommand(command: ExecuteCommand, opts: { actor?: string; now?: number } = {}): ApprovalContext {
   const actor = opts.actor?.trim() || "local-user";
@@ -267,7 +275,7 @@ export function buildAuthorityTransparencyTrace(
     black_box_boundary: "none_in_hds_authority_path",
     hds_position: "upper_control_self_norm",
     full_access_default: opts.full_access_default ?? true,
-    final_review_boundary: Array.from(FINAL_REVIEW_OPERATIONS).sort(),
+    final_review_boundary: finalReviewOperationList().sort(),
     resolved_factors: {
       operation: ctx.operation,
       target_scope: ctx.target_scope,

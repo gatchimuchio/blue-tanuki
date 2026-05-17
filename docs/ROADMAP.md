@@ -133,7 +133,7 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 12-S1 | G | HDS-BRAIN Output / Result Audit Plane | P0 | completed |
 | 12-S2 | G | Local Complete History Substrate | P0 | completed |
 | 12-S3 | G | Runtime Invariants Evidence Upgrade | P0 | completed |
-| 12-S4 | G | Final-review Operation Single Source of Truth | P0 | 12-S3 active next |
+| 12-S4 | G | Final-review Operation Single Source of Truth | P0 | completed |
 | 12-S5 | G | Approval / Notification / History / Replay UI Completion | P0 | 12-S4 |
 | 12-S6 | G | Root Full-access + Compound Attack Scenario Tests | P0 | 12-S5 |
 | 12-S7 | G | Detector Lifecycle and Unknown Pattern Escalation | P0 | 12-S6 |
@@ -142,10 +142,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 12-S4 Final-review Operation Single Source of Truth
+Phase 12-S5 Approval / Notification / History / Replay UI Completion
 ```
 
-Phase 12-S3 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S4 Final-review Operation Single Source of Truth.
+Phase 12-S4 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S5 Approval / Notification / History / Replay UI Completion.
 
 ## 4. Completed Phase Summaries
 
@@ -377,6 +377,14 @@ Phase 12-S3 is complete. Phase 11-S10 Resident Application Integration is paused
 - Audit dump and authority trace project runtime invariant evidence without creating authority
 - Active execution lane advances to Phase 12-S4 Final-review Operation Single Source of Truth
 
+### Phase 12-S4
+
+- `FINAL_REVIEW_OPERATION_LIST` is now the HDS-BRAIN-owned source of truth for L3 final-review operations
+- `FINAL_REVIEW_OPERATIONS`, process approval profiles, authority traces, and Runtime Invariants evidence derive from that list
+- Tests cover drift across Approval Gate, process profile, authority trace, and runtime evidence projections
+- `tool.call`, `google.write`, and `unknown` remain included in the canonical L3 boundary
+- Active execution lane advances to Phase 12-S5 Approval / Notification / History / Replay UI Completion
+
 ## 5. Non-Goals
 
 Do not add:
@@ -421,6 +429,7 @@ Do not add:
 - [Phase 12-S2 Local Complete History Substrate](phase12-s2-local-complete-history-substrate.md)
 - [HDS-BRAIN Runtime Invariants Evidence](hds-brain-runtime-invariants-evidence.md)
 - [Phase 12-S3 Runtime Invariants Evidence](phase12-s3-runtime-invariants-evidence.md)
+- [Phase 12-S4 Final-review Operation Single Source](phase12-s4-final-review-single-source.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

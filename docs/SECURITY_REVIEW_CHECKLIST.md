@@ -17,6 +17,7 @@
 - Does this change send user-visible output or external result handoff without an `output_audit` record?
 - Does this change let complete history become authority, approval, risk classification, or policy input?
 - Does this change turn Runtime Invariants evidence into authority, approval, policy mutation, or fallback execution?
+- Does this change duplicate or bypass `FINAL_REVIEW_OPERATION_LIST` instead of deriving from the HDS-BRAIN source of truth?
 
 追加確認:
 
@@ -33,3 +34,4 @@
 - UI / Control Center / memory / history / session / tool result が authority に変換されていないか
 - CompleteHistoryStore が standalone append / verify / replay / export baseline を維持しているか
 - Runtime Invariants evidence が HDS-BRAIN standalone で取得・監査できるか
+- final-review operation が `packages/hds-brain/src/approval_policy.ts` の単一ソースから派生しているか

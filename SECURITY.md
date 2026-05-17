@@ -134,11 +134,18 @@ The Runtime Invariants endpoint exposes the current values and the HDS-BRAIN evi
 |---|---|---|---|---|
 | L1 | observe gate | read-only/no-op/ordinary `llm.call` operations | auto-allow when policy permits; audit still records evaluation | `approvalLevelFromContext()` maps low-risk non-final-review operations to `L1_observe`. |
 | L2 | operate gate | ordinary state-changing operations outside final-review | reusable grants may apply | medium-risk non-final-review operations map to `L2_operate`; `ApprovalGrantStore` can match operation/scope/risk/actor/capability. |
-| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete / GitHub write / browser automation action / unknown or unclassified tool call | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
+| L3 | final-review gate | file delete / shell exec / external send / credential access / settings write / payment charge / schedule create/update/delete / GitHub write / browser automation action / unknown or unclassified tool call | reusable grants and full access cannot bypass; owner confirmation required | `FINAL_REVIEW_OPERATION_LIST`, derived `FINAL_REVIEW_OPERATIONS`, `risk === "high"`, and `finalReviewRequired()` force `ask`. |
 
 Operationally, HDS-BRAIN may ASSERT a command, but the executor must not run it until Approval Gate evaluation has completed. The Approval Gate result, `approval_level`, authority trace, and downstream lifecycle events are recorded into the same hash-chain audit log before executor feedback closes the loop.
 
 ## Final-review operations
+
+The canonical source is `FINAL_REVIEW_OPERATION_LIST` in
+`packages/hds-brain/src/approval_policy.ts`. `FINAL_REVIEW_OPERATIONS`,
+process approval profiles, authority traces, and Runtime Invariants evidence
+derive from that HDS-BRAIN-owned list. Gateway, UI, channels, plugins,
+operators, and other downstream limbs may display or route the resulting
+classification, but they do not own or rewrite the final-review boundary.
 
 These always require review regardless of full-access default:
 
@@ -248,7 +255,7 @@ tool:schedule.delete id=<id>
 | `ApprovalMode.full_access` | broad local allowance for L1/L2, never L3 |
 | `ApprovalGrantStore` | reusable grant storage; grants still cannot bypass L3 |
 | `ApprovalLevel` | first-class workflow axis |
-| `FINAL_REVIEW_OPERATIONS` | explicit L3 boundary |
+| `FINAL_REVIEW_OPERATION_LIST` / `FINAL_REVIEW_OPERATIONS` | HDS-BRAIN-owned source and derived set for the explicit L3 boundary |
 | `AuthorityTransparencyTrace.resolved_factors.approval_level` | machine-readable L1/L2/L3 trace |
 | `approval_gate` / `authority_event` / `schedule_lifecycle` audit entries | trace closure |
 

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { FINAL_REVIEW_OPERATIONS, type ApprovalOperation } from "./approval_policy.js";
+import { FINAL_REVIEW_OPERATION_LIST, FINAL_REVIEW_OPERATIONS } from "./approval_policy.js";
 
 export const RUNTIME_INVARIANTS_SCHEMA_VERSION = "phase12-s3-runtime-invariants-v1";
 
@@ -66,30 +66,13 @@ export interface RuntimeInvariantEvidenceOptions {
   actuals?: Partial<Record<RuntimeInvariantKey, boolean>>;
 }
 
-const REQUIRED_FINAL_REVIEW_OPERATIONS: ApprovalOperation[] = [
-  "tool.call",
-  "tool.file.delete",
-  "tool.shell.exec",
-  "external.send",
-  "credential.access",
-  "settings.write",
-  "schedule.create",
-  "schedule.update",
-  "schedule.delete",
-  "browser.automation",
-  "github.write",
-  "google.write",
-  "payment.charge",
-  "unknown",
-];
-
 export function buildRuntimeInvariantEvidence(
   opts: RuntimeInvariantEvidenceOptions = {},
 ): RuntimeInvariantEvidenceReport {
   const actuals = opts.actuals ?? {};
-  const finalReviewBoundaryPresent = REQUIRED_FINAL_REVIEW_OPERATIONS.every((operation) =>
-    FINAL_REVIEW_OPERATIONS.has(operation),
-  );
+  const finalReviewBoundaryPresent =
+    FINAL_REVIEW_OPERATION_LIST.every((operation) => FINAL_REVIEW_OPERATIONS.has(operation)) &&
+    FINAL_REVIEW_OPERATIONS.size === FINAL_REVIEW_OPERATION_LIST.length;
   const values: RuntimeInvariantValues = {
     hds_calls_llm: actuals.hds_calls_llm ?? EXPECTED_RUNTIME_INVARIANTS.hds_calls_llm,
     process_policy_enforced: actuals.process_policy_enforced ?? EXPECTED_RUNTIME_INVARIANTS.process_policy_enforced,
@@ -126,10 +109,10 @@ export function buildRuntimeInvariantEvidence(
       "Complete history is append/verify/replay/export substrate, not an approval or policy source.",
     ]),
     item("final_review_boundary_enforced_by_approval_gate", values.final_review_boundary_enforced_by_approval_gate, "runtime", [
-      "FINAL_REVIEW_OPERATIONS is evaluated by Approval Gate before executor execution.",
+      "FINAL_REVIEW_OPERATION_LIST is the single source for Approval Gate, process profiles, and runtime evidence.",
       "full_access and reusable grants do not bypass L3 final-review operations.",
     ], {
-      required_final_review_operations: REQUIRED_FINAL_REVIEW_OPERATIONS,
+      required_final_review_operations: FINAL_REVIEW_OPERATION_LIST,
       configured_final_review_operations: Array.from(FINAL_REVIEW_OPERATIONS).sort(),
     }),
   ];

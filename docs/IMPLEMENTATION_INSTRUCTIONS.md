@@ -2308,6 +2308,58 @@ docs/hds-brain-standalone-boundary.md
 
 ---
 
+# Phase 12-S4 - Final-review Operation Single Source of Truth
+
+## Objective
+
+Make final-review operations a single HDS-BRAIN-owned source of truth.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/test/final_review_operations.test.ts
+docs/phase12-s4-final-review-single-source.md
+```
+
+Update:
+
+```txt
+packages/hds-brain/src/approval_policy.ts
+packages/hds-brain/src/process.ts
+packages/hds-brain/src/runtime_invariants.ts
+packages/hds-brain/src/index.ts
+SECURITY.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+```
+
+## Non-Goals
+
+- Approval UI redesign
+- history / replay UI wiring
+- detector lifecycle changes
+- fail-safe policy redesign
+- new privileged operation classes
+- gateway-owned final-review policy source
+
+## Completion Notes
+
+- Added `FINAL_REVIEW_OPERATION_LIST` as the canonical HDS-BRAIN final-review operation list.
+- Kept `FINAL_REVIEW_OPERATIONS` as a derived set and added `finalReviewOperationList()` for copied projections.
+- Process approval profiles, authority traces, and Runtime Invariants evidence now derive from the same HDS-BRAIN list.
+- Tests cover drift across Approval Gate, process profile, authority trace, and runtime evidence.
+- Active execution lane advances to Phase 12-S5 Approval / Notification / History / Replay UI Completion.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2398,7 +2450,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S4 Final-review Operation Single Source of Truth
+Phase 12-S5 Approval / Notification / History / Replay UI Completion
 ```
 
-Phase 12-S3 is complete. Proceed to Phase 12-S4 Final-review Operation Single Source of Truth before resuming resident application integration.
+Phase 12-S4 is complete. Proceed to Phase 12-S5 Approval / Notification / History / Replay UI Completion before resuming resident application integration.

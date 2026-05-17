@@ -1,4 +1,5 @@
 import type { InboundRequest } from "@blue-tanuki/protocol";
+import { finalReviewOperationList } from "./approval_policy.js";
 import type {
   ActorKind,
   ActorRef,
@@ -7,20 +8,6 @@ import type {
   ProcessKind,
   TrustLevel,
 } from "./types.js";
-
-const DEFAULT_FINAL_REVIEW_OPERATIONS = [
-  "tool.file.delete",
-  "tool.shell.exec",
-  "external.send",
-  "credential.access",
-  "settings.write",
-  "schedule.create",
-  "schedule.update",
-  "schedule.delete",
-  "browser.automation",
-  "github.write",
-  "payment.charge",
-] as const;
 
 const CHAT_MEMORY_POLICY: MemoryReadPolicy = {
   policy_id: "memory.chat.v1",
@@ -96,7 +83,7 @@ export function resolveProcess(req: InboundRequest, actor: ActorRef): HDSProcess
     memory_policy,
     approval_profile: {
       default_mode: "full_access",
-      final_review_operations: [...DEFAULT_FINAL_REVIEW_OPERATIONS],
+      final_review_operations: finalReviewOperationList(),
     },
     execution_policy: executionPolicy(process_kind),
     capture_policy: {
