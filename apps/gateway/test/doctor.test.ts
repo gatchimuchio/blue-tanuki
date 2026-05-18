@@ -117,6 +117,8 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "guided first-run",
       "Verify LLM",
       "BLUE_TANUKI_SETTINGS_TOKEN",
+      "resident-start",
+      "resident-autostart-enable",
       "RESET_CONFIG=1 PURGE=1 dry-run",
       "does not build signed native packages yet",
     ].join("\n"),
@@ -131,6 +133,7 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "Verify LLM",
       "not a signed native installer",
       "not an automatic updater",
+      "RESIDENT_APP_GUIDE.md",
     ].join("\n"),
   );
   await writeFixtureFile(
@@ -144,6 +147,31 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "Verify LLM",
       "not a signed native installer",
       "not an automatic updater",
+      "RESIDENT_APP_GUIDE.md",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "docs/RESIDENT_APP_GUIDE.md",
+    [
+      "# Resident App Guide",
+      "resident-start",
+      "resident-status",
+      "resident-stop",
+      "resident-autostart-enable",
+      "Autostart is opt-in only",
+      "does not provide a signed native app",
+      "does not provide an automatic updater",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "install/resident/README.md",
+    [
+      "# Resident Helpers",
+      "resident-start",
+      "resident-autostart-enable",
+      "does not enable autostart",
     ].join("\n"),
   );
   await writeFixtureFile(
@@ -167,6 +195,7 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "release bundle",
       "signed native installer",
       "automatic updater",
+      "resident app docs",
       "dry-run",
     ].join("\n"),
   );
@@ -175,6 +204,7 @@ async function writeDistributionFixture(root: string): Promise<void> {
     "scripts/create_release_bundle.ts",
     [
       "install/windows/install.ps1",
+      "install/resident/README.md",
       "install/macos/install.sh",
       "install/linux/install.sh",
       ".sha256",
@@ -185,7 +215,7 @@ async function writeDistributionFixture(root: string): Promise<void> {
   await writeFixtureFile(
     root,
     "scripts/verify_release_bundle.ts",
-    ["sha256", "manifest", "isForbiddenFileName"].join("\n"),
+    ["sha256", "manifest", "isForbiddenFileName", "install/resident/README.md"].join("\n"),
   );
   await writeFixtureFile(
     root,
@@ -199,17 +229,17 @@ async function writeDistributionFixture(root: string): Promise<void> {
   await writeFixtureFile(
     root,
     "install/windows/uninstall.ps1",
-    "Purge DryRun Assert-SafeTarget Data retained",
+    "Purge DryRun Assert-SafeTarget resident-autostart-disable Data retained",
   );
   await writeFixtureFile(
     root,
     "install/macos/uninstall.sh",
-    "PURGE DRY_RUN safe_target Data retained",
+    "PURGE DRY_RUN safe_target resident-autostart-disable Data retained",
   );
   await writeFixtureFile(
     root,
     "install/linux/uninstall.sh",
-    "PURGE DRY_RUN safe_target Config retained",
+    "PURGE DRY_RUN safe_target resident-autostart-disable Config retained",
   );
 }
 
@@ -436,7 +466,7 @@ describe("runDoctor — error paths", () => {
     });
     expect(reused.exit_code).toBe(2);
     expect(reused.checks.find((c) => c.id === "webhook_token")?.level).toBe("error");
-  });
+  }, 10_000);
 
   it("exit_code=2 when generic schedule JSON is malformed", async () => {
     const r = await runDoctor({

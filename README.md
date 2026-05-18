@@ -18,6 +18,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Resident Control Center status cards for first-run next action, permanent-use status, approvals, runtime schedules, audit chain, and authority trace
 - Guided first-run installer via `pnpm installer:run`
 - SIM-like LLM API settings with token-gated `Verify LLM` before saving provider changes
+- Portable resident app launcher commands for background start/status/stop, logs, Control Center open, and explicit autostart management
 - HDS Process / Memory / Authority closure
 - deterministic `MemoryTrace` with `used_for_authority=false`
 - standalone `CompleteHistoryStore` with append / verify / replay / export and `used_for_authority=false`
@@ -90,6 +91,20 @@ The guided installer is a portable first-run accelerator. It is not a signed
 native installer, not an automatic updater, and not a verified 5-minute setup
 guarantee. Use `Verify LLM` in Settings before saving non-stub provider
 changes.
+
+Portable installer launchers also expose a resident lifecycle path:
+
+```bash
+blue-tanuki resident-start
+blue-tanuki resident-status
+blue-tanuki resident-open
+blue-tanuki resident-logs
+blue-tanuki resident-stop
+blue-tanuki resident-autostart-enable
+blue-tanuki resident-autostart-disable
+```
+
+Autostart is opt-in only. See [docs/RESIDENT_APP_GUIDE.md](./docs/RESIDENT_APP_GUIDE.md).
 
 ## Telegram
 
@@ -428,6 +443,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions
 - [docs/INSTALLER_GUIDE.md](./docs/INSTALLER_GUIDE.md) - guided first-run installer and SIM-like LLM API settings
 - [docs/phase11-s9-installer-setup-ux.md](./docs/phase11-s9-installer-setup-ux.md) - Phase 11-S9 implementation report
+- [docs/RESIDENT_APP_GUIDE.md](./docs/RESIDENT_APP_GUIDE.md) - resident launcher lifecycle and explicit autostart
+- [docs/phase11-s10-resident-application-integration.md](./docs/phase11-s10-resident-application-integration.md) - Phase 11-S10 implementation report
 - [docs/INDEX.md](./docs/INDEX.md) - documentation index
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks

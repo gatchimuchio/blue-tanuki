@@ -74,6 +74,17 @@ $dataRootResolved = Assert-SafeTarget $DataRoot "DataRoot"
 $binRoot = Join-Path $dataRootResolved "bin"
 $launcher = Join-Path $binRoot "blue-tanuki.ps1"
 $cmdLauncher = Join-Path $binRoot "blue-tanuki.cmd"
+$residentScript = Join-Path $installRootResolved "install\resident\blue-tanuki-resident.ps1"
+
+if (Test-Path -LiteralPath $residentScript) {
+  if ($DryRun) {
+    Write-Host "Would stop resident gateway and disable resident autostart."
+  }
+  else {
+    & powershell -ExecutionPolicy Bypass -File $residentScript -Command "resident-stop" -InstallRoot $installRootResolved -EnvFile (Join-Path $dataRootResolved "blue-tanuki.env") -DataRoot $dataRootResolved -Launcher $launcher
+    & powershell -ExecutionPolicy Bypass -File $residentScript -Command "resident-autostart-disable" -InstallRoot $installRootResolved -EnvFile (Join-Path $dataRootResolved "blue-tanuki.env") -DataRoot $dataRootResolved -Launcher $launcher
+  }
+}
 
 Remove-Target $installRootResolved "app"
 Remove-FileIfPresent $launcher "PowerShell launcher"

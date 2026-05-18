@@ -2677,7 +2677,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S10 Resident Application Integration
+Phase 11-S11 Channel First-Party Promotion
 ```
 
-Phase 12-S8 is complete. The HDS-BRAIN quality lock sequence has reached a natural audit boundary. Proceed to Phase 11-S10 Resident Application Integration.
+Phase 11-S10 is complete. Proceed to Phase 11-S11 Channel First-Party Promotion.

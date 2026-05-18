@@ -153,6 +153,12 @@ param(
 `$ErrorActionPreference = "Stop"
 `$env:BLUE_TANUKI_ENV_FILE = "$envFile"
 Set-Location "$installRootResolved"
+`$residentScript = Join-Path "$installRootResolved" "install\resident\blue-tanuki-resident.ps1"
+function Invoke-ResidentCommand {
+  param([string]`$ResidentCommand)
+  & powershell -ExecutionPolicy Bypass -File `$residentScript -Command `$ResidentCommand -InstallRoot "$installRootResolved" -EnvFile "$envFile" -DataRoot "$dataRootResolved" -Launcher "$launcher" @RemainingArgs
+  exit `$LASTEXITCODE
+}
 `$cmd = `$Command.ToLowerInvariant()
 switch (`$cmd) {
   "start" {
@@ -180,12 +186,37 @@ switch (`$cmd) {
     Write-Output "$envFile"
     exit 0
   }
+  "resident-start" {
+    Invoke-ResidentCommand "resident-start"
+  }
+  "resident-stop" {
+    Invoke-ResidentCommand "resident-stop"
+  }
+  "resident-status" {
+    Invoke-ResidentCommand "resident-status"
+  }
+  "resident-open" {
+    Invoke-ResidentCommand "resident-open"
+  }
+  "resident-logs" {
+    Invoke-ResidentCommand "resident-logs"
+  }
+  "resident-autostart-enable" {
+    Invoke-ResidentCommand "resident-autostart-enable"
+  }
+  "resident-autostart-disable" {
+    Invoke-ResidentCommand "resident-autostart-disable"
+  }
+  "resident-autostart-status" {
+    Invoke-ResidentCommand "resident-autostart-status"
+  }
   "help" {
-    Write-Host "Usage: blue-tanuki.ps1 [start|doctor|setup|settings|env|help]"
+    Write-Host "Usage: blue-tanuki.ps1 [start|doctor|setup|settings|env|resident-start|resident-status|resident-stop|resident-open|resident-logs|resident-autostart-enable|resident-autostart-disable|resident-autostart-status|help]"
     Write-Host "  start/settings  Start gateway serve mode. Open /settings after boot."
     Write-Host "  doctor          Check local configuration."
     Write-Host "  setup           Re-run setup against the installed env file."
     Write-Host "  env             Print the env-file path."
+    Write-Host "  resident-*      Manage background resident gateway lifecycle and explicit autostart."
     exit 0
   }
   default {

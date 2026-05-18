@@ -22,9 +22,20 @@ pnpm installer:run -- --no-serve
 Use the Control Center Settings `Verify LLM` action before saving any provider,
 endpoint, model, or API key change after update.
 
+Phase 11-S10 resident launcher commands are part of the distribution surface.
+Before replacing an installed app directory, stop the resident gateway and record
+autostart state:
+
+```bash
+blue-tanuki resident-status
+blue-tanuki resident-autostart-status
+blue-tanuki resident-stop
+```
+
 ## 1. Before Update
 
 1. Stop the gateway if it is running.
+   - Portable resident users should run `blue-tanuki resident-stop`.
 2. Record the current commit or release bundle name.
 3. Back up local config and data:
    - env file
@@ -58,6 +69,13 @@ Then start with the same env file as before:
 
 ```bash
 pnpm gateway:serve -- --env-file .blue-tanuki/blue-tanuki.env
+```
+
+If using the portable resident launcher, restart with:
+
+```bash
+blue-tanuki resident-start
+blue-tanuki resident-status
 ```
 
 ## 3. Release Bundle Update
@@ -122,6 +140,7 @@ pnpm run doctor
 ### Release bundle rollback
 
 1. Stop gateway.
+   - Portable resident users should run `blue-tanuki resident-stop`.
 2. Restore the previous app directory or previous release bundle.
 3. Reuse the preserved env file and local data directories.
 4. Run `doctor`.

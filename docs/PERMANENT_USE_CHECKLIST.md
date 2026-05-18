@@ -6,6 +6,8 @@
 
 - [ ] Guided first-run installer users have recorded the env file path printed by `pnpm installer:run`.
 - [ ] Non-stub LLM provider changes were checked with `Verify LLM` before saving.
+- [ ] Portable installer users have selected foreground `start` or resident `resident-start` as the normal lifecycle path.
+- [ ] If autostart is desired, `resident-autostart-status` was checked before running `resident-autostart-enable`.
 
 - [ ] 起動方法を 1 つに決めている: source install、release bundle、Docker、systemd、portable installer
 - [ ] 起動時に読み込む env file の場所を把握している
@@ -16,6 +18,7 @@
 ## Stop / Restart
 
 - [ ] gateway process の止め方を把握している
+- [ ] resident launcher users can run `resident-status`, `resident-logs`, and `resident-stop`
 - [ ] restart 後も env、audit、session、memory の保存場所が変わらない
 - [ ] restart 後に `/runtime/snapshot` の Runtime Invariants が変わらない
 
@@ -89,6 +92,7 @@
 - [ ] `pnpm installer:run -- --no-serve` has a documented recovery path if setup fails.
 - [ ] installer docs do not claim a signed native installer.
 - [ ] update docs do not claim an automatic updater.
+- [ ] resident app docs explain start/status/stop/logs/open/autostart and uninstall cleanup.
 
 ## Rollback
 
@@ -115,6 +119,7 @@
 
 - v1.0 RC は signed native installer ではない
 - v1.0 RC は automatic updater を持たない
+- v1.0 RC の resident app path は portable launcher 統合であり、native tray app ではない
 - v1.0 RC Daily Brief は scheduled message smoke が既定であり、Gmail/GCal/Drive は read-only source として optional
 - Slack/Discord は release-polished preview-level。実 token / test target での live smoke 完走後に first-party 昇格判断を行う
 - Google write integrations、Teams、LINE は後続 phase

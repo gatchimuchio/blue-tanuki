@@ -151,6 +151,8 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "guided first-run",
       "Verify LLM",
       "BLUE_TANUKI_SETTINGS_TOKEN",
+      "resident-start",
+      "resident-autostart-enable",
       "RESET_CONFIG=1",
       "PURGE=1",
       "dry-run",
@@ -170,6 +172,28 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
     ],
   },
   {
+    rel: "docs/RESIDENT_APP_GUIDE.md",
+    label: "resident app guide",
+    needles: [
+      "resident-start",
+      "resident-status",
+      "resident-stop",
+      "resident-autostart-enable",
+      "Autostart is opt-in only",
+      "does not provide a signed native app",
+      "does not provide an automatic updater",
+    ],
+  },
+  {
+    rel: "install/resident/README.md",
+    label: "resident helper docs",
+    needles: [
+      "resident-start",
+      "resident-autostart-enable",
+      "does not enable autostart",
+    ],
+  },
+  {
     rel: "docs/INSTALLER_GUIDE.md",
     label: "installer guide",
     needles: [
@@ -179,6 +203,7 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "Verify LLM",
       "not a signed native installer",
       "not an automatic updater",
+      "RESIDENT_APP_GUIDE.md",
     ],
   },
   {
@@ -201,12 +226,14 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "signed native installer",
       "automatic updater",
       "dry-run",
+      "resident app docs",
     ],
   },
   {
     rel: "scripts/create_release_bundle.ts",
     label: "release bundle creator",
     needles: [
+      "install/resident/README.md",
       "install/windows/install.ps1",
       "install/macos/install.sh",
       "install/linux/install.sh",
@@ -218,7 +245,7 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
   {
     rel: "scripts/verify_release_bundle.ts",
     label: "release bundle verifier",
-    needles: ["sha256", "manifest", "isForbiddenFileName"],
+    needles: ["sha256", "manifest", "isForbiddenFileName", "install/resident/README.md"],
   },
   {
     rel: "scripts/validate_packaging.ts",
@@ -232,17 +259,17 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
   {
     rel: "install/windows/uninstall.ps1",
     label: "Windows uninstaller",
-    needles: ["Purge", "DryRun", "Assert-SafeTarget", "Data retained"],
+    needles: ["Purge", "DryRun", "Assert-SafeTarget", "resident-autostart-disable", "Data retained"],
   },
   {
     rel: "install/macos/uninstall.sh",
     label: "macOS uninstaller",
-    needles: ["PURGE", "DRY_RUN", "safe_target", "Data retained"],
+    needles: ["PURGE", "DRY_RUN", "safe_target", "resident-autostart-disable", "Data retained"],
   },
   {
     rel: "install/linux/uninstall.sh",
     label: "Linux uninstaller",
-    needles: ["PURGE", "DRY_RUN", "safe_target", "Config retained"],
+    needles: ["PURGE", "DRY_RUN", "safe_target", "resident-autostart-disable", "Config retained"],
   },
 ];
 

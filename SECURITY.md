@@ -65,6 +65,8 @@ LLMs, tools, plugins, skills, channels, executors, schedulers, browser automatio
 
 UI / Control Center is also downstream. It can display HDS-BRAIN decisions and submit owner input back to the existing Approval Gate, but it cannot become a second authority path.
 
+Resident launcher lifecycle and autostart helpers are downstream process-management surfaces. They may start, stop, open, and report the local Gateway process, but they must not approve, resume, classify, bypass final-review, rewrite policy, or expose token values.
+
 ## Boundary definition lock
 
 Phase 12-S0 fixes these authority boundaries:

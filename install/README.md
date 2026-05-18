@@ -73,6 +73,10 @@ powershell -ExecutionPolicy Bypass -File "$env:APPDATA\BlueTanuki\bin\blue-tanuk
 powershell -ExecutionPolicy Bypass -File "$env:APPDATA\BlueTanuki\bin\blue-tanuki.ps1" doctor
 powershell -ExecutionPolicy Bypass -File "$env:APPDATA\BlueTanuki\bin\blue-tanuki.ps1" settings
 powershell -ExecutionPolicy Bypass -File "$env:APPDATA\BlueTanuki\bin\blue-tanuki.ps1" env
+powershell -ExecutionPolicy Bypass -File "$env:APPDATA\BlueTanuki\bin\blue-tanuki.ps1" resident-start
+powershell -ExecutionPolicy Bypass -File "$env:APPDATA\BlueTanuki\bin\blue-tanuki.ps1" resident-status
+powershell -ExecutionPolicy Bypass -File "$env:APPDATA\BlueTanuki\bin\blue-tanuki.ps1" resident-stop
+powershell -ExecutionPolicy Bypass -File "$env:APPDATA\BlueTanuki\bin\blue-tanuki.ps1" resident-autostart-enable
 ```
 
 ## macOS
@@ -99,6 +103,10 @@ The installer creates `~/.local/bin/blue-tanuki`.
 ~/.local/bin/blue-tanuki doctor
 ~/.local/bin/blue-tanuki settings
 ~/.local/bin/blue-tanuki env
+~/.local/bin/blue-tanuki resident-start
+~/.local/bin/blue-tanuki resident-status
+~/.local/bin/blue-tanuki resident-stop
+~/.local/bin/blue-tanuki resident-autostart-enable
 ```
 
 ## Linux
@@ -125,7 +133,33 @@ The installer creates `~/.local/bin/blue-tanuki`.
 ~/.local/bin/blue-tanuki doctor
 ~/.local/bin/blue-tanuki settings
 ~/.local/bin/blue-tanuki env
+~/.local/bin/blue-tanuki resident-start
+~/.local/bin/blue-tanuki resident-status
+~/.local/bin/blue-tanuki resident-stop
+~/.local/bin/blue-tanuki resident-autostart-enable
 ```
+
+## Resident app lifecycle
+
+Phase 11-S10 adds portable resident integration commands to the generated
+launchers. These commands start the normal Gateway serve process in the
+background, report status, open Control Center, show logs, and manage explicit
+current-user autostart where supported:
+
+```bash
+blue-tanuki resident-start
+blue-tanuki resident-status
+blue-tanuki resident-open
+blue-tanuki resident-logs
+blue-tanuki resident-stop
+blue-tanuki resident-autostart-status
+blue-tanuki resident-autostart-enable
+blue-tanuki resident-autostart-disable
+```
+
+Autostart is never enabled by install/setup itself. It is only enabled when the
+owner runs `resident-autostart-enable`. The resident app path does not provide a
+signed native installer and does not implement an automatic updater.
 
 ## Settings
 

@@ -5,6 +5,8 @@ INSTALL_ROOT="${INSTALL_ROOT:-$HOME/Library/Application Support/BlueTanuki/app}"
 DATA_ROOT="${DATA_ROOT:-$HOME/Library/Application Support/BlueTanuki}"
 BIN_ROOT="${BIN_ROOT:-$HOME/.local/bin}"
 LAUNCHER="$BIN_ROOT/blue-tanuki"
+ENV_FILE="$DATA_ROOT/blue-tanuki.env"
+RESIDENT_SCRIPT="$INSTALL_ROOT/install/resident/blue-tanuki-resident.sh"
 PURGE="${PURGE:-0}"
 DRY_RUN="${DRY_RUN:-0}"
 
@@ -58,6 +60,15 @@ remove_file() {
   rm -f -- "$target"
   echo "Removed $2: $target"
 }
+
+if [ -f "$RESIDENT_SCRIPT" ]; then
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "Would stop resident gateway and disable resident autostart."
+  else
+    INSTALL_ROOT="$INSTALL_ROOT" ENV_FILE="$ENV_FILE" DATA_ROOT="$DATA_ROOT" LAUNCHER="$LAUNCHER" sh "$RESIDENT_SCRIPT" resident-stop || true
+    INSTALL_ROOT="$INSTALL_ROOT" ENV_FILE="$ENV_FILE" DATA_ROOT="$DATA_ROOT" LAUNCHER="$LAUNCHER" sh "$RESIDENT_SCRIPT" resident-autostart-disable || true
+  fi
+fi
 
 remove_target "$INSTALL_ROOT" "app"
 remove_file "$LAUNCHER" "launcher"

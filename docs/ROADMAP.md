@@ -124,7 +124,7 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S7 | F | Daily Operator Implementation | P0 | completed |
 | 11-S8 | F | Developer Operator Implementation | P0 | completed |
 | 11-S9 | F | Installer and Setup UX | P0 | completed |
-| 11-S10 | F | Resident Application Integration | P0 | 12-S8 |
+| 11-S10 | F | Resident Application Integration | P0 | completed |
 | 11-S11 | F | Channel First-Party Promotion | P0 | 11-S3 |
 | 11-S12 | F | Plugin Review Gate Implementation | P0 | 11-S5 |
 | 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
@@ -145,7 +145,7 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 Phase 11-S10 Resident Application Integration
 ```
 
-Phase 12-S8 is complete. The HDS-BRAIN quality lock sequence has reached a natural audit boundary. Next work can resume Phase 11-S10 Resident Application Integration.
+Phase 11-S10 is complete. The active execution lane advances to Phase 11-S11 Channel First-Party Promotion.
 
 ## 4. Completed Phase Summaries
 
@@ -330,6 +330,16 @@ Phase 12-S8 is complete. The HDS-BRAIN quality lock sequence has reached a natur
 - Signed native installer, automatic updater, and verified 5-minute setup guarantee remain out of scope
 - Active execution lane advances to Phase 11-S10 Resident Application Integration
 
+### Phase 11-S10
+
+- Portable resident helpers added under `install/resident/`
+- Installed launchers expose `resident-start`, `resident-status`, `resident-stop`, `resident-open`, `resident-logs`, and explicit `resident-autostart-*` commands
+- Resident autostart is opt-in only and uses current-user OS facilities where supported
+- Uninstallers stop resident state and disable autostart before removing app/launcher files
+- Resident app guide, permanent-use checklist, update/rollback runbook, RC docs, conformance docs, doctor distribution readiness, and packaging validation updated
+- Signed native tray app and automatic updater remain out of scope
+- Active execution lane advances to Phase 11-S11 Channel First-Party Promotion
+
 ### Phase 12-S-1
 
 - HDS-BRAIN standalone completeness locked as a package-level boundary
@@ -448,6 +458,7 @@ Do not add:
 - [v1.0 Post-RC Closure Review](v1.0-post-rc-closure-review.md)
 - [Phase 11-S6 Writing Operator Implementation](phase11-s6-writing-operator.md)
 - [Phase 11-S7 Daily Operator Implementation](phase11-s7-daily-operator.md)
+- [Phase 11-S10 Resident Application Integration](phase11-s10-resident-application-integration.md)
 - [Phase 11-S8 Developer Operator Implementation](phase11-s8-developer-operator.md)
 - [Phase 11-S9 Installer and Setup UX](phase11-s9-installer-setup-ux.md)
 - [HDS-BRAIN Standalone Boundary](hds-brain-standalone-boundary.md)

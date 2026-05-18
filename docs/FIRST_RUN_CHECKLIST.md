@@ -59,6 +59,13 @@ setup が env file を出力した場合:
 pnpm gateway:serve -- --env-file .blue-tanuki/blue-tanuki.env
 ```
 
+portable installer の resident launcher を使う場合:
+
+```bash
+blue-tanuki resident-start
+blue-tanuki resident-status
+```
+
 手動 env の場合:
 
 ```bash

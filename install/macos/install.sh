@@ -96,6 +96,10 @@ if [ "\$#" -gt 0 ]; then
   shift
 fi
 export BLUE_TANUKI_ENV_FILE="$ENV_FILE"
+RESIDENT_SCRIPT="$INSTALL_ROOT/install/resident/blue-tanuki-resident.sh"
+resident_cmd() {
+  INSTALL_ROOT="$INSTALL_ROOT" ENV_FILE="$ENV_FILE" DATA_ROOT="$DATA_ROOT" LAUNCHER="$LAUNCHER" sh "\$RESIDENT_SCRIPT" "\$@"
+}
 cd "$INSTALL_ROOT"
 case "\$COMMAND" in
   start|serve)
@@ -114,13 +118,17 @@ case "\$COMMAND" in
   env)
     printf '%s\n' "$ENV_FILE"
     ;;
+  resident-start|resident-stop|resident-status|resident-open|resident-logs|resident-autostart-enable|resident-autostart-disable|resident-autostart-status)
+    resident_cmd "\$COMMAND" "\$@"
+    ;;
   help|-h|--help)
     cat <<'HELP'
-Usage: blue-tanuki [start|doctor|setup|settings|env|help]
+Usage: blue-tanuki [start|doctor|setup|settings|env|resident-start|resident-status|resident-stop|resident-open|resident-logs|resident-autostart-enable|resident-autostart-disable|resident-autostart-status|help]
   start/settings  Start gateway serve mode. Open /settings after boot.
   doctor          Check local configuration.
   setup           Re-run setup against the installed env file.
   env             Print the env-file path.
+  resident-*      Manage background resident gateway lifecycle and explicit autostart.
 HELP
     ;;
   *)

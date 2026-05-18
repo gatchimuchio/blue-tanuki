@@ -35,6 +35,9 @@ const REQUIRED_ARCHIVE_PATHS = [
   "install/installer/src/setup_flow.ts",
   "install/installer/src/api_provisioning.ts",
   "install/installer/src/verify.ts",
+  "install/resident/README.md",
+  "install/resident/blue-tanuki-resident.ps1",
+  "install/resident/blue-tanuki-resident.sh",
   "install/windows/install.ps1",
   "install/windows/uninstall.ps1",
   "install/macos/install.sh",
@@ -51,6 +54,8 @@ const REQUIRED_ARCHIVE_PATHS = [
   "docs/history/phase7-s4-transparent-full-access-authority.md",
   "docs/INSTALLER_GUIDE.md",
   "docs/phase11-s9-installer-setup-ux.md",
+  "docs/RESIDENT_APP_GUIDE.md",
+  "docs/phase11-s10-resident-application-integration.md",
 ] as const;
 
 const FORBIDDEN_SEGMENTS = new Set([

@@ -86,8 +86,8 @@ provider, endpoint, model, and API key, then verify again.
 - The installer does not intervene in the HDS-BRAIN authority path.
 - The installer does not bypass final-review operations.
 - The installer does not change Layer A / Layer B boundaries.
-- The installer does not create a daemon or resident OS integration; that is
-  Phase 11-S10.
+- Resident OS integration is provided by Phase 11-S10 launcher commands and
+  remains downstream lifecycle glue over the existing Gateway serve path.
 - The installer does not provide a signed native installer.
 - The installer does not provide an automatic updater.
 - The installer is a guided first-run path, not a verified 5-minute setup
@@ -96,6 +96,7 @@ provider, endpoint, model, and API key, then verify again.
 ## Cross-References
 
 - [install/README.md](../install/README.md)
+- [RESIDENT_APP_GUIDE.md](RESIDENT_APP_GUIDE.md)
 - [FIRST_RUN_CHECKLIST.md](FIRST_RUN_CHECKLIST.md)
 - [PERMANENT_USE_CHECKLIST.md](PERMANENT_USE_CHECKLIST.md)
 - [UPDATE_ROLLBACK_RUNBOOK.md](UPDATE_ROLLBACK_RUNBOOK.md)

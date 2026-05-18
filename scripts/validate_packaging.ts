@@ -40,6 +40,8 @@ function main(): void {
   requireIncludes("install/README.md", installReadme, "BLUE_TANUKI_SETTINGS_TOKEN");
   requireIncludes("install/README.md", installReadme, "doctor");
   requireIncludes("install/README.md", installReadme, "settings");
+  requireIncludes("install/README.md", installReadme, "resident-start");
+  requireIncludes("install/README.md", installReadme, "resident-autostart-enable");
   requireIncludes("install/README.md", installReadme, "uninstall");
   requireIncludes("install/README.md", installReadme, "PURGE=1");
   requireIncludes("install/README.md", installReadme, "RESET_CONFIG=1");
@@ -58,6 +60,22 @@ function main(): void {
   requireIncludes("install/installer/README.md", guidedInstallerReadme, "Verify LLM");
   requireIncludes("install/installer/README.md", guidedInstallerReadme, "not a signed native installer");
   requireIncludes("install/installer/README.md", guidedInstallerReadme, "not an automatic updater");
+
+  const residentReadme = read("install/resident/README.md");
+  requireIncludes("install/resident/README.md", residentReadme, "resident-start");
+  requireIncludes("install/resident/README.md", residentReadme, "resident-autostart-enable");
+  requireIncludes("install/resident/README.md", residentReadme, "does not enable autostart");
+
+  const residentPs = read("install/resident/blue-tanuki-resident.ps1");
+  requireIncludes("install/resident/blue-tanuki-resident.ps1", residentPs, "resident-start");
+  requireIncludes("install/resident/blue-tanuki-resident.ps1", residentPs, "resident-autostart-enable");
+  requireIncludes("install/resident/blue-tanuki-resident.ps1", residentPs, "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run");
+
+  const residentSh = read("install/resident/blue-tanuki-resident.sh");
+  requireIncludes("install/resident/blue-tanuki-resident.sh", residentSh, "resident-start");
+  requireIncludes("install/resident/blue-tanuki-resident.sh", residentSh, "resident-autostart-enable");
+  requireIncludes("install/resident/blue-tanuki-resident.sh", residentSh, "LaunchAgents");
+  requireIncludes("install/resident/blue-tanuki-resident.sh", residentSh, "systemctl --user");
 
   const guidedInstallerIndex = read("install/installer/src/index.ts");
   requireIncludes("install/installer/src/index.ts", guidedInstallerIndex, "runInstallerCli");
@@ -91,12 +109,15 @@ function main(): void {
   requireIncludes("install/windows/install.ps1", winInstall, "Invoke-PostInstallDoctor");
   requireIncludes("install/windows/install.ps1", winInstall, "post-install doctor");
   requireIncludes("install/windows/install.ps1", winInstall, "\"doctor\"");
+  requireIncludes("install/windows/install.ps1", winInstall, "resident-start");
+  requireIncludes("install/windows/install.ps1", winInstall, "resident-autostart-enable");
   requireIncludes("install/windows/install.ps1", winInstall, "/settings");
 
   const winUninstall = read("install/windows/uninstall.ps1");
   requireIncludes("install/windows/uninstall.ps1", winUninstall, "Purge");
   requireIncludes("install/windows/uninstall.ps1", winUninstall, "DryRun");
   requireIncludes("install/windows/uninstall.ps1", winUninstall, "Assert-SafeTarget");
+  requireIncludes("install/windows/uninstall.ps1", winUninstall, "resident-autostart-disable");
   requireIncludes("install/windows/uninstall.ps1", winUninstall, "Data retained");
 
   const macInstall = read("install/macos/install.sh");
@@ -109,12 +130,15 @@ function main(): void {
   requireIncludes("install/macos/install.sh", macInstall, "Add RESET_CONFIG=1 only");
   requireIncludes("install/macos/install.sh", macInstall, "post-install doctor");
   requireIncludes("install/macos/install.sh", macInstall, "doctor)");
+  requireIncludes("install/macos/install.sh", macInstall, "resident-start");
+  requireIncludes("install/macos/install.sh", macInstall, "resident-autostart-enable");
   requireIncludes("install/macos/install.sh", macInstall, "/settings");
 
   const macUninstall = read("install/macos/uninstall.sh");
   requireIncludes("install/macos/uninstall.sh", macUninstall, "PURGE");
   requireIncludes("install/macos/uninstall.sh", macUninstall, "DRY_RUN");
   requireIncludes("install/macos/uninstall.sh", macUninstall, "safe_target");
+  requireIncludes("install/macos/uninstall.sh", macUninstall, "resident-autostart-disable");
   requireIncludes("install/macos/uninstall.sh", macUninstall, "Data retained");
 
   const linuxInstall = read("install/linux/install.sh");
@@ -127,16 +151,22 @@ function main(): void {
   requireIncludes("install/linux/install.sh", linuxInstall, "Add RESET_CONFIG=1 only");
   requireIncludes("install/linux/install.sh", linuxInstall, "post-install doctor");
   requireIncludes("install/linux/install.sh", linuxInstall, "doctor)");
+  requireIncludes("install/linux/install.sh", linuxInstall, "resident-start");
+  requireIncludes("install/linux/install.sh", linuxInstall, "resident-autostart-enable");
   requireIncludes("install/linux/install.sh", linuxInstall, "/settings");
 
   const linuxUninstall = read("install/linux/uninstall.sh");
   requireIncludes("install/linux/uninstall.sh", linuxUninstall, "PURGE");
   requireIncludes("install/linux/uninstall.sh", linuxUninstall, "DRY_RUN");
   requireIncludes("install/linux/uninstall.sh", linuxUninstall, "safe_target");
+  requireIncludes("install/linux/uninstall.sh", linuxUninstall, "resident-autostart-disable");
   requireIncludes("install/linux/uninstall.sh", linuxUninstall, "Config retained");
 
   const releaseBundle = read("scripts/create_release_bundle.ts");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/README.md");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/README.md");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/blue-tanuki-resident.ps1");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/blue-tanuki-resident.sh");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/src/index.ts");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/windows/install.ps1");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/windows/uninstall.ps1");
@@ -156,6 +186,9 @@ function main(): void {
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "manifest");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "tar");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/README.md");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/README.md");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/blue-tanuki-resident.ps1");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/blue-tanuki-resident.sh");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/src/index.ts");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/windows/uninstall.ps1");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/macos/uninstall.sh");
@@ -169,6 +202,7 @@ function main(): void {
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "distribution_readiness");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "Distribution readiness");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "guided first-run installer docs");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "resident app guide");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "does not build signed native packages yet");
   requireIncludes(
     "apps/gateway/src/doctor.ts",
@@ -208,7 +242,9 @@ function main(): void {
 
   const docsIndex = read("docs/INDEX.md");
   requireIncludes("docs/INDEX.md", docsIndex, "INSTALLER_GUIDE.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "RESIDENT_APP_GUIDE.md");
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s9-installer-setup-ux.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "phase11-s10-resident-application-integration.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-release-candidate.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-post-rc-closure-review.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-security-and-permanent-use-review.md");
@@ -220,6 +256,7 @@ function main(): void {
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "first-party-preview");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "reserved-third-party");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No signed native installer");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "resident app path");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No automatic updater");
   requireNotMatches(
     "docs/v1.0-release-candidate.md",

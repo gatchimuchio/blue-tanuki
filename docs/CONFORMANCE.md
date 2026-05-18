@@ -114,6 +114,10 @@
 - `install/installer/test/installer.test.ts`
   - guided first-run installer CLI parses provider and no-serve options
   - installer preflight reports owner next action when run outside a repo root
+- `install/installer/test/resident_integration.test.ts`
+  - portable installer launchers expose resident lifecycle commands
+  - resident helpers provide explicit autostart enable/disable/status paths
+  - uninstallers stop resident state and disable autostart before app removal
 - `apps/gateway/test/doctor.test.ts`
   - doctor が manifest / compatibility matrix / schedule config の release gate を表示すること
 
@@ -136,6 +140,7 @@
 - Runtime automation containment tests
 - First-party operator surface tests
 - Installer setup UX tests
+- Resident application integration tests
 - SIM-like LLM API settings verification tests
 - Preview quarantine rule
 - Main release gate rule
@@ -187,6 +192,17 @@ runtime automation は未来の action を作るため、通常の tool より�
 - old active schedule は update/delete approval まで維持される
 - snapshot は content を露出せず、safe metadata と payload hash のみを出す
 - lifecycle は hash-chain audit に残る
+
+## Resident Application Integration Tests
+
+resident application integration は Gateway lifecycle を OS に寄せるが、authority path ではない。
+
+- portable launcher は resident start/status/stop/open/logs を提供する
+- autostart は owner が明示的に enable した場合のみ設定される
+- autostart は current-user OS facility に限定される
+- uninstall は resident process を止め、autostart を disable してから app/launcher を削除する
+- normal uninstall は env/audit/session/memory を保持する
+- resident helpers は token 値を表示せず、HDS-BRAIN / Approval Gate / audit / Runtime Invariants を変更しない
 
 ## Audit Trace Compatibility Tests
 
