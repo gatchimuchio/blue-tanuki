@@ -53,6 +53,7 @@ Audit expectations:
 - fail-safe states suspend downstream execution instead of delegating authority;
 - policy, detector, approval, and history updates require L3 final review;
 - detector lifecycle failures and unknown detector patterns resolve to `SUSPEND` with lifecycle traces in the decision log;
+- self-health fail-safe decisions record failed preconditions and command/downstream execution denial before command emission;
 - Trinity `M` closure failures are suspend conditions, not silent allow conditions.
 
 ## Output / result audit
@@ -175,6 +176,7 @@ Exit code: 1
 - unknown/stale feedback
 - runtime invariants evidence
 - detector lifecycle traces inside HDS decision logs
+- fail-safe self-health decisions and failed preconditions
 
 ## Schedule lifecycle audit
 

@@ -53,6 +53,7 @@ export interface FailSafeInput {
   audit_chain_valid: boolean;
   runtime_invariants_valid: boolean;
   approval_gate_available: boolean;
+  memory_chain_valid?: boolean;
 }
 
 export interface TrinityMClosureInput {
@@ -131,15 +132,17 @@ export function evaluateUnknownEscalation(reason: UnknownEscalationReason): Boun
 }
 
 export function evaluateFailSafeBoundary(input: FailSafeInput): BoundaryEvaluation & {
+  failed_preconditions: Array<keyof FailSafeInput>;
   command_execution_allowed: boolean;
   downstream_execution_allowed: boolean;
 } {
   const failed = Object.entries(input)
-    .filter(([, ok]) => !ok)
-    .map(([key]) => key);
+    .filter(([, ok]) => ok === false)
+    .map(([key]) => key as keyof FailSafeInput);
   if (failed.length === 0) {
     return {
       policy_version: HDS_BOUNDARY_POLICY_VERSION,
+      failed_preconditions: failed,
       allowed: true,
       decision: "allow_reference",
       risk: "low",
@@ -152,6 +155,7 @@ export function evaluateFailSafeBoundary(input: FailSafeInput): BoundaryEvaluati
   }
   return {
     policy_version: HDS_BOUNDARY_POLICY_VERSION,
+    failed_preconditions: failed,
     allowed: false,
     decision: "suspend",
     risk: "high",

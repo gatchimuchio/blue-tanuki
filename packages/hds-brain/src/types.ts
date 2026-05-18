@@ -3,6 +3,7 @@ import type { OutputAuditLog } from "./output_audit.js";
 import type { RuntimeInvariantEvidenceReport, RuntimeInvariantValues } from "./runtime_invariants.js";
 import type { ApprovalEvaluation } from "./approval_policy.js";
 import type { DetectorLifecycleTrace } from "./detectors/types.js";
+import type { HDSBrainHealth } from "./health.js";
 
 /**
  * Output of the F (Frame) phase.
@@ -365,6 +366,9 @@ export interface SuspendedRequest {
   log: DecisionLog;
   suspended_at: number;
   reason: string;
+  fail_safe?: boolean;
+  resume_allowed?: boolean;
+  self_health?: HDSBrainHealth;
 }
 
 /**

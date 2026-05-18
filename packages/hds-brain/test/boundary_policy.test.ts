@@ -131,6 +131,7 @@ describe("Phase 12-S0 boundary policy", () => {
     });
     expect(healthy.command_execution_allowed).toBe(true);
     expect(healthy.downstream_execution_allowed).toBe(true);
+    expect(healthy.failed_preconditions).toEqual([]);
 
     const unhealthy = evaluateFailSafeBoundary({
       hds_available: true,
@@ -143,6 +144,7 @@ describe("Phase 12-S0 boundary policy", () => {
     expect(unhealthy.decision).toBe("suspend");
     expect(unhealthy.command_execution_allowed).toBe(false);
     expect(unhealthy.downstream_execution_allowed).toBe(false);
+    expect(unhealthy.failed_preconditions).toEqual(["audit_chain_valid"]);
     expect(unhealthy.reason).toContain("audit_chain_valid");
   });
 

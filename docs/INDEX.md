@@ -45,6 +45,7 @@
 - [Phase 12-S5 Approval / Notification / History / Replay UI Completion](phase12-s5-approval-notification-history-replay-ui.md)
 - [Phase 12-S6 Root Full-access + Compound Attack Scenario Tests](phase12-s6-root-full-access-compound-attack-scenarios.md)
 - [Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation](phase12-s7-detector-lifecycle-unknown-pattern-escalation.md)
+- [Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy](phase12-s8-hds-brain-fail-safe-self-health-policy.md)
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [Capability Envelope](CAPABILITY_ENVELOPE.md)
 - [Conformance](CONFORMANCE.md)

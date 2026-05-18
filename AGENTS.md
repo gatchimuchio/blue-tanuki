@@ -277,6 +277,7 @@ Phase 12-S0 fixes the boundary model before later output audit/history/UI phases
 - Memory, complete history, session, tool result, LLM output, channel metadata, plugin metadata, external metadata, audit viewers, and Control Center projections are reference/evidence only.
 - Policy, detector, approval, and history updates require L3 final review.
 - HDS-BRAIN fail-safe is `SUSPEND`, not fallback authority.
+- HDS-BRAIN self-health fail-safe suspensions cannot be approved through human resume; repair the failed precondition and retry.
 - Trinity `M` is deterministic policy: identity, boundary, judgement, log, and suspend rules.
 
 ### Output / Result Audit Plane Rule

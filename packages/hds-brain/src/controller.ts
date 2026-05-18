@@ -13,6 +13,7 @@ import type {
   CommandLifecyclePhase,
   ControllerState,
   DecisionLog,
+  ModelResult,
   MemoryReferenceLog,
   PolicyConfig,
   ResumeAuditTrace,
@@ -31,7 +32,7 @@ import {
   DetectorRegistry,
   createDefaultDetectorRegistry,
 } from "./detectors/index.js";
-import { DEFAULT_POLICY } from "./policy.js";
+import { DEFAULT_POLICY, validatePolicy } from "./policy.js";
 import { routeAction } from "./action_router.js";
 import type { ApprovalEvaluation } from "./approval_policy.js";
 import {
@@ -46,6 +47,10 @@ import {
   type RuntimeInvariantValues,
 } from "./runtime_invariants.js";
 import { fReferenceForId } from "./f_reference.js";
+import {
+  evaluateHDSBrainHealth,
+  type HDSBrainHealth,
+} from "./health.js";
 
 interface LongTermMemoryPort {
   capture(log: DecisionLog): unknown;
@@ -91,6 +96,7 @@ export interface ControllerOptions {
   audit?: AuditLog;
   memory?: LongTermMemoryPort;
   llm_route?: LLMCommandRoute;
+  self_health?: ControllerSelfHealthOptions;
 }
 
 export interface LLMCommandRoute {
@@ -99,6 +105,13 @@ export interface LLMCommandRoute {
   temperature?: number;
   max_tokens?: number;
   timeout_ms?: number;
+}
+
+export interface ControllerSelfHealthOptions {
+  hds_available?: boolean;
+  policy_valid?: boolean;
+  approval_gate_available?: boolean;
+  runtime_invariants?: RuntimeInvariantEvidenceReport;
 }
 
 export interface ResumeAuditOptions {
@@ -139,6 +152,22 @@ function securityCommit(kind: string, reason: string, bind: unknown): import("./
   });
   return {
     decision: "FAIL",
+    reason: `${kind}:${reason}`,
+    hash,
+    triggered_thresholds,
+  };
+}
+
+function suspendCommit(kind: string, reason: string, bind: unknown, triggered_thresholds: string[]): import("./types.js").CommitResult {
+  const hash = sha256({
+    kind,
+    reason,
+    bind,
+    decision: "SUSPEND",
+    triggered_thresholds,
+  });
+  return {
+    decision: "SUSPEND",
     reason: `${kind}:${reason}`,
     hash,
     triggered_thresholds,
@@ -212,6 +241,7 @@ export class HDSUpperController {
   private readonly detectors: DetectorRegistry;
   private readonly memory?: LongTermMemoryPort;
   private readonly llm_route: LLMCommandRoute;
+  private readonly self_health: ControllerSelfHealthOptions;
 
   /** Commands awaiting executor feedback (already ASSERTed). */
   private readonly inflight = new Map<string, DecisionLog>();
@@ -228,6 +258,7 @@ export class HDSUpperController {
     this.audit = opts.audit ?? new AuditLog();
     this.memory = opts.memory;
     this.llm_route = opts.llm_route ?? {};
+    this.self_health = opts.self_health ?? {};
   }
 
   /**
@@ -250,6 +281,48 @@ export class HDSUpperController {
       default_policy: this.policy,
       memory_reader: this.memory,
     });
+    const selfHealth = this.evaluateSelfHealth();
+    if (selfHealth.fail_safe) {
+      const m = selfHealthModel(f, selfHealth);
+      const failSafeReason = selfHealth.fail_safe_reason.startsWith("hds_fail_safe:")
+        ? selfHealth.fail_safe_reason.slice("hds_fail_safe:".length)
+        : selfHealth.fail_safe_reason;
+      const c = suspendCommit(
+        "hds_fail_safe",
+        failSafeReason,
+        {
+          request_id: req.id,
+          failed_preconditions: selfHealth.failed_preconditions,
+          command_execution_allowed: selfHealth.command_execution_allowed,
+          downstream_execution_allowed: selfHealth.downstream_execution_allowed,
+        },
+        [
+          "hds_fail_safe:suspend",
+          ...selfHealth.failed_preconditions.map((precondition) => `hds_fail_safe:${precondition}=false`),
+        ],
+      );
+      const log: DecisionLog = {
+        request_id: req.id,
+        input,
+        frame: f,
+        model: m,
+        commit: c,
+        timestamp: Date.now(),
+      };
+      this.audit.append(log);
+      this.state = "SUSPENDED";
+      this.suspended.set(req.id, {
+        request_id: req.id,
+        log,
+        suspended_at: Date.now(),
+        reason: c.reason,
+        fail_safe: true,
+        resume_allowed: false,
+        self_health: selfHealth,
+      });
+      this.suspendedRequests.set(req.id, authorityReq);
+      return { log, command: null };
+    }
     const m = model(authorityReq, f, this.policy, this.detectors);
 
     const processViolation = processAuthorityViolation(f);
@@ -348,6 +421,50 @@ export class HDSUpperController {
     }
 
     this.state = "AWAITING_RESUME";
+    const selfHealth = this.evaluateSelfHealth();
+    if (susp.resume_allowed === false || selfHealth.fail_safe) {
+      const actor = opts.actor?.trim() || "unknown";
+      const token_kind = opts.token_kind ?? "resume";
+      const reason =
+        susp.resume_allowed === false
+          ? `human_resume_denied:fail_safe (was SUSPEND: ${susp.reason})`
+          : `human_resume_denied:self_health_fail_safe:${selfHealth.fail_safe_reason}`;
+      const deniedHash = sha256({
+        kind: "human_resume_denied",
+        previous_commit_hash: susp.log.commit.hash,
+        request_id: susp.request_id,
+        verdict,
+        actor,
+        token_kind,
+        suspended_reason: susp.reason,
+        self_health: selfHealth,
+      });
+      const deniedLog: DecisionLog = {
+        request_id: susp.request_id,
+        input: susp.log.input,
+        resume: {
+          verdict,
+          actor,
+          token_kind,
+        },
+        frame: susp.log.frame,
+        model: selfHealthModel(susp.log.frame, selfHealth),
+        commit: {
+          decision: "SUSPEND",
+          reason,
+          hash: deniedHash,
+          triggered_thresholds: [
+            ...susp.log.commit.triggered_thresholds,
+            "human_resume_denied:fail_safe",
+            ...selfHealth.failed_preconditions.map((precondition) => `hds_fail_safe:${precondition}=false`),
+          ],
+        },
+        timestamp: Date.now(),
+      };
+      this.audit.append(deniedLog);
+      this.state = "SUSPENDED";
+      return { log: deniedLog, command: null, request: req };
+    }
 
     // Map verdict → effective decision for the resume audit entry.
     const lifted: "ASSERT" | "FAIL" | "OUT_OF_SCOPE" =
@@ -627,6 +744,28 @@ export class HDSUpperController {
     };
   }
 
+  getSelfHealth(opts: { runtime_invariants?: RuntimeInvariantEvidenceReport } = {}): HDSBrainHealth {
+    return this.evaluateSelfHealth(opts);
+  }
+
+  private evaluateSelfHealth(opts: { runtime_invariants?: RuntimeInvariantEvidenceReport } = {}): HDSBrainHealth {
+    const runtime_invariants = opts.runtime_invariants ?? this.self_health.runtime_invariants;
+    return evaluateHDSBrainHealth(this.getRuntimeSnapshot({ ...(runtime_invariants ? { runtime_invariants } : {}) }), {
+      hds_available: this.self_health.hds_available,
+      policy_valid: this.self_health.policy_valid ?? this.policyStructurallyValid(),
+      approval_gate_available: this.self_health.approval_gate_available,
+    });
+  }
+
+  private policyStructurallyValid(): boolean {
+    try {
+      validatePolicy(this.policy);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private buildCommand(req: InboundRequest, log: DecisionLog): ExecuteCommand {
     const upstream_decision: UpstreamDecision = {
       frame_goal: log.frame.goal,
@@ -705,6 +844,45 @@ export class HDSUpperController {
       upstream_decision,
     };
   }
+}
+
+function selfHealthModel(frameResult: DecisionLog["frame"], health: HDSBrainHealth): ModelResult {
+  return {
+    abstraction: `self_health:${health.status}`,
+    structure: {
+      problem_definition_id: frameResult.problem_definition_id,
+      actor: frameResult.actor,
+      process: {
+        process_id: frameResult.process.process_id,
+        process_kind: frameResult.process.process_kind,
+        trigger: frameResult.process.trigger,
+      },
+      self_health: {
+        status: health.status,
+        failed_preconditions: health.failed_preconditions,
+        command_execution_allowed: health.command_execution_allowed,
+        downstream_execution_allowed: health.downstream_execution_allowed,
+        operator_next_action: health.operator_next_action,
+        used_for_authority: health.used_for_authority,
+      },
+    },
+    scoring: {
+      axis_scores: [
+        {
+          axis: "self_health",
+          score: health.fail_safe ? 0 : 1,
+          detector: "hds_self_health",
+          evidence: health.fail_safe_reason,
+          lifecycle: {
+            status: "ok",
+            reason: "self_health_evaluated",
+          },
+        },
+      ],
+      weights: { self_health: 1 },
+      aggregate: health.fail_safe ? 0 : 1,
+    },
+  };
 }
 
 function isCapturedMemoryReference(value: unknown): value is CapturedMemoryReference {

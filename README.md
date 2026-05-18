@@ -422,6 +422,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase12-s5-approval-notification-history-replay-ui.md](./docs/phase12-s5-approval-notification-history-replay-ui.md) - Phase 12-S5 resident history/replay UI completion
 - [docs/phase12-s6-root-full-access-compound-attack-scenarios.md](./docs/phase12-s6-root-full-access-compound-attack-scenarios.md) - Phase 12-S6 root full-access compound attack test lock
 - [docs/phase12-s7-detector-lifecycle-unknown-pattern-escalation.md](./docs/phase12-s7-detector-lifecycle-unknown-pattern-escalation.md) - Phase 12-S7 detector lifecycle and unknown pattern escalation
+- [docs/phase12-s8-hds-brain-fail-safe-self-health-policy.md](./docs/phase12-s8-hds-brain-fail-safe-self-health-policy.md) - Phase 12-S8 executable fail-safe self-health boundary
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions

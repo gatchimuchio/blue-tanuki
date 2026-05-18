@@ -2530,6 +2530,63 @@ docs/hds-brain-unknown-escalation-policy.md
 
 ---
 
+# Phase 12-S8 - HDS-BRAIN Fail-safe / Self-health Policy
+
+## Objective
+
+Make HDS-BRAIN self-health an executable fail-safe boundary before downstream command emission.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/test/fail_safe_self_health.test.ts
+docs/phase12-s8-hds-brain-fail-safe-self-health-policy.md
+```
+
+Update:
+
+```txt
+packages/hds-brain/src/boundary_policy.ts
+packages/hds-brain/src/controller.ts
+packages/hds-brain/src/health.ts
+packages/hds-brain/src/index.ts
+packages/hds-brain/src/types.ts
+packages/hds-brain/test/boundary_policy.test.ts
+AGENTS.md
+SECURITY.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+docs/hds-brain-fail-safe-policy.md
+```
+
+## Non-Goals
+
+- ApprovalRisk redesign
+- new `critical` risk level
+- Approval Gate UX changes
+- gateway-owned authority checks
+- Runtime Invariants as authority
+- external watchdog/service-manager implementation
+- resident application integration implementation
+
+## Completion Notes
+
+- Added HDS-BRAIN self-health failed preconditions and owner next action.
+- New command emission suspends when policy, audit chain, Runtime Invariants, Approval Gate, HDS availability, or configured memory chain is unhealthy.
+- Fail-safe suspensions are not human-resumable approval paths.
+- Fail-safe decisions record `hds_fail_safe:*` triggered thresholds and audit-safe self-health metadata.
+- Phase 12 HDS-BRAIN quality lock sequence reaches a natural audit boundary; active execution lane returns to Phase 11-S10 Resident Application Integration.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2620,7 +2677,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy
+Phase 11-S10 Resident Application Integration
 ```
 
-Phase 12-S7 is complete. Proceed to Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy before resuming resident application integration.
+Phase 12-S8 is complete. The HDS-BRAIN quality lock sequence has reached a natural audit boundary. Proceed to Phase 11-S10 Resident Application Integration.

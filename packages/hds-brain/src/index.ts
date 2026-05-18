@@ -59,6 +59,8 @@ export {
 export {
   evaluateHDSBrainHealth,
   type HDSBrainHealth,
+  type HDSBrainHealthOptions,
+  type HDSBrainHealthPrecondition,
   type HDSBrainHealthStatus,
 } from "./health.js";
 export {
@@ -78,6 +80,7 @@ export {
 export {
   HDSUpperController,
   type ControllerOptions,
+  type ControllerSelfHealthOptions,
   type LLMCommandRoute,
   type ResumeAuditOptions,
   type HDSRuntimeSnapshot,

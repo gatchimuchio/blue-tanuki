@@ -46,6 +46,7 @@
 - Added Phase 12-S5 Approval / Notification / History / Replay UI Completion with read-only `/history` and `/history/replay`, Gateway complete-history replay metadata, Control Center history display, payload stripping, and non-authority replay docs.
 - Added Phase 12-S6 Root Full-access + Compound Attack Scenario Tests covering wildcard full-access grants, privileged envelopes, metadata spoofing, forged channel-send metadata, downstream feedback spoofing, and history authority conversion.
 - Added Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation with lifecycle traces, fail-closed detector errors, invalid pattern suspension, and detector conflict coverage.
+- Added Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy with executable self-health preconditions, command-emission blocking, non-resumable fail-safe suspension, and audit-visible failed preconditions.
 
 ## 0.1.0 - 2026-05-06
 

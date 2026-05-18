@@ -76,6 +76,8 @@ Phase 12-S0 fixes these authority boundaries:
 - HDS-BRAIN fail-safe is `SUSPEND`; it does not delegate authority to downstream devices.
 - Trinity `M` is the deterministic policy layer: identity, boundary, judgement, log, and suspend rules.
 
+Phase 12-S8 makes fail-safe executable inside HDS-BRAIN self-health. Failed policy validity, audit chain validity, Runtime Invariants validity, Approval Gate availability, HDS availability, or configured memory-chain validity suspends before command emission. A fail-safe suspension cannot be approved through human resume; the failed precondition must be repaired and the request retried.
+
 ## Output / result audit plane
 
 Phase 12-S1 adds `OutputAudit` inside `packages/hds-brain`.

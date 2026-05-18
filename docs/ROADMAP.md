@@ -124,7 +124,7 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S7 | F | Daily Operator Implementation | P0 | completed |
 | 11-S8 | F | Developer Operator Implementation | P0 | completed |
 | 11-S9 | F | Installer and Setup UX | P0 | completed |
-| 11-S10 | F | Resident Application Integration | P0 | paused by Phase 12 HDS-BRAIN quality lock |
+| 11-S10 | F | Resident Application Integration | P0 | 12-S8 |
 | 11-S11 | F | Channel First-Party Promotion | P0 | 11-S3 |
 | 11-S12 | F | Plugin Review Gate Implementation | P0 | 11-S5 |
 | 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
@@ -137,15 +137,15 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 12-S5 | G | Approval / Notification / History / Replay UI Completion | P0 | completed |
 | 12-S6 | G | Root Full-access + Compound Attack Scenario Tests | P0 | completed |
 | 12-S7 | G | Detector Lifecycle and Unknown Pattern Escalation | P0 | completed |
-| 12-S8 | G | HDS-BRAIN Fail-safe / Self-health Policy | P0 | 12-S7 |
+| 12-S8 | G | HDS-BRAIN Fail-safe / Self-health Policy | P0 | completed |
 
 ## 3. Current Active Phase
 
 ```txt
-Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy
+Phase 11-S10 Resident Application Integration
 ```
 
-Phase 12-S7 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy.
+Phase 12-S8 is complete. The HDS-BRAIN quality lock sequence has reached a natural audit boundary. Next work can resume Phase 11-S10 Resident Application Integration.
 
 ## 4. Completed Phase Summaries
 
@@ -412,6 +412,14 @@ Phase 12-S7 is complete. Phase 11-S10 Resident Application Integration is paused
 - Detector lifecycle failures are audit-visible through commit thresholds and axis lifecycle traces
 - Active execution lane advances to Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy
 
+### Phase 12-S8
+
+- Added executable HDS-BRAIN self-health fail-safe preconditions
+- New command emission suspends when policy validity, audit chain, Runtime Invariants, Approval Gate, HDS availability, or configured memory chain is unhealthy
+- Fail-safe suspensions cannot be approved through human resume
+- Fail-safe decisions expose failed preconditions and owner next action in audit-safe metadata
+- HDS-BRAIN quality lock sequence reaches a natural audit boundary; active lane resumes to Phase 11-S10 Resident Application Integration
+
 ## 5. Non-Goals
 
 Do not add:
@@ -461,6 +469,7 @@ Do not add:
 - [Phase 12-S5 Approval / Notification / History / Replay UI Completion](phase12-s5-approval-notification-history-replay-ui.md)
 - [Phase 12-S6 Root Full-access + Compound Attack Scenario Tests](phase12-s6-root-full-access-compound-attack-scenarios.md)
 - [Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation](phase12-s7-detector-lifecycle-unknown-pattern-escalation.md)
+- [Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy](phase12-s8-hds-brain-fail-safe-self-health-policy.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)
