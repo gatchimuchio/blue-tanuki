@@ -2469,6 +2469,67 @@ docs/SECURITY_REVIEW_CHECKLIST.md
 
 ---
 
+# Phase 12-S7 - Detector Lifecycle and Unknown Pattern Escalation
+
+## Objective
+
+Lock detector lifecycle failures and unknown detector patterns into fail-closed HDS-BRAIN decisions.
+
+## Scope
+
+Create:
+
+```txt
+packages/hds-brain/test/detector_lifecycle.test.ts
+docs/hds-brain-detector-lifecycle.md
+docs/phase12-s7-detector-lifecycle-unknown-pattern-escalation.md
+```
+
+Update:
+
+```txt
+packages/hds-brain/src/boundary_policy.ts
+packages/hds-brain/src/detectors/index.ts
+packages/hds-brain/src/detectors/risk_keyword.ts
+packages/hds-brain/src/detectors/types.ts
+packages/hds-brain/src/index.ts
+packages/hds-brain/src/policy.ts
+packages/hds-brain/src/types.ts
+packages/hds-brain/test/boundary_policy.test.ts
+packages/hds-brain/test/detectors.test.ts
+AGENTS.md
+SECURITY.md
+AUDIT.md
+README.md
+CHANGELOG.md
+docs/CONFORMANCE.md
+docs/INDEX.md
+docs/ROADMAP.md
+docs/IMPLEMENTATION_INSTRUCTIONS.md
+docs/SECURITY_REVIEW_CHECKLIST.md
+docs/hds-brain-unknown-escalation-policy.md
+```
+
+## Non-Goals
+
+- LLM-based detector fallback
+- ApprovalRisk redesign
+- new `critical` risk level
+- full-access default change
+- Approval Gate UX changes
+- gateway-owned detector authority
+- fail-safe/self-health policy implementation
+
+## Completion Notes
+
+- Added lifecycle traces to detector axis scores.
+- Missing detectors, detector exceptions, invalid detector scores, duplicate policy axes, and unknown detector patterns suspend before normal score thresholds.
+- Invalid `risk_keyword` regex patterns now classify as `detector_unknown_pattern` instead of being silently ignored.
+- Detector lifecycle failures are visible in HDS decision logs and commit triggered thresholds.
+- Active execution lane advances to Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy.
+
+---
+
 # Global Validation Command Set
 
 Use this set after major phases:
@@ -2559,7 +2620,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation
+Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy
 ```
 
-Phase 12-S6 is complete. Proceed to Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation before resuming resident application integration.
+Phase 12-S7 is complete. Proceed to Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy before resuming resident application integration.

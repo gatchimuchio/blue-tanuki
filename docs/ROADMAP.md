@@ -136,16 +136,16 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 12-S4 | G | Final-review Operation Single Source of Truth | P0 | completed |
 | 12-S5 | G | Approval / Notification / History / Replay UI Completion | P0 | completed |
 | 12-S6 | G | Root Full-access + Compound Attack Scenario Tests | P0 | completed |
-| 12-S7 | G | Detector Lifecycle and Unknown Pattern Escalation | P0 | 12-S6 |
+| 12-S7 | G | Detector Lifecycle and Unknown Pattern Escalation | P0 | completed |
 | 12-S8 | G | HDS-BRAIN Fail-safe / Self-health Policy | P0 | 12-S7 |
 
 ## 3. Current Active Phase
 
 ```txt
-Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation
+Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy
 ```
 
-Phase 12-S6 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation.
+Phase 12-S7 is complete. Phase 11-S10 Resident Application Integration is paused until the HDS-BRAIN quality lock sequence reaches a natural audit boundary. Next work is Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy.
 
 ## 4. Completed Phase Summaries
 
@@ -404,6 +404,14 @@ Phase 12-S6 is complete. Phase 11-S10 Resident Application Integration is paused
 - Complete-history references and history updates remain non-authority
 - Active execution lane advances to Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation
 
+### Phase 12-S7
+
+- Added detector lifecycle traces to HDS-BRAIN axis scores
+- Missing detectors, detector exceptions, invalid detector scores, duplicate policy axes, and unknown detector patterns now suspend before normal thresholds
+- Invalid `risk_keyword` regex patterns classify as `detector_unknown_pattern`
+- Detector lifecycle failures are audit-visible through commit thresholds and axis lifecycle traces
+- Active execution lane advances to Phase 12-S8 HDS-BRAIN Fail-safe / Self-health Policy
+
 ## 5. Non-Goals
 
 Do not add:
@@ -440,6 +448,7 @@ Do not add:
 - [HDS-BRAIN Reference Boundary](hds-brain-reference-boundary.md)
 - [HDS-BRAIN Fail-safe Policy](hds-brain-fail-safe-policy.md)
 - [HDS-BRAIN Unknown Escalation Policy](hds-brain-unknown-escalation-policy.md)
+- [HDS-BRAIN Detector Lifecycle](hds-brain-detector-lifecycle.md)
 - [HDS-BRAIN Trinity M Policy Model](hds-brain-trinity-m-policy-model.md)
 - [Phase 12-S0 Boundary Definition Lock](phase12-s0-boundary-definition-lock.md)
 - [HDS-BRAIN Output / Result Audit Plane](hds-brain-output-audit-plane.md)
@@ -451,6 +460,7 @@ Do not add:
 - [Phase 12-S4 Final-review Operation Single Source](phase12-s4-final-review-single-source.md)
 - [Phase 12-S5 Approval / Notification / History / Replay UI Completion](phase12-s5-approval-notification-history-replay-ui.md)
 - [Phase 12-S6 Root Full-access + Compound Attack Scenario Tests](phase12-s6-root-full-access-compound-attack-scenarios.md)
+- [Phase 12-S7 Detector Lifecycle and Unknown Pattern Escalation](phase12-s7-detector-lifecycle-unknown-pattern-escalation.md)
 - [Docs Index](INDEX.md)
 - [First-Run Checklist](FIRST_RUN_CHECKLIST.md)
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md)

@@ -273,7 +273,7 @@ They must not:
 Phase 12-S0 fixes the boundary model before later output audit/history/UI phases.
 
 - `tool.call` and `unknown` are high-risk `L3_final_review` operations.
-- Unknown, ambiguous, unclassified, missing capability, policy-version mismatch, reference ambiguity, approval ambiguity, external metadata conflict, and detector conflict must not auto-allow.
+- Unknown, ambiguous, unclassified, missing capability, policy-version mismatch, reference ambiguity, approval ambiguity, external metadata conflict, detector conflict, and detector unknown pattern must not auto-allow.
 - Memory, complete history, session, tool result, LLM output, channel metadata, plugin metadata, external metadata, audit viewers, and Control Center projections are reference/evidence only.
 - Policy, detector, approval, and history updates require L3 final review.
 - HDS-BRAIN fail-safe is `SUSPEND`, not fallback authority.

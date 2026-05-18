@@ -409,6 +409,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/hds-brain-reference-boundary.md](./docs/hds-brain-reference-boundary.md) - memory/history/session/tool-result reference boundary
 - [docs/hds-brain-fail-safe-policy.md](./docs/hds-brain-fail-safe-policy.md) - HDS-BRAIN fail-safe suspend policy
 - [docs/hds-brain-unknown-escalation-policy.md](./docs/hds-brain-unknown-escalation-policy.md) - unknown/ambiguous/unclassified escalation policy
+- [docs/hds-brain-detector-lifecycle.md](./docs/hds-brain-detector-lifecycle.md) - detector lifecycle and unknown pattern escalation boundary
 - [docs/hds-brain-trinity-m-policy-model.md](./docs/hds-brain-trinity-m-policy-model.md) - Trinity M policy model
 - [docs/phase12-s0-boundary-definition-lock.md](./docs/phase12-s0-boundary-definition-lock.md) - Phase 12-S0 boundary definition lock
 - [docs/hds-brain-output-audit-plane.md](./docs/hds-brain-output-audit-plane.md) - output/result audit plane boundary
@@ -420,6 +421,7 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase12-s4-final-review-single-source.md](./docs/phase12-s4-final-review-single-source.md) - Phase 12-S4 final-review operation source-of-truth lock
 - [docs/phase12-s5-approval-notification-history-replay-ui.md](./docs/phase12-s5-approval-notification-history-replay-ui.md) - Phase 12-S5 resident history/replay UI completion
 - [docs/phase12-s6-root-full-access-compound-attack-scenarios.md](./docs/phase12-s6-root-full-access-compound-attack-scenarios.md) - Phase 12-S6 root full-access compound attack test lock
+- [docs/phase12-s7-detector-lifecycle-unknown-pattern-escalation.md](./docs/phase12-s7-detector-lifecycle-unknown-pattern-escalation.md) - Phase 12-S7 detector lifecycle and unknown pattern escalation
 - [docs/v1.0-security-and-permanent-use-review.md](./docs/v1.0-security-and-permanent-use-review.md) - v1.0 security and permanent-use closure
 - [docs/v1.0-release-candidate.md](./docs/v1.0-release-candidate.md) - v1.0 RC validation, support boundary, and upgrade notes
 - [docs/v1.0-post-rc-closure-review.md](./docs/v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions

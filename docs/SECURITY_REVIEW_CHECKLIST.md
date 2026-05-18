@@ -20,6 +20,7 @@
 - Does this change turn Runtime Invariants evidence into authority, approval, policy mutation, or fallback execution?
 - Does this change duplicate or bypass `FINAL_REVIEW_OPERATION_LIST` instead of deriving from the HDS-BRAIN source of truth?
 - Does this change weaken any compound attack guarantee covered by `packages/hds-brain/test/compound_attack_scenarios.test.ts`?
+- Does this change let detector lifecycle failure, invalid detector output, or unknown detector pattern auto-allow?
 
 追加確認:
 
@@ -39,3 +40,4 @@
 - Runtime Invariants evidence が HDS-BRAIN standalone で取得・監査できるか
 - final-review operation が `packages/hds-brain/src/approval_policy.ts` の単一ソースから派生しているか
 - full-access / wildcard grant / metadata spoof / downstream feedback spoof の複合条件でも L3 final-review が維持されているか
+- detector missing / exception / invalid score / invalid pattern / duplicate axis が `SUSPEND` に落ちるか

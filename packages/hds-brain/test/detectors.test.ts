@@ -87,12 +87,14 @@ describe("riskKeywordDetector", () => {
     expect(out.score).toBeCloseTo(0.3, 2);
   });
 
-  it("ignores invalid regex without crashing", () => {
+  it("marks invalid regex patterns as unknown detector patterns", () => {
     const out = riskKeywordDetector.evaluate(
       { danger_patterns: ["[invalid("] },
       { ...baseCtx, request_content: "anything" },
     );
-    expect(out.score).toBe(1);
+    expect(out.score).toBe(0);
+    expect(out.lifecycle?.status).toBe("unknown_pattern");
+    expect(out.lifecycle?.escalation_reason).toBe("detector_unknown_pattern");
   });
 });
 

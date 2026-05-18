@@ -89,6 +89,7 @@ describe("Phase 12-S0 boundary policy", () => {
       "approval_grant_ambiguity",
       "external_metadata_conflict",
       "detector_conflict",
+      "detector_unknown_pattern",
     ];
 
     for (const reason of reasons) {

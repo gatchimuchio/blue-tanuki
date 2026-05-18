@@ -34,7 +34,8 @@ export type UnknownEscalationReason =
   | "history_reference_ambiguity"
   | "approval_grant_ambiguity"
   | "external_metadata_conflict"
-  | "detector_conflict";
+  | "detector_conflict"
+  | "detector_unknown_pattern";
 
 export interface BoundaryEvaluation {
   policy_version: typeof HDS_BOUNDARY_POLICY_VERSION;

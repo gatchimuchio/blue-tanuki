@@ -52,6 +52,7 @@ Audit expectations:
 - memory, complete history, session, tool result, LLM output, and metadata remain reference/evidence only;
 - fail-safe states suspend downstream execution instead of delegating authority;
 - policy, detector, approval, and history updates require L3 final review;
+- detector lifecycle failures and unknown detector patterns resolve to `SUSPEND` with lifecycle traces in the decision log;
 - Trinity `M` closure failures are suspend conditions, not silent allow conditions.
 
 ## Output / result audit
@@ -173,6 +174,7 @@ Exit code: 1
 - executor feedback
 - unknown/stale feedback
 - runtime invariants evidence
+- detector lifecycle traces inside HDS decision logs
 
 ## Schedule lifecycle audit
 

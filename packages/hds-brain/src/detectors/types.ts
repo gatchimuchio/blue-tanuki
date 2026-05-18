@@ -1,3 +1,5 @@
+import type { UnknownEscalationReason } from "../boundary_policy.js";
+
 /**
  * Detector contract.
  *
@@ -19,9 +21,24 @@ export interface DetectorContext {
   user: string;
 }
 
+export type DetectorLifecycleStatus =
+  | "ok"
+  | "missing_detector"
+  | "detector_exception"
+  | "invalid_output"
+  | "unknown_pattern"
+  | "detector_conflict";
+
+export interface DetectorLifecycleTrace {
+  status: DetectorLifecycleStatus;
+  reason: string;
+  escalation_reason?: UnknownEscalationReason;
+}
+
 export interface DetectorOutput {
   score: number;
   evidence?: string;
+  lifecycle?: DetectorLifecycleTrace;
 }
 
 export interface Detector {
@@ -37,4 +54,16 @@ export function clamp01(x: number): number {
   if (x < 0) return 0;
   if (x > 1) return 1;
   return x;
+}
+
+export function detectorLifecycleOk(reason = "detector_ok"): DetectorLifecycleTrace {
+  return { status: "ok", reason };
+}
+
+export function detectorLifecycleEscalation(
+  status: Exclude<DetectorLifecycleStatus, "ok">,
+  reason: string,
+  escalation_reason: UnknownEscalationReason = "detector_conflict",
+): DetectorLifecycleTrace {
+  return { status, reason, escalation_reason };
 }

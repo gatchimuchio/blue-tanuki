@@ -1,4 +1,5 @@
 import type { Detector, DetectorOutput, DetectorContext } from "./types.js";
+import { detectorLifecycleEscalation } from "./types.js";
 
 interface RiskKeywordArgs {
   danger_patterns?: string[];
@@ -28,17 +29,30 @@ export const riskKeywordDetector: Detector = {
     }
 
     const matched: string[] = [];
+    const invalid: string[] = [];
     for (const p of patterns) {
       let re: RegExp;
       try {
         re = new RegExp(p, "i");
       } catch {
-        // Invalid pattern — skip silently; policy review will catch this.
+        invalid.push(p);
         continue;
       }
       if (re.test(ctx.request_content)) {
         matched.push(p);
       }
+    }
+
+    if (invalid.length > 0) {
+      return {
+        score: 0,
+        evidence: `invalid danger_patterns: ${invalid.length}`,
+        lifecycle: detectorLifecycleEscalation(
+          "unknown_pattern",
+          `invalid danger_patterns: ${invalid.length}`,
+          "detector_unknown_pattern",
+        ),
+      };
     }
 
     if (matched.length === 0) {

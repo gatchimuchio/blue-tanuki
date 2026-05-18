@@ -103,11 +103,15 @@ export {
 export {
   DetectorRegistry,
   createDefaultDetectorRegistry,
+  detectorLifecycleEscalation,
+  detectorLifecycleOk,
   lengthDetector,
   riskKeywordDetector,
   keywordMatchDetector,
   type Detector,
   type DetectorContext,
+  type DetectorLifecycleStatus,
+  type DetectorLifecycleTrace,
   type DetectorOutput,
 } from "./detectors/index.js";
 

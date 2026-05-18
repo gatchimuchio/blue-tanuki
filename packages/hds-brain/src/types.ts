@@ -2,6 +2,7 @@ import type { CommandConstraints, Decision, ExecuteCommand, ExecuteFeedback } fr
 import type { OutputAuditLog } from "./output_audit.js";
 import type { RuntimeInvariantEvidenceReport, RuntimeInvariantValues } from "./runtime_invariants.js";
 import type { ApprovalEvaluation } from "./approval_policy.js";
+import type { DetectorLifecycleTrace } from "./detectors/types.js";
 
 /**
  * Output of the F (Frame) phase.
@@ -117,6 +118,7 @@ export interface AxisScore {
   score: number;
   detector: string;
   evidence?: string;
+  lifecycle: DetectorLifecycleTrace;
 }
 
 /**

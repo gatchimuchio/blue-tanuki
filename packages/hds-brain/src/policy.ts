@@ -5,7 +5,12 @@ import type {
   PolicyConfig,
   ScoringResult,
 } from "./types.js";
-import type { Detector, DetectorContext, DetectorRegistry } from "./detectors/index.js";
+import type { Detector, DetectorContext, DetectorLifecycleTrace, DetectorRegistry } from "./detectors/index.js";
+import {
+  detectorLifecycleEscalation,
+  detectorLifecycleOk,
+} from "./detectors/index.js";
+import { evaluateUnknownEscalation } from "./boundary_policy.js";
 
 /**
  * Run all detectors declared in a policy against the given context,
@@ -23,30 +28,68 @@ export function runScoring(
   const weights: Record<string, number> = {};
   let weightedSum = 0;
   let weightTotal = 0;
+  const seenAxes = new Set<string>();
 
   for (const ax of policy.axes) {
+    if (seenAxes.has(ax.name)) {
+      const lifecycle = detectorLifecycleEscalation(
+        "detector_conflict",
+        `duplicate policy axis: ${ax.name}`,
+      );
+      axis_scores.push(axisScore(ax.name, 0, ax.detector, lifecycle.reason, lifecycle));
+      weights[ax.name] = ax.weight;
+      weightTotal += ax.weight;
+      continue;
+    }
+    seenAxes.add(ax.name);
+
     const det: Detector | undefined = registry.get(ax.detector);
     if (!det) {
-      // Missing detector is a policy-config error, not a runtime hallucination.
-      // Score 0 and surface the issue in evidence so audit can pick it up.
-      axis_scores.push({
-        axis: ax.name,
-        score: 0,
-        detector: ax.detector,
-        evidence: `detector not registered: ${ax.detector}`,
-      });
+      const lifecycle = detectorLifecycleEscalation(
+        "missing_detector",
+        `detector not registered: ${ax.detector}`,
+      );
+      axis_scores.push(axisScore(ax.name, 0, ax.detector, lifecycle.reason, lifecycle));
       weights[ax.name] = ax.weight;
       weightTotal += ax.weight;
       continue;
     }
 
-    const out = det.evaluate(ax.detector_args ?? {}, ctx);
-    axis_scores.push({
-      axis: ax.name,
-      score: out.score,
-      detector: ax.detector,
-      evidence: out.evidence,
-    });
+    let out: ReturnType<Detector["evaluate"]>;
+    try {
+      out = det.evaluate(ax.detector_args ?? {}, ctx);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const lifecycle = detectorLifecycleEscalation(
+        "detector_exception",
+        `detector threw: ${ax.detector}: ${message}`,
+      );
+      axis_scores.push(axisScore(ax.name, 0, ax.detector, lifecycle.reason, lifecycle));
+      weights[ax.name] = ax.weight;
+      weightTotal += ax.weight;
+      continue;
+    }
+
+    const outputLifecycle = out.lifecycle ?? detectorLifecycleOk(`detector_output_ok:${ax.detector}`);
+    if (outputLifecycle.status !== "ok") {
+      axis_scores.push(axisScore(ax.name, 0, ax.detector, out.evidence ?? outputLifecycle.reason, outputLifecycle));
+      weights[ax.name] = ax.weight;
+      weightTotal += ax.weight;
+      continue;
+    }
+
+    if (typeof out.score !== "number" || !Number.isFinite(out.score) || out.score < 0 || out.score > 1) {
+      const lifecycle = detectorLifecycleEscalation(
+        "invalid_output",
+        `detector returned invalid score: ${ax.detector}`,
+      );
+      axis_scores.push(axisScore(ax.name, 0, ax.detector, out.evidence ?? lifecycle.reason, lifecycle));
+      weights[ax.name] = ax.weight;
+      weightTotal += ax.weight;
+      continue;
+    }
+
+    axis_scores.push(axisScore(ax.name, out.score, ax.detector, out.evidence, outputLifecycle));
     weights[ax.name] = ax.weight;
     weightedSum += out.score * ax.weight;
     weightTotal += ax.weight;
@@ -75,6 +118,19 @@ export function evaluateDecision(
   const t = policy.thresholds;
   const byName = new Map(scoring.axis_scores.map((a) => [a.axis, a]));
   const triggered: string[] = [];
+
+  const lifecycleIssue = scoring.axis_scores.find((a) => (a.lifecycle?.status ?? "ok") !== "ok");
+  if (lifecycleIssue) {
+    const escalationReason = lifecycleIssue.lifecycle.escalation_reason ?? "detector_conflict";
+    const escalation = evaluateUnknownEscalation(escalationReason);
+    triggered.push(`unknown_escalation:${escalationReason}`);
+    triggered.push(`detector_lifecycle:${lifecycleIssue.axis}:${lifecycleIssue.lifecycle.status}`);
+    return {
+      decision: "SUSPEND",
+      reason: `${escalation.reason}:axis=${lifecycleIssue.axis}:detector=${lifecycleIssue.detector}:status=${lifecycleIssue.lifecycle.status}`,
+      triggered_thresholds: triggered,
+    };
+  }
 
   // 1. FAIL: any axis at-or-below its hard fail threshold
   if (t.per_axis_fail) {
@@ -132,6 +188,22 @@ export function evaluateDecision(
     decision: "SUSPEND",
     reason: `aggregate ${scoring.aggregate.toFixed(2)} below assert threshold; default suspend`,
     triggered_thresholds: triggered,
+  };
+}
+
+function axisScore(
+  axis: string,
+  score: number,
+  detector: string,
+  evidence: string | undefined,
+  lifecycle: DetectorLifecycleTrace,
+): AxisScore {
+  return {
+    axis,
+    score,
+    detector,
+    evidence,
+    lifecycle,
   };
 }
 

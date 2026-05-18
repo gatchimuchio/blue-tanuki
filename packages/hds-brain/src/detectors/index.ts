@@ -1,9 +1,20 @@
 import type { Detector } from "./types.js";
+import { detectorLifecycleOk } from "./types.js";
 import { lengthDetector } from "./length.js";
 import { riskKeywordDetector } from "./risk_keyword.js";
 import { keywordMatchDetector } from "./keyword_match.js";
 
-export type { Detector, DetectorOutput, DetectorContext } from "./types.js";
+export type {
+  Detector,
+  DetectorContext,
+  DetectorLifecycleStatus,
+  DetectorLifecycleTrace,
+  DetectorOutput,
+} from "./types.js";
+export {
+  detectorLifecycleEscalation,
+  detectorLifecycleOk,
+} from "./types.js";
 export { lengthDetector } from "./length.js";
 export { riskKeywordDetector } from "./risk_keyword.js";
 export { keywordMatchDetector } from "./keyword_match.js";
@@ -22,18 +33,31 @@ export class DetectorRegistry {
   }
 
   register(d: Detector): void {
-    if (this.detectors.has(d.name)) {
-      throw new Error(`Detector already registered: ${d.name}`);
+    const name = d.name.trim();
+    if (!name) {
+      throw new Error("Detector name is required");
     }
-    this.detectors.set(d.name, d);
+    if (this.detectors.has(name)) {
+      throw new Error(`Detector already registered: ${name}`);
+    }
+    this.detectors.set(name, d);
   }
 
   get(name: string): Detector | undefined {
-    return this.detectors.get(name);
+    return this.detectors.get(name.trim());
   }
 
   list(): readonly Detector[] {
     return Array.from(this.detectors.values());
+  }
+
+  lifecycle(): ReadonlyArray<{ name: string; lifecycle: ReturnType<typeof detectorLifecycleOk> }> {
+    return Array.from(this.detectors.keys())
+      .sort()
+      .map((name) => ({
+        name,
+        lifecycle: detectorLifecycleOk(`registered:${name}`),
+      }));
   }
 }
 

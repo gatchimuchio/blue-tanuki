@@ -70,7 +70,7 @@ UI / Control Center is also downstream. It can display HDS-BRAIN decisions and s
 Phase 12-S0 fixes these authority boundaries:
 
 - `tool.call` and `unknown` are high-risk `L3_final_review` operations.
-- Unknown, ambiguous, unclassified, missing capability, policy-version mismatch, reference ambiguity, approval ambiguity, external metadata conflict, and detector conflict never auto-allow.
+- Unknown, ambiguous, unclassified, missing capability, policy-version mismatch, reference ambiguity, approval ambiguity, external metadata conflict, detector conflict, and detector unknown pattern never auto-allow.
 - Memory, complete history, session, tool result, LLM output, metadata, audit viewer output, and Control Center output are reference/evidence only.
 - Policy, detector, approval, and history updates require L3 final review.
 - HDS-BRAIN fail-safe is `SUSPEND`; it does not delegate authority to downstream devices.
@@ -169,6 +169,8 @@ These always require review regardless of full-access default:
 `payment.charge` is a defensive placeholder. The current release has no payment feature, but any future payment-class operation is L3 from the moment it is introduced.
 
 Phase 12-S6 adds compound attack scenario tests for the local root/full-access posture. These tests combine wildcard full-access grants, privileged tool envelopes, metadata spoofing, forged channel-send metadata, downstream feedback spoofing, and complete-history/history authority-conversion attempts. The expected result stays fixed: privileged operations remain `L3_final_review`, metadata cannot create authority, downstream feedback cannot lift suspension, and history remains non-authority.
+
+Phase 12-S7 adds detector lifecycle escalation. Missing detectors, detector exceptions, invalid detector scores, duplicate detector axes, and invalid detector patterns now resolve to `SUSPEND` before normal score thresholds. Invalid `risk_keyword` regex patterns are classified as `detector_unknown_pattern`; they are not ignored and cannot produce `ASSERT`.
 
 ## Browser automation preview boundary
 
