@@ -2058,6 +2058,18 @@ CHANGELOG.md
 
 ---
 
+# Phase 11-S13 Pre-GO Completion Notes
+
+- Added `pnpm validate:ga` as the v1.0 GA promotion preflight.
+- Added `scripts/ga_promotion_gate.ts`, `apps/gateway/test/ga_promotion_gate.test.ts`, `docs/v1.0-ga-promotion-review.md`, and the Phase 11-S13 report.
+- GA Bar A-F evidence is machine-checked.
+- Bar G remains `PENDING_OWNER_GO`; `public_claim_allowed=false` until explicit owner GO.
+- Gate rejects `1.0.0` version promotion or README / QUICKSTART / CLAIM public claim activation before owner GO.
+- CI, doctor, packaging validation, release bundle requirements, RC docs, post-RC review, GA bar docs, and docs index were updated.
+- Actual v1.0.0 promotion remains pending explicit owner GO.
+
+---
+
 # Phase 12-S-1 - HDS-BRAIN Standalone Completeness Lock
 
 ## Objective
@@ -2711,7 +2723,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S13 v1.0 GA Promotion Execution
+Phase 11-S13 Owner GO Decision / v1.0.0 Promotion
 ```
 
-Phase 11-S12 is complete. Proceed to Phase 11-S13 v1.0 GA Promotion Execution.
+Phase 11-S13 pre-GO gate is complete. Actual v1.0.0 promotion is blocked until explicit owner GO.

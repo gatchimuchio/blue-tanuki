@@ -254,6 +254,16 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
     ],
   },
   {
+    rel: "docs/v1.0-ga-promotion-review.md",
+    label: "GA promotion review",
+    needles: [
+      "PENDING_OWNER_GO",
+      "pnpm validate:ga",
+      "public_claim_allowed=false",
+      "status=pre_go_ready",
+    ],
+  },
+  {
     rel: "scripts/channel_promotion_gate.ts",
     label: "channel promotion gate script",
     needles: [
@@ -275,6 +285,16 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
     ],
   },
   {
+    rel: "scripts/ga_promotion_gate.ts",
+    label: "GA promotion gate script",
+    needles: [
+      "validateGaPromotionGate",
+      "PENDING_OWNER_GO",
+      "public_claim_allowed",
+      "OWNER_DECISION_PATH",
+    ],
+  },
+  {
     rel: "apps/gateway/src/plugin_review_gate.ts",
     label: "plugin review gate implementation",
     needles: [
@@ -288,7 +308,7 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
   {
     rel: "package.json",
     label: "package scripts",
-    needles: ["validate:channels", "plugin:review"],
+    needles: ["validate:channels", "plugin:review", "validate:ga"],
   },
   {
     rel: "scripts/create_release_bundle.ts",
@@ -296,6 +316,9 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
     needles: [
       "docs/CHANNEL_PROMOTION_GATE.md",
       "docs/phase11-s12-plugin-review-gate-implementation.md",
+      "docs/v1.0-ga-promotion-review.md",
+      "docs/phase11-s13-v1-ga-promotion-execution.md",
+      "scripts/ga_promotion_gate.ts",
       "scripts/plugin_review_gate.ts",
       "apps/gateway/src/plugin_review_gate.ts",
       "install/resident/README.md",
@@ -317,6 +340,8 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "install/resident/README.md",
       "docs/CHANNEL_PROMOTION_GATE.md",
       "scripts/plugin_review_gate.ts",
+      "scripts/ga_promotion_gate.ts",
+      "docs/v1.0-ga-promotion-review.md",
       "apps/gateway/src/plugin_review_gate.ts",
     ],
   },
@@ -328,6 +353,7 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "does not build signed native packages yet",
       "does not currently implement an automatic updater",
       "plugin:review",
+      "validate:ga",
     ],
   },
   {
@@ -1187,7 +1213,7 @@ async function checkDistributionReadiness(rootOverride?: string): Promise<CheckD
     id: "distribution_readiness",
     level: "ok",
     label: "distribution readiness",
-    detail: `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall/channel-promotion/plugin-review surfaces verified`,
+    detail: `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall/channel-promotion/plugin-review/ga-promotion surfaces verified`,
   };
 }
 
@@ -1397,8 +1423,8 @@ function remediationFor(check: CheckDraft): Remediation {
   if (check.id === "distribution_readiness") {
     return {
       cause: check.detail,
-      impact: "Install, update, rollback, uninstall, channel promotion, plugin review, or release verification guidance may be incomplete for operators.",
-      next_action: "Fix the listed distribution docs or release scripts, then rerun pnpm run doctor, pnpm validate:packaging, and pnpm plugin:review where relevant.",
+      impact: "Install, update, rollback, uninstall, channel promotion, plugin review, GA promotion, or release verification guidance may be incomplete for operators.",
+      next_action: "Fix the listed distribution docs or release scripts, then rerun pnpm run doctor, pnpm validate:packaging, pnpm validate:ga, and pnpm plugin:review where relevant.",
       doc_ref: "docs/phase10-s3-distribution-ux-hardening.md",
       safe_to_ignore: false,
     };

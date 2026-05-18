@@ -90,9 +90,23 @@ The v1.0 GA bar does not include:
 6. Update external claim language.
 7. Regenerate and verify the release bundle.
 
+The pre-GO machine check is:
+
+```bash
+pnpm validate:ga
+```
+
+Before owner GO, this check must report `public_claim_allowed=false`. Actual
+promotion mode uses:
+
+```bash
+pnpm validate:ga -- --require-owner-go
+```
+
 ## 7. Cross-References
 
 - [Strategy Frame](STRATEGY_FRAME.md)
+- [v1.0 GA Promotion Review](v1.0-ga-promotion-review.md)
 - [v1.0 Release Candidate](v1.0-release-candidate.md)
 - [v1.0 Security and Permanent-Use Review](v1.0-security-and-permanent-use-review.md)
 - [Roadmap](ROADMAP.md)

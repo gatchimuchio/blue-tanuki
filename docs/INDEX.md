@@ -10,6 +10,7 @@
 - [Permanent-Use Checklist](PERMANENT_USE_CHECKLIST.md) - long-running owner operation
 - [v1.0 Release Candidate](v1.0-release-candidate.md) - release-candidate claim, validation, support boundary, and upgrade notes
 - [v1.0 Post-RC Closure Review](v1.0-post-rc-closure-review.md) - post-RC bundle, smoke, live-smoke, preview-promotion, installer, and updater decisions
+- [v1.0 GA Promotion Review](v1.0-ga-promotion-review.md) - GA bar evidence, pre-GO state, and owner decision boundary
 
 ## First-Party Surfaces
 
@@ -59,6 +60,7 @@
 - [Adapter Contract](ADAPTER_CONTRACT.md)
 - [LLM Development Guide](LLM_DEVELOPMENT_GUIDE.md)
 - [Phase 11-S12 Plugin Review Gate Implementation](phase11-s12-plugin-review-gate-implementation.md)
+- [Phase 11-S13 v1.0 GA Promotion Execution](phase11-s13-v1-ga-promotion-execution.md)
 
 ## Operation
 
@@ -80,6 +82,7 @@
 - [Phase 11-S10 Resident Application Integration](phase11-s10-resident-application-integration.md)
 - [Phase 11-S11 Channel First-Party Promotion](phase11-s11-channel-first-party-promotion.md)
 - [Phase 11-S12 Plugin Review Gate Implementation](phase11-s12-plugin-review-gate-implementation.md)
+- [Phase 11-S13 v1.0 GA Promotion Execution](phase11-s13-v1-ga-promotion-execution.md)
 - [Phase 10-S3 Distribution UX Hardening](phase10-s3-distribution-ux-hardening.md)
 - [Compatibility Matrix](compatibility-matrix.json)
 

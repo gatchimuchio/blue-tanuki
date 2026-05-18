@@ -173,6 +173,9 @@ RC is not GA. `1.0.0-rc.1` means technical release candidate; GA means the repos
 
 Until the GA bar passes and the owner explicitly decides GO, Codex must not add external-facing OpenClaw complete-superiority claims to README, QUICKSTART, CLAIM, or release copy.
 
+`pnpm validate:ga` is the machine preflight for this boundary. Before owner GO,
+the expected state is `public_claim_allowed=false`.
+
 When Codex proposes or executes a new phase, it must check whether the change advances, preserves, or conflicts with the GA bar.
 
 ---

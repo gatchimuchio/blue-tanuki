@@ -64,6 +64,9 @@ const REQUIRED_PATHS = [
   "apps/gateway/src/plugin_review_gate.ts",
   "scripts/plugin_review_gate.ts",
   "docs/phase11-s12-plugin-review-gate-implementation.md",
+  "scripts/ga_promotion_gate.ts",
+  "docs/v1.0-ga-promotion-review.md",
+  "docs/phase11-s13-v1-ga-promotion-execution.md",
 ] as const;
 
 const INSTALLER_PATHS = [

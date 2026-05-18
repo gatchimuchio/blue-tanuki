@@ -36,6 +36,11 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm test
+      - run: pnpm docs:check
+      - run: pnpm validate:packaging
+      - run: pnpm validate:channels
+      - run: pnpm plugin:review -- --package packages/channel-slack --bundled
+      - run: pnpm validate:ga
       - run: pnpm smoke:serve
       - run: pnpm smoke:resume
       - run: pnpm smoke:live

@@ -169,6 +169,9 @@ function main(): void {
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "apps/gateway/src/plugin_review_gate.ts");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "scripts/plugin_review_gate.ts");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/phase11-s12-plugin-review-gate-implementation.md");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "scripts/ga_promotion_gate.ts");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/v1.0-ga-promotion-review.md");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/phase11-s13-v1-ga-promotion-execution.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/README.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/README.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/blue-tanuki-resident.ps1");
@@ -197,6 +200,9 @@ function main(): void {
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "apps/gateway/src/plugin_review_gate.ts");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "scripts/plugin_review_gate.ts");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/phase11-s12-plugin-review-gate-implementation.md");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "scripts/ga_promotion_gate.ts");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/v1.0-ga-promotion-review.md");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/phase11-s13-v1-ga-promotion-execution.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/README.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/README.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/blue-tanuki-resident.ps1");
@@ -217,6 +223,8 @@ function main(): void {
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "resident app guide");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "plugin review gate");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "pnpm plugin:review");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "GA promotion review");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "pnpm validate:ga");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "does not build signed native packages yet");
   requireIncludes(
     "apps/gateway/src/doctor.ts",
@@ -252,6 +260,7 @@ function main(): void {
   requireIncludes("package.json", packageJson, "\"installer:run\"");
   requireIncludes("package.json", packageJson, "\"installer:verify\"");
   requireIncludes("package.json", packageJson, "\"validate:channels\"");
+  requireIncludes("package.json", packageJson, "\"validate:ga\"");
   requireIncludes("package.json", packageJson, "\"plugin:review\"");
   requireIncludes("package.json", packageJson, "\"release:verify\"");
   requireIncludes("package.json", packageJson, "\"version\": \"1.0.0-rc.1\"");
@@ -265,8 +274,10 @@ function main(): void {
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s10-resident-application-integration.md");
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s11-channel-first-party-promotion.md");
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s12-plugin-review-gate-implementation.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "phase11-s13-v1-ga-promotion-execution.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-release-candidate.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-post-rc-closure-review.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "v1.0-ga-promotion-review.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-security-and-permanent-use-review.md");
 
   const releaseCandidate = read("docs/v1.0-release-candidate.md");
@@ -277,6 +288,7 @@ function main(): void {
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "validate:channels");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "plugin:review");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "Plugin Review Gate");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "validate:ga");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "reserved-third-party");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No signed native installer");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "resident app path");
@@ -293,6 +305,8 @@ function main(): void {
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Channel Promotion Gate");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Plugin Review Gate");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "pnpm plugin:review");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "GA Promotion Gate");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "pnpm validate:ga");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Status: PASS");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "cannot be completed in this workspace");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "remain `first-party-preview`");
@@ -355,6 +369,11 @@ function main(): void {
   requireIncludes(".github/workflows/ci.yml", workflow, "pnpm typecheck");
   requireIncludes(".github/workflows/ci.yml", workflow, "pnpm build");
   requireIncludes(".github/workflows/ci.yml", workflow, "pnpm test");
+  requireIncludes(".github/workflows/ci.yml", workflow, "pnpm docs:check");
+  requireIncludes(".github/workflows/ci.yml", workflow, "pnpm validate:packaging");
+  requireIncludes(".github/workflows/ci.yml", workflow, "pnpm validate:channels");
+  requireIncludes(".github/workflows/ci.yml", workflow, "pnpm plugin:review");
+  requireIncludes(".github/workflows/ci.yml", workflow, "pnpm validate:ga");
   requireIncludes(".github/workflows/ci.yml", workflow, "pnpm smoke:serve");
   requireIncludes(".github/workflows/ci.yml", workflow, "pnpm smoke:resume");
   requireIncludes(".github/workflows/ci.yml", workflow, "pnpm run doctor");
@@ -423,6 +442,16 @@ function main(): void {
   requireIncludes("docs/phase11-s12-plugin-review-gate-implementation.md", phase11s12, "Plugin Review Gate");
   requireIncludes("docs/phase11-s12-plugin-review-gate-implementation.md", phase11s12, "pnpm plugin:review");
   requireIncludes("docs/phase11-s12-plugin-review-gate-implementation.md", phase11s12, "layer_b_review_used_for_authority=false");
+
+  const gaReview = read("docs/v1.0-ga-promotion-review.md");
+  requireIncludes("docs/v1.0-ga-promotion-review.md", gaReview, "PENDING_OWNER_GO");
+  requireIncludes("docs/v1.0-ga-promotion-review.md", gaReview, "pnpm validate:ga");
+  requireIncludes("docs/v1.0-ga-promotion-review.md", gaReview, "public_claim_allowed=false");
+
+  const phase11s13 = read("docs/phase11-s13-v1-ga-promotion-execution.md");
+  requireIncludes("docs/phase11-s13-v1-ga-promotion-execution.md", phase11s13, "v1.0 GA Promotion Execution");
+  requireIncludes("docs/phase11-s13-v1-ga-promotion-execution.md", phase11s13, "pnpm validate:ga");
+  requireIncludes("docs/phase11-s13-v1-ga-promotion-execution.md", phase11s13, "PENDING_OWNER_GO");
 
   console.log("[packaging] PASS");
 }

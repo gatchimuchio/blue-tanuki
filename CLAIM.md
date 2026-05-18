@@ -1,5 +1,9 @@
 # BLUE-TANUKI v1.0 RC Claim Boundary
 
+GA promotion note: `pnpm validate:ga` currently treats the repository as
+pre-GO ready only. `public_claim_allowed=false` until explicit owner GO is
+recorded.
+
 ## Claim
 
 BLUE-TANUKI v1.0 RC is a local, owner-operated resident control plane built around **HDS-BRAIN**.

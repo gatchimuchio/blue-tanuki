@@ -13,6 +13,7 @@
     "test": "node node_modules/vitest/vitest.mjs run --passWithNoTests",
     "docs:check": "node scripts/check_docs.mjs",
     "validate:channels": "node node_modules/tsx/dist/cli.mjs scripts/channel_promotion_gate.ts",
+    "validate:ga": "node node_modules/tsx/dist/cli.mjs scripts/ga_promotion_gate.ts",
     "plugin:review": "node node_modules/tsx/dist/cli.mjs scripts/plugin_review_gate.ts",
     "gateway": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run start",
     "gateway:dev": "node scripts/pnpm_exec.mjs --filter @blue-tanuki/gateway run dev",

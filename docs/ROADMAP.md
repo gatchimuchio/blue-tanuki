@@ -127,7 +127,7 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S10 | F | Resident Application Integration | P0 | completed |
 | 11-S11 | F | Channel First-Party Promotion | P0 | completed |
 | 11-S12 | F | Plugin Review Gate Implementation | P0 | completed |
-| 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
+| 11-S13 | F | v1.0 GA Promotion Execution | P0 | pre-GO gate complete; owner GO required |
 | 12-S-1 | G | HDS-BRAIN Standalone Completeness Lock | P0 | completed |
 | 12-S0 | G | Boundary Definition Lock | P0 | completed |
 | 12-S1 | G | HDS-BRAIN Output / Result Audit Plane | P0 | completed |
@@ -142,10 +142,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S13 v1.0 GA Promotion Execution
+Phase 11-S13 Owner GO Decision / v1.0.0 Promotion
 ```
 
-Phase 11-S12 is complete. The active execution lane advances to Phase 11-S13 v1.0 GA Promotion Execution.
+Phase 11-S13 pre-GO gate is complete. Actual v1.0.0 promotion is blocked until explicit owner GO.
 
 ## 4. Completed Phase Summaries
 
@@ -358,6 +358,16 @@ Phase 11-S12 is complete. The active execution lane advances to Phase 11-S13 v1.
 - Doctor, packaging validation, release bundle requirements, RC docs, conformance docs, and Plugin Review Gate docs updated
 - Active execution lane advances to Phase 11-S13 v1.0 GA Promotion Execution
 
+### Phase 11-S13
+
+- Added `pnpm validate:ga` as the v1.0 GA promotion preflight.
+- Added `scripts/ga_promotion_gate.ts`, `apps/gateway/test/ga_promotion_gate.test.ts`, `docs/v1.0-ga-promotion-review.md`, and the Phase 11-S13 report.
+- GA Bar A-F evidence is machine-checked.
+- Bar G remains `PENDING_OWNER_GO`; `public_claim_allowed=false` until explicit owner GO.
+- Gate rejects `1.0.0` version promotion or README / QUICKSTART / CLAIM public claim activation before owner GO.
+- CI, doctor, packaging validation, release bundle requirements, RC docs, post-RC review, GA bar docs, and docs index updated.
+- Actual v1.0.0 promotion remains pending explicit owner GO.
+
 ### Phase 12-S-1
 
 - HDS-BRAIN standalone completeness locked as a package-level boundary
@@ -479,6 +489,8 @@ Do not add:
 - [Phase 11-S10 Resident Application Integration](phase11-s10-resident-application-integration.md)
 - [Phase 11-S11 Channel First-Party Promotion](phase11-s11-channel-first-party-promotion.md)
 - [Phase 11-S12 Plugin Review Gate Implementation](phase11-s12-plugin-review-gate-implementation.md)
+- [v1.0 GA Promotion Review](v1.0-ga-promotion-review.md)
+- [Phase 11-S13 v1.0 GA Promotion Execution](phase11-s13-v1-ga-promotion-execution.md)
 - [Phase 11-S8 Developer Operator Implementation](phase11-s8-developer-operator.md)
 - [Phase 11-S9 Installer and Setup UX](phase11-s9-installer-setup-ux.md)
 - [HDS-BRAIN Standalone Boundary](hds-brain-standalone-boundary.md)
