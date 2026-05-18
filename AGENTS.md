@@ -954,6 +954,8 @@ Layer B の境界は次の文書群で確定する:
 
 新規 plugin / skill / adapter を作成・受け入れる際は本群を通読し、認められない受け入れは reject する。
 
+Layer B submission は `pnpm plugin:review -- --package <plugin-package-dir>` を通すこと。Review result は non-authority evidence であり、HDS-BRAIN / Approval Gate / Runtime Invariants / audit を代替しない。
+
 ---
 
 ## Channel Policy

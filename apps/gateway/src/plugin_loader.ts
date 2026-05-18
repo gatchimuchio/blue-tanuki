@@ -7,6 +7,10 @@ import {
   type PluginManifest,
 } from "@blue-tanuki/protocol";
 import type { ToolRegistry } from "@blue-tanuki/core";
+import {
+  assertPluginReviewAccepted,
+  reviewPluginPackage,
+} from "./plugin_review_gate.js";
 
 type PluginModule = Record<string, unknown>;
 type Env = Record<string, string | undefined>;
@@ -290,6 +294,12 @@ export async function loadWorkspacePlugins(
     const pkg = await readPackageJson(packageDir);
     const manifest = await readManifest(manifestPath);
     validateManifestMetadata(packageDir, pkg, manifest);
+    assertPluginReviewAccepted(
+      await reviewPluginPackage(packageDir, {
+        mode: "bundled",
+        require_entry_exists: false,
+      }),
+    );
     const plugin: WorkspacePlugin = {
       package_dir: packageDir,
       package_json: pkg,

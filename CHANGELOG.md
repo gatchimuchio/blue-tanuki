@@ -39,6 +39,7 @@
 - Added Phase 11-S9 Installer and Setup UX with `pnpm installer:verify`, guided `pnpm installer:run`, token-gated Settings `Verify LLM`, installer docs, doctor distribution readiness coverage, and packaging validation.
 - Added Phase 11-S10 Resident Application Integration with portable launcher resident lifecycle commands, explicit autostart management, uninstall cleanup, resident docs, and packaging validation.
 - Added Phase 11-S11 Channel First-Party Promotion gate with `pnpm validate:channels`, owner-evidence requirements for Slack / Discord / Teams / LINE promotion, Teams / LINE inbound-listener gating, and WhatsApp reserved-third-party enforcement.
+- Added Phase 11-S12 Plugin Review Gate implementation with `pnpm plugin:review`, static Layer B submission evidence checks, bundled workspace package review before plugin import, doctor/packaging/release-bundle coverage, and non-authority review result flags.
 - Added Phase 12-S-1 HDS-BRAIN Standalone Completeness Lock with standalone harness, downstream port types, HDSBrainHealth baseline, dependency boundary tests, `pnpm hds:standalone`, standalone boundary docs, and Downstream Limbs Doctrine documentation.
 - Added Phase 12-S0 Boundary Definition Lock with deterministic boundary policy tests, unknown/unclassified L3 escalation, reference/non-authority boundaries, fail-safe policy, and Trinity M policy model docs.
 - Added Phase 12-S1 Output / Result Audit Plane with standalone OutputAudit records, gateway pre-release output audit calls, audit dump projection, and conformance/security docs.

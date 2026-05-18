@@ -10,12 +10,14 @@ const requiredDocs = [
   "docs/CHANNEL_READINESS_MATRIX.md",
   "docs/CHANNEL_PROMOTION_GATE.md",
   "docs/CREDENTIAL_READINESS_MATRIX.md",
+  "docs/PLUGIN_REVIEW_GATE.md",
   "docs/UPDATE_ROLLBACK_RUNBOOK.md",
   "docs/phase8-s2a-operator-usability-docs.md",
   "docs/phase10-s3-distribution-ux-hardening.md",
   "docs/v1.0-security-and-permanent-use-review.md",
   "docs/v1.0-release-candidate.md",
   "docs/v1.0-post-rc-closure-review.md",
+  "docs/phase11-s12-plugin-review-gate-implementation.md",
 ];
 
 const failures = [];
@@ -52,6 +54,7 @@ const currentReleaseDocs = [
   "docs/CHANNEL_READINESS_MATRIX.md",
   "docs/CHANNEL_PROMOTION_GATE.md",
   "docs/CREDENTIAL_READINESS_MATRIX.md",
+  "docs/PLUGIN_REVIEW_GATE.md",
   "docs/UPDATE_ROLLBACK_RUNBOOK.md",
   "docs/INDEX.md",
   "docs/v1.0-release-candidate.md",
@@ -65,6 +68,7 @@ for (const rel of [
   "docs/CHANNEL_READINESS_MATRIX.md",
   "docs/CHANNEL_PROMOTION_GATE.md",
   "docs/CREDENTIAL_READINESS_MATRIX.md",
+  "docs/PLUGIN_REVIEW_GATE.md",
   "docs/UPDATE_ROLLBACK_RUNBOOK.md",
   "docs/INDEX.md",
   "docs/v1.0-release-candidate.md",

@@ -126,7 +126,7 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 | 11-S9 | F | Installer and Setup UX | P0 | completed |
 | 11-S10 | F | Resident Application Integration | P0 | completed |
 | 11-S11 | F | Channel First-Party Promotion | P0 | completed |
-| 11-S12 | F | Plugin Review Gate Implementation | P0 | 11-S5 |
+| 11-S12 | F | Plugin Review Gate Implementation | P0 | completed |
 | 11-S13 | F | v1.0 GA Promotion Execution | P0 | 11-S3 through 11-S12 |
 | 12-S-1 | G | HDS-BRAIN Standalone Completeness Lock | P0 | completed |
 | 12-S0 | G | Boundary Definition Lock | P0 | completed |
@@ -142,10 +142,10 @@ Codex must proceed sequentially unless explicitly instructed otherwise.
 ## 3. Current Active Phase
 
 ```txt
-Phase 11-S12 Plugin Review Gate Implementation
+Phase 11-S13 v1.0 GA Promotion Execution
 ```
 
-Phase 11-S11 is complete. The active execution lane advances to Phase 11-S12 Plugin Review Gate Implementation.
+Phase 11-S12 is complete. The active execution lane advances to Phase 11-S13 v1.0 GA Promotion Execution.
 
 ## 4. Completed Phase Summaries
 
@@ -349,6 +349,15 @@ Phase 11-S11 is complete. The active execution lane advances to Phase 11-S12 Plu
 - Channel promotion gate docs, tests, conformance docs, readiness docs, and release docs updated
 - Active execution lane advances to Phase 11-S12 Plugin Review Gate Implementation
 
+### Phase 11-S12
+
+- Plugin Review Gate implemented through `reviewPluginPackage()` and `pnpm plugin:review`
+- Layer B submissions require `blue-tanuki.review.json` evidence for conformance, audit, safety, disable/revoke, failure modes, dynamic-import denial, hot-reload denial, and final-review capability declaration
+- Gate rejects wildcard capabilities, package/manifest drift, lifecycle install scripts, runtime dynamic import, forbidden WhatsApp-specific routes, `kind=core` Layer B submissions, and final-review bypass claims
+- Bundled workspace plugin loading now runs the non-submission Plugin Review Gate before importing entries
+- Doctor, packaging validation, release bundle requirements, RC docs, conformance docs, and Plugin Review Gate docs updated
+- Active execution lane advances to Phase 11-S13 v1.0 GA Promotion Execution
+
 ### Phase 12-S-1
 
 - HDS-BRAIN standalone completeness locked as a package-level boundary
@@ -469,6 +478,7 @@ Do not add:
 - [Phase 11-S7 Daily Operator Implementation](phase11-s7-daily-operator.md)
 - [Phase 11-S10 Resident Application Integration](phase11-s10-resident-application-integration.md)
 - [Phase 11-S11 Channel First-Party Promotion](phase11-s11-channel-first-party-promotion.md)
+- [Phase 11-S12 Plugin Review Gate Implementation](phase11-s12-plugin-review-gate-implementation.md)
 - [Phase 11-S8 Developer Operator Implementation](phase11-s8-developer-operator.md)
 - [Phase 11-S9 Installer and Setup UX](phase11-s9-installer-setup-ux.md)
 - [HDS-BRAIN Standalone Boundary](hds-brain-standalone-boundary.md)

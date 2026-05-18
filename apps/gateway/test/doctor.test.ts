@@ -214,6 +214,18 @@ async function writeDistributionFixture(root: string): Promise<void> {
   );
   await writeFixtureFile(
     root,
+    "docs/PLUGIN_REVIEW_GATE.md",
+    [
+      "# Plugin Review Gate",
+      "pnpm plugin:review",
+      "blue-tanuki.review.json",
+      "used_for_authority=false",
+      "no external npm dynamic import",
+      "Plugin Review Gate result is review evidence only",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
     "scripts/channel_promotion_gate.ts",
     [
       "validateChannelPromotion",
@@ -223,12 +235,40 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "gateway-owned inbound listener",
     ].join("\n"),
   );
-  await writeFixtureFile(root, "package.json", '{"scripts":{"validate:channels":"x"}}');
+  await writeFixtureFile(
+    root,
+    "scripts/plugin_review_gate.ts",
+    [
+      "--package",
+      "--bundled",
+      "plugin-review",
+      "reviewPluginPackage",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "apps/gateway/src/plugin_review_gate.ts",
+    [
+      "reviewPluginPackage",
+      "blue-tanuki.review.json",
+      "layer_b_review_used_for_authority",
+      "external_dynamic_imports",
+      "hot_reload",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "package.json",
+    '{"scripts":{"validate:channels":"x","plugin:review":"x"}}',
+  );
   await writeFixtureFile(
     root,
     "scripts/create_release_bundle.ts",
     [
       "docs/CHANNEL_PROMOTION_GATE.md",
+      "docs/phase11-s12-plugin-review-gate-implementation.md",
+      "scripts/plugin_review_gate.ts",
+      "apps/gateway/src/plugin_review_gate.ts",
       "install/windows/install.ps1",
       "install/resident/README.md",
       "install/macos/install.sh",
@@ -247,6 +287,8 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "isForbiddenFileName",
       "install/resident/README.md",
       "docs/CHANNEL_PROMOTION_GATE.md",
+      "scripts/plugin_review_gate.ts",
+      "apps/gateway/src/plugin_review_gate.ts",
     ].join("\n"),
   );
   await writeFixtureFile(
@@ -256,6 +298,7 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "Distribution readiness",
       "does not build signed native packages yet",
       "does not currently implement an automatic updater",
+      "plugin:review",
     ].join("\n"),
   );
   await writeFixtureFile(
@@ -960,7 +1003,7 @@ describe("runDoctor - distribution readiness gate", () => {
     });
     const c = r.checks.find((x) => x.id === "distribution_readiness");
     expect(c?.level).toBe("ok");
-    expect(c?.detail).toContain("install/update/uninstall/channel-promotion surfaces verified");
+    expect(c?.detail).toContain("install/update/uninstall/channel-promotion/plugin-review surfaces verified");
   });
 
   it("errors when required installer docs are missing from an explicit root", async () => {

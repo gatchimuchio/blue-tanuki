@@ -61,6 +61,9 @@ const REQUIRED_PATHS = [
   "docs/CHANNEL_PROMOTION_GATE.md",
   "docs/phase11-s11-channel-first-party-promotion.md",
   "scripts/channel_promotion_gate.ts",
+  "apps/gateway/src/plugin_review_gate.ts",
+  "scripts/plugin_review_gate.ts",
+  "docs/phase11-s12-plugin-review-gate-implementation.md",
 ] as const;
 
 const INSTALLER_PATHS = [

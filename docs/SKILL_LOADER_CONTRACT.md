@@ -12,6 +12,14 @@ Skills are discovered only from approved workspace package roots or explicitly c
 
 The loader must not dynamically import arbitrary external npm packages at runtime. External dynamic import is rejected unless a future security phase explicitly changes this policy.
 
+Layer B skill submissions must pass Plugin Review Gate before acceptance:
+
+```bash
+pnpm plugin:review -- --package <skill-package-dir>
+```
+
+The submitted package must include `blue-tanuki.review.json`, declare `external_dynamic_imports: false`, and declare `hot_reload: false`. Review is static and must not import or execute the skill entry point.
+
 ## 3. Skill Manifest Schema
 
 A skill manifest must include:
@@ -64,6 +72,7 @@ The loader must:
 - parse manifest
 - validate schema
 - compare declared capabilities with allowed envelope
+- apply Plugin Review Gate evidence for Layer B submissions
 - reject unsupported capability classes
 - record review result for doctor/reporting
 - fail closed on invalid state

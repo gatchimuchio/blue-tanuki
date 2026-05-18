@@ -19,6 +19,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Guided first-run installer via `pnpm installer:run`
 - SIM-like LLM API settings with token-gated `Verify LLM` before saving provider changes
 - Portable resident app launcher commands for background start/status/stop, logs, Control Center open, and explicit autostart management
+- Plugin Review Gate via `pnpm plugin:review` for Layer B submissions and bundled package review before workspace plugin loading
 - HDS Process / Memory / Authority closure
 - deterministic `MemoryTrace` with `used_for_authority=false`
 - standalone `CompleteHistoryStore` with append / verify / replay / export and `used_for_authority=false`
@@ -39,6 +40,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - Teams / LINE are preview channel adapters until owner-run credentialed live smoke and permanent-use recovery are verified.
 - Voice / Mobile / rich Canvas are deferred to v0.2+.
 - Public third-party Skill registry is intentionally excluded.
+- Plugin / skill / third-party adapter review evidence is downstream-only and cannot approve, execute, classify risk, or promote support status.
 
 ## Architecture
 
@@ -419,6 +421,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase10-s1-control-center-approval-ux.md](./docs/phase10-s1-control-center-approval-ux.md) - Control Center resident approval UX boundary
 - [docs/phase10-s2-resident-notifications.md](./docs/phase10-s2-resident-notifications.md) - resident notification center boundary
 - [docs/phase10-s3-distribution-ux-hardening.md](./docs/phase10-s3-distribution-ux-hardening.md) - install/update/uninstall distribution readiness boundary
+- [docs/PLUGIN_REVIEW_GATE.md](./docs/PLUGIN_REVIEW_GATE.md) - Layer B plugin / skill / adapter acceptance boundary
+- [docs/phase11-s12-plugin-review-gate-implementation.md](./docs/phase11-s12-plugin-review-gate-implementation.md) - Plugin Review Gate implementation boundary
 - [docs/hds-brain-standalone-boundary.md](./docs/hds-brain-standalone-boundary.md) - HDS-BRAIN standalone kernel and downstream limbs boundary
 - [docs/phase12-s-1-hds-brain-standalone-completeness.md](./docs/phase12-s-1-hds-brain-standalone-completeness.md) - Phase 12-S-1 standalone completeness lock
 - [docs/hds-brain-risk-approval-boundary.md](./docs/hds-brain-risk-approval-boundary.md) - L1/L2/L3 and unknown operation boundary

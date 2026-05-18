@@ -48,6 +48,7 @@ Bar E: Channel Selection Completeness.
 Bar F: Platform Extension Surface.
 
 - Plugin Review Gate exists.
+- Plugin Review Gate has an executable `pnpm plugin:review` path for Layer B submission review.
 - Plugin HIG exists.
 - Skill Loader Contract exists.
 - Layer B cannot bypass Layer A authority.

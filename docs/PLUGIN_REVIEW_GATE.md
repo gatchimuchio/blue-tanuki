@@ -123,7 +123,36 @@ Every accepted plugin must have a disable/revoke path:
 
 Runtime disable is allowed only if it does not create hot authority mutation. Hot-reload remains out of scope unless a future security phase changes the policy.
 
-## 10. Cross-References
+## 10. Implemented Gate
+
+Phase 11-S12 implements the static Plugin Review Gate in `apps/gateway/src/plugin_review_gate.ts` and exposes it through:
+
+```bash
+pnpm plugin:review -- --package <plugin-package-dir>
+pnpm plugin:review -- --package packages/channel-slack --bundled
+```
+
+Default mode is Layer B submission review. `--bundled` is for repository-bundled packages and performs the basic manifest/package/capability/rejected-scope checks before workspace plugin loading. The gate never imports the plugin entry point during review.
+
+Layer B submissions must include `blue-tanuki.review.json` with:
+
+- `schema_version: 1`
+- `layer: "B"`
+- `support_status: "preview" | "first-party-preview" | "first-party"`
+- conformance evidence
+- audit evidence
+- safety evidence
+- disable/revoke evidence
+- failure modes with owner next action
+- `external_dynamic_imports: false`
+- `hot_reload: false`
+- explicit final-review capability declaration when privileged capabilities are requested
+
+The implementation rejects wildcard capabilities, package/manifest drift, lifecycle install scripts, core-kind Layer B submissions, forbidden WhatsApp-specific routes, final-review bypass claims, and no external npm dynamic import is allowed at runtime.
+
+Plugin Review Gate result is review evidence only. Results carry `used_for_authority=false` and `layer_b_review_used_for_authority=false`; they do not approve, execute, classify risk, substitute HDS-BRAIN, bypass Approval Gate, or promote preview support status.
+
+## 11. Cross-References
 
 - [Plugin HIG](PLUGIN_HIG.md)
 - [Skill Loader Contract](SKILL_LOADER_CONTRACT.md)

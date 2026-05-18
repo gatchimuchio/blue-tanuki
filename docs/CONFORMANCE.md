@@ -30,6 +30,11 @@
   - complete evidence がある channel だけ future promotion 可能であること
   - Teams / LINE は gateway-owned inbound listener closure なしに昇格しないこと
   - WhatsApp が first-party core に昇格しないこと
+- `apps/gateway/test/plugin_review_gate.test.ts`
+  - complete Layer B submission が entry import なしに accept されること
+  - `blue-tanuki.review.json` 不在、wildcard capability、manifest drift、`kind=core` submission を reject すること
+  - lifecycle install scripts、runtime dynamic import、WhatsApp-specific scope、final-review declaration 不足を reject すること
+  - bundled workspace packages が basic non-submission gate を通ること
 - `apps/gateway/test/runtime_schedule.test.ts`
   - runtime schedule create/update/delete が pending approval を経由すること
   - pending / rejected / timed-out schedule が発火しないこと
@@ -100,7 +105,7 @@
   - untrusted metadata does not select a surface
   - surface recognition leaves the process as HDS-owned downstream chat
 - `apps/gateway/test/plugin_loader.test.ts`
-  - first-party surface exports are loaded only after manifest permission checks
+  - first-party surface exports are loaded only after manifest permission checks and bundled Plugin Review Gate checks
 - `packages/channel-webchat/test/webchat.test.ts`
   - Complete History / Replay Control Center shell
   - `/history` / `/history/replay` require inbound auth
@@ -180,6 +185,14 @@ Layer B plugin / skill submissions must include tests for:
 - disable / revoke fail-closed behavior
 - no hot reload for skills
 - no external npm dynamic import at runtime
+
+The repository gate is:
+
+```bash
+pnpm plugin:review -- --package <plugin-package-dir>
+```
+
+Bundled workspace packages are reviewed through the non-submission path before load. Layer B submission packages require `blue-tanuki.review.json` evidence and remain downstream-only; review results are non-authority evidence.
 
 Review docs:
 

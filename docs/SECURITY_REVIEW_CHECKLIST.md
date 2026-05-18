@@ -23,6 +23,7 @@
 - Does this change let detector lifecycle failure, invalid detector output, or unknown detector pattern auto-allow?
 - Does this change let HDS self-health fail-safe emit commands or approve through resume?
 - Does this change promote a preview channel without `pnpm validate:channels` evidence?
+- Does this change accept a Layer B plugin / skill / adapter without `pnpm plugin:review` evidence?
 
 追加確認:
 
@@ -45,3 +46,4 @@
 - detector missing / exception / invalid score / invalid pattern / duplicate axis が `SUSPEND` に落ちるか
 - policy / audit / Runtime Invariants / Approval Gate / HDS availability failure が command emission 前に `SUSPEND` するか
 - Slack / Discord / Teams / LINE の first-party promotion が owner-run live smoke / recovery review / metadata non-authority evidence なしに行われていないか
+- Layer B submission が `blue-tanuki.review.json`、capability envelope、audit evidence、disable/revoke evidence、HDS non-bypass evidence なしに受け入れられていないか

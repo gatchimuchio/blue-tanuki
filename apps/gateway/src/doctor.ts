@@ -41,7 +41,8 @@ import { parseGoogleServices } from "./google_daily_brief.js";
  *   - BLUE_TANUKI_FILE_ROOT and BLUE_TANUKI_SHELL_ROOT (if set) are directories
  *   - BLUE_TANUKI_SCHEDULES_JSON parses as scheduled-message config
  *   - LLM_BACKEND consistency (stub / anthropic / openai-compatible)
- *   - Distribution readiness docs and release-bundle gates are present
+ *   - Distribution readiness docs, release-bundle gates, channel promotion,
+ *     and plugin review gates are present
  *
  * What we do NOT check:
  *   - Live Slack / Discord / Anthropic API connectivity. Those are
@@ -242,6 +243,17 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
     ],
   },
   {
+    rel: "docs/PLUGIN_REVIEW_GATE.md",
+    label: "plugin review gate",
+    needles: [
+      "pnpm plugin:review",
+      "blue-tanuki.review.json",
+      "used_for_authority=false",
+      "no external npm dynamic import",
+      "Plugin Review Gate result is review evidence only",
+    ],
+  },
+  {
     rel: "scripts/channel_promotion_gate.ts",
     label: "channel promotion gate script",
     needles: [
@@ -253,15 +265,39 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
     ],
   },
   {
+    rel: "scripts/plugin_review_gate.ts",
+    label: "plugin review gate script",
+    needles: [
+      "--package",
+      "--bundled",
+      "plugin-review",
+      "reviewPluginPackage",
+    ],
+  },
+  {
+    rel: "apps/gateway/src/plugin_review_gate.ts",
+    label: "plugin review gate implementation",
+    needles: [
+      "reviewPluginPackage",
+      "blue-tanuki.review.json",
+      "layer_b_review_used_for_authority",
+      "external_dynamic_imports",
+      "hot_reload",
+    ],
+  },
+  {
     rel: "package.json",
     label: "package scripts",
-    needles: ["validate:channels"],
+    needles: ["validate:channels", "plugin:review"],
   },
   {
     rel: "scripts/create_release_bundle.ts",
     label: "release bundle creator",
     needles: [
       "docs/CHANNEL_PROMOTION_GATE.md",
+      "docs/phase11-s12-plugin-review-gate-implementation.md",
+      "scripts/plugin_review_gate.ts",
+      "apps/gateway/src/plugin_review_gate.ts",
       "install/resident/README.md",
       "install/windows/install.ps1",
       "install/macos/install.sh",
@@ -280,6 +316,8 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "isForbiddenFileName",
       "install/resident/README.md",
       "docs/CHANNEL_PROMOTION_GATE.md",
+      "scripts/plugin_review_gate.ts",
+      "apps/gateway/src/plugin_review_gate.ts",
     ],
   },
   {
@@ -289,6 +327,7 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "Distribution readiness",
       "does not build signed native packages yet",
       "does not currently implement an automatic updater",
+      "plugin:review",
     ],
   },
   {
@@ -1148,7 +1187,7 @@ async function checkDistributionReadiness(rootOverride?: string): Promise<CheckD
     id: "distribution_readiness",
     level: "ok",
     label: "distribution readiness",
-    detail: `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall/channel-promotion surfaces verified`,
+    detail: `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall/channel-promotion/plugin-review surfaces verified`,
   };
 }
 
@@ -1358,8 +1397,8 @@ function remediationFor(check: CheckDraft): Remediation {
   if (check.id === "distribution_readiness") {
     return {
       cause: check.detail,
-      impact: "Install, update, rollback, uninstall, channel promotion, or release verification guidance may be incomplete for operators.",
-      next_action: "Fix the listed distribution docs or release scripts, then rerun pnpm run doctor and pnpm validate:packaging.",
+      impact: "Install, update, rollback, uninstall, channel promotion, plugin review, or release verification guidance may be incomplete for operators.",
+      next_action: "Fix the listed distribution docs or release scripts, then rerun pnpm run doctor, pnpm validate:packaging, and pnpm plugin:review where relevant.",
       doc_ref: "docs/phase10-s3-distribution-ux-hardening.md",
       safe_to_ignore: false,
     };

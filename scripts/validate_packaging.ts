@@ -166,6 +166,9 @@ function main(): void {
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/CHANNEL_PROMOTION_GATE.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/phase11-s11-channel-first-party-promotion.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "scripts/channel_promotion_gate.ts");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "apps/gateway/src/plugin_review_gate.ts");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "scripts/plugin_review_gate.ts");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/phase11-s12-plugin-review-gate-implementation.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/README.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/README.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/blue-tanuki-resident.ps1");
@@ -191,6 +194,9 @@ function main(): void {
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/CHANNEL_PROMOTION_GATE.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/phase11-s11-channel-first-party-promotion.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "scripts/channel_promotion_gate.ts");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "apps/gateway/src/plugin_review_gate.ts");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "scripts/plugin_review_gate.ts");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/phase11-s12-plugin-review-gate-implementation.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/README.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/README.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/blue-tanuki-resident.ps1");
@@ -209,6 +215,8 @@ function main(): void {
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "Distribution readiness");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "guided first-run installer docs");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "resident app guide");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "plugin review gate");
+  requireIncludes("apps/gateway/src/doctor.ts", doctor, "pnpm plugin:review");
   requireIncludes("apps/gateway/src/doctor.ts", doctor, "does not build signed native packages yet");
   requireIncludes(
     "apps/gateway/src/doctor.ts",
@@ -244,16 +252,19 @@ function main(): void {
   requireIncludes("package.json", packageJson, "\"installer:run\"");
   requireIncludes("package.json", packageJson, "\"installer:verify\"");
   requireIncludes("package.json", packageJson, "\"validate:channels\"");
+  requireIncludes("package.json", packageJson, "\"plugin:review\"");
   requireIncludes("package.json", packageJson, "\"release:verify\"");
   requireIncludes("package.json", packageJson, "\"version\": \"1.0.0-rc.1\"");
 
   const docsIndex = read("docs/INDEX.md");
   requireIncludes("docs/INDEX.md", docsIndex, "CHANNEL_PROMOTION_GATE.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "PLUGIN_REVIEW_GATE.md");
   requireIncludes("docs/INDEX.md", docsIndex, "INSTALLER_GUIDE.md");
   requireIncludes("docs/INDEX.md", docsIndex, "RESIDENT_APP_GUIDE.md");
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s9-installer-setup-ux.md");
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s10-resident-application-integration.md");
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s11-channel-first-party-promotion.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "phase11-s12-plugin-review-gate-implementation.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-release-candidate.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-post-rc-closure-review.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-security-and-permanent-use-review.md");
@@ -264,6 +275,8 @@ function main(): void {
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No hard-coded archive SHA");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "first-party-preview");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "validate:channels");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "plugin:review");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "Plugin Review Gate");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "reserved-third-party");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No signed native installer");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "resident app path");
@@ -278,6 +291,8 @@ function main(): void {
   const postRcReview = read("docs/v1.0-post-rc-closure-review.md");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Credentialed Live Smoke");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Channel Promotion Gate");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Plugin Review Gate");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "pnpm plugin:review");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Status: PASS");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "cannot be completed in this workspace");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "remain `first-party-preview`");
@@ -398,6 +413,16 @@ function main(): void {
     "\"Daily Brief: scheduled smoke from BLUE-TANUKI v1.0 RC.\"",
   );
   requireNotIncludes("apps/gateway/src/cron_channel.ts", cronChannel, "v0.1");
+
+  const pluginReviewGate = read("docs/PLUGIN_REVIEW_GATE.md");
+  requireIncludes("docs/PLUGIN_REVIEW_GATE.md", pluginReviewGate, "pnpm plugin:review");
+  requireIncludes("docs/PLUGIN_REVIEW_GATE.md", pluginReviewGate, "blue-tanuki.review.json");
+  requireIncludes("docs/PLUGIN_REVIEW_GATE.md", pluginReviewGate, "used_for_authority=false");
+
+  const phase11s12 = read("docs/phase11-s12-plugin-review-gate-implementation.md");
+  requireIncludes("docs/phase11-s12-plugin-review-gate-implementation.md", phase11s12, "Plugin Review Gate");
+  requireIncludes("docs/phase11-s12-plugin-review-gate-implementation.md", phase11s12, "pnpm plugin:review");
+  requireIncludes("docs/phase11-s12-plugin-review-gate-implementation.md", phase11s12, "layer_b_review_used_for_authority=false");
 
   console.log("[packaging] PASS");
 }

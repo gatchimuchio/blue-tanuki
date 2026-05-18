@@ -58,6 +58,7 @@
 - [Skill Loader Contract](SKILL_LOADER_CONTRACT.md)
 - [Adapter Contract](ADAPTER_CONTRACT.md)
 - [LLM Development Guide](LLM_DEVELOPMENT_GUIDE.md)
+- [Phase 11-S12 Plugin Review Gate Implementation](phase11-s12-plugin-review-gate-implementation.md)
 
 ## Operation
 
@@ -78,6 +79,7 @@
 - [Phase 11-S9 Installer and Setup UX](phase11-s9-installer-setup-ux.md)
 - [Phase 11-S10 Resident Application Integration](phase11-s10-resident-application-integration.md)
 - [Phase 11-S11 Channel First-Party Promotion](phase11-s11-channel-first-party-promotion.md)
+- [Phase 11-S12 Plugin Review Gate Implementation](phase11-s12-plugin-review-gate-implementation.md)
 - [Phase 10-S3 Distribution UX Hardening](phase10-s3-distribution-ux-hardening.md)
 - [Compatibility Matrix](compatibility-matrix.json)
 

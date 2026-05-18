@@ -41,6 +41,14 @@ Layer B submissions must declare every network, filesystem, process, credential,
 
 Undeclared capability use is hard reject.
 
+Phase 11-S12 implements this check in `reviewPluginPackage()` and the CLI:
+
+```bash
+pnpm plugin:review -- --package <plugin-package-dir>
+```
+
+The gate rejects wildcard capability declarations and unsupported capability prefixes. Passing review does not grant authority; it only proves that the declared downstream envelope is explicit enough to continue into HDS-BRAIN / Approval Gate / audit-controlled execution.
+
 See:
 
 - [Plugin Review Gate](PLUGIN_REVIEW_GATE.md)

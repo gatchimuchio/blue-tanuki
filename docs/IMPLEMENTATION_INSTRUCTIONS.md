@@ -2046,6 +2046,18 @@ CHANGELOG.md
 
 ---
 
+# Phase 11-S12 Completion Notes
+
+- Added `pnpm plugin:review` as the Plugin Review Gate for Layer B submissions.
+- Added `apps/gateway/src/plugin_review_gate.ts`, `scripts/plugin_review_gate.ts`, `apps/gateway/test/plugin_review_gate.test.ts`, and the Phase 11-S12 report.
+- Layer B submissions now require `blue-tanuki.review.json` evidence for conformance, audit, safety, disable/revoke, failure modes, dynamic-import denial, hot-reload denial, and final-review capability declaration.
+- Gate rejects wildcard capabilities, package/manifest drift, lifecycle install scripts, runtime dynamic import, forbidden WhatsApp-specific routes, `kind=core` Layer B submissions, and final-review bypass claims.
+- Bundled workspace plugin loading now runs the non-submission Plugin Review Gate before importing entries.
+- Doctor, packaging validation, release bundle requirements, RC docs, conformance docs, and Plugin Review Gate docs were updated.
+- Active execution lane advances to Phase 11-S13 v1.0 GA Promotion Execution.
+
+---
+
 # Phase 12-S-1 - HDS-BRAIN Standalone Completeness Lock
 
 ## Objective
@@ -2699,7 +2711,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S12 Plugin Review Gate Implementation
+Phase 11-S13 v1.0 GA Promotion Execution
 ```
 
-Phase 11-S11 is complete. Proceed to Phase 11-S12 Plugin Review Gate Implementation.
+Phase 11-S12 is complete. Proceed to Phase 11-S13 v1.0 GA Promotion Execution.
