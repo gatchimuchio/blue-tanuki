@@ -163,6 +163,9 @@ function main(): void {
   requireIncludes("install/linux/uninstall.sh", linuxUninstall, "Config retained");
 
   const releaseBundle = read("scripts/create_release_bundle.ts");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/CHANNEL_PROMOTION_GATE.md");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/phase11-s11-channel-first-party-promotion.md");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "scripts/channel_promotion_gate.ts");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/README.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/README.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/blue-tanuki-resident.ps1");
@@ -185,6 +188,9 @@ function main(): void {
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "sha256");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "manifest");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "tar");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/CHANNEL_PROMOTION_GATE.md");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/phase11-s11-channel-first-party-promotion.md");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "scripts/channel_promotion_gate.ts");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/README.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/README.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/blue-tanuki-resident.ps1");
@@ -237,14 +243,17 @@ function main(): void {
   const packageJson = read("package.json");
   requireIncludes("package.json", packageJson, "\"installer:run\"");
   requireIncludes("package.json", packageJson, "\"installer:verify\"");
+  requireIncludes("package.json", packageJson, "\"validate:channels\"");
   requireIncludes("package.json", packageJson, "\"release:verify\"");
   requireIncludes("package.json", packageJson, "\"version\": \"1.0.0-rc.1\"");
 
   const docsIndex = read("docs/INDEX.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "CHANNEL_PROMOTION_GATE.md");
   requireIncludes("docs/INDEX.md", docsIndex, "INSTALLER_GUIDE.md");
   requireIncludes("docs/INDEX.md", docsIndex, "RESIDENT_APP_GUIDE.md");
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s9-installer-setup-ux.md");
   requireIncludes("docs/INDEX.md", docsIndex, "phase11-s10-resident-application-integration.md");
+  requireIncludes("docs/INDEX.md", docsIndex, "phase11-s11-channel-first-party-promotion.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-release-candidate.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-post-rc-closure-review.md");
   requireIncludes("docs/INDEX.md", docsIndex, "v1.0-security-and-permanent-use-review.md");
@@ -254,6 +263,7 @@ function main(): void {
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "generated `.sha256`");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No hard-coded archive SHA");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "first-party-preview");
+  requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "validate:channels");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "reserved-third-party");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "No signed native installer");
   requireIncludes("docs/v1.0-release-candidate.md", releaseCandidate, "resident app path");
@@ -267,6 +277,7 @@ function main(): void {
 
   const postRcReview = read("docs/v1.0-post-rc-closure-review.md");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Credentialed Live Smoke");
+  requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Channel Promotion Gate");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "Status: PASS");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "cannot be completed in this workspace");
   requireIncludes("docs/v1.0-post-rc-closure-review.md", postRcReview, "remain `first-party-preview`");

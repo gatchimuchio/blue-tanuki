@@ -25,6 +25,11 @@
   - `docs/compatibility-matrix.json` と first-party / preview channel manifest の整合
   - WhatsApp が `reserved-third-party` のまま維持されること
   - first-party channel manifest が wildcard permission を持たないこと
+- `apps/gateway/test/channel_promotion_gate.test.ts`
+  - Slack / Discord / Teams / LINE が owner evidence なしに first-party 昇格しないこと
+  - complete evidence がある channel だけ future promotion 可能であること
+  - Teams / LINE は gateway-owned inbound listener closure なしに昇格しないこと
+  - WhatsApp が first-party core に昇格しないこと
 - `apps/gateway/test/runtime_schedule.test.ts`
   - runtime schedule create/update/delete が pending approval を経由すること
   - pending / rejected / timed-out schedule が発火しないこと
@@ -141,6 +146,7 @@
 - First-party operator surface tests
 - Installer setup UX tests
 - Resident application integration tests
+- Channel first-party promotion gate tests
 - SIM-like LLM API settings verification tests
 - Preview quarantine rule
 - Main release gate rule
@@ -307,3 +313,13 @@ resident application integration は Gateway lifecycle を OS に寄せるが、
 ## Main Release Gate Rule
 
 main release へ昇格するには、conformance tests、permission enforcement tests、audit trace compatibility tests、runtime invariant preservation tests が pass し、support level と運用責任が docs に残っていること。
+
+## Channel First-Party Promotion Gate Tests
+
+- `pnpm validate:channels` must pass for the committed compatibility matrix.
+- WebChat and Telegram remain the baseline v1.0 first-party channels.
+- Slack / Discord / Teams / LINE cannot move from `first-party-preview` to
+  `first-party` without owner-run live smoke evidence and recovery review.
+- Teams / LINE cannot move to first-party until gateway-owned inbound listener
+  behavior is release-complete.
+- WhatsApp remains `reserved-third-party` with no core warranty.

@@ -43,6 +43,7 @@ Bar E: Channel Selection Completeness.
 - Tier S selected channels are first-party.
 - WhatsApp remains reserved-third-party.
 - Channel count is not treated as product quality.
+- Preview-to-first-party promotion is gated by `pnpm validate:channels` and owner-run evidence.
 
 Bar F: Platform Extension Surface.
 

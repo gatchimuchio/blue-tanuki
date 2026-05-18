@@ -36,6 +36,14 @@ Secret values must never be printed in docs, logs, doctor output, runtime snapsh
 | `TEAMS_LIVE_TARGET` | live smoke | target id | manual env | not doctor-owned | live smoke skip | Teams live check skipped | use `channel/<team_id>/<channel_id>`, `reply/<team_id>/<channel_id>/<message_id>`, or `chat/<chat_id>` test target |
 | `LINE_LIVE_TARGET` | live smoke | target id | manual env | not doctor-owned | live smoke skip | LINE live check skipped | use a reachable userId, groupId, or roomId test target |
 
+## Promotion Evidence Rule
+
+Channel first-party promotion evidence must be redacted. It may record command
+name, PASS/SKIP/FAIL status, timestamp, and report digest, but it must not
+record token values, bearer headers, raw live target identifiers, message
+content, or provider request bodies. Run `pnpm validate:channels` to verify the
+compatibility matrix against the promotion gate.
+
 ## Rotation Rule
 
 Credential rotation is a configuration change, not an authority change. Rotating a token must not alter HDS-BRAIN, Approval Gate, Runtime Invariants, or hash-chain compatibility.

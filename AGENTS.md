@@ -981,6 +981,13 @@ A channel is first-party only if:
 - channel metadata cannot escalate authority,
 - compatibility matrix is accurate.
 
+Phase 11-S11 adds the machine promotion gate: `pnpm validate:channels` must
+pass before any Slack / Discord / Teams / LINE entry is promoted from
+`first-party-preview` to `first-party`. Owner-run live smoke evidence must be
+redacted and must not contain token values, raw live targets, bearer headers, or
+message content. Teams / LINE also require gateway-owned inbound listener
+closure before promotion.
+
 WhatsApp policy:
 
 WhatsApp is intentionally excluded from first-party core. This is **not a "too hard, defer later"** decision. It is a deliberate safety strategy:

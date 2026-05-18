@@ -227,12 +227,41 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "automatic updater",
       "dry-run",
       "resident app docs",
+      "validate:channels",
     ],
+  },
+  {
+    rel: "docs/CHANNEL_PROMOTION_GATE.md",
+    label: "channel promotion gate",
+    needles: [
+      "pnpm validate:channels",
+      "owner-run evidence",
+      "gateway-owned inbound listener closure",
+      "reserved-third-party",
+      "must not contain token values",
+    ],
+  },
+  {
+    rel: "scripts/channel_promotion_gate.ts",
+    label: "channel promotion gate script",
+    needles: [
+      "validateChannelPromotion",
+      "BASELINE_FIRST_PARTY_CHANNELS",
+      "PROMOTION_ELIGIBLE_CHANNELS",
+      "reserved-third-party",
+      "gateway-owned inbound listener",
+    ],
+  },
+  {
+    rel: "package.json",
+    label: "package scripts",
+    needles: ["validate:channels"],
   },
   {
     rel: "scripts/create_release_bundle.ts",
     label: "release bundle creator",
     needles: [
+      "docs/CHANNEL_PROMOTION_GATE.md",
       "install/resident/README.md",
       "install/windows/install.ps1",
       "install/macos/install.sh",
@@ -245,7 +274,13 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
   {
     rel: "scripts/verify_release_bundle.ts",
     label: "release bundle verifier",
-    needles: ["sha256", "manifest", "isForbiddenFileName", "install/resident/README.md"],
+    needles: [
+      "sha256",
+      "manifest",
+      "isForbiddenFileName",
+      "install/resident/README.md",
+      "docs/CHANNEL_PROMOTION_GATE.md",
+    ],
   },
   {
     rel: "scripts/validate_packaging.ts",
@@ -1066,7 +1101,7 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDra
     id: "compatibility_matrix",
     level: "ok",
     label: "compatibility matrix",
-    detail: "channel scope and preview quarantine verified",
+    detail: "channel scope, preview quarantine, and promotion gate boundary verified",
   };
 }
 
@@ -1113,7 +1148,7 @@ async function checkDistributionReadiness(rootOverride?: string): Promise<CheckD
     id: "distribution_readiness",
     level: "ok",
     label: "distribution readiness",
-    detail: `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall surfaces verified`,
+    detail: `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall/channel-promotion surfaces verified`,
   };
 }
 
@@ -1314,8 +1349,8 @@ function remediationFor(check: CheckDraft): Remediation {
     return {
       cause: check.detail,
       impact: "Release scope or preview quarantine may be inconsistent.",
-      next_action: "Fix docs/compatibility-matrix.json and channel docs before release.",
-      doc_ref: "docs/CHANNEL_READINESS_MATRIX.md",
+      next_action: "Fix docs/compatibility-matrix.json, channel docs, or promotion evidence, then rerun pnpm validate:channels and pnpm run doctor.",
+      doc_ref: "docs/CHANNEL_PROMOTION_GATE.md",
       safe_to_ignore: false,
     };
   }
@@ -1323,7 +1358,7 @@ function remediationFor(check: CheckDraft): Remediation {
   if (check.id === "distribution_readiness") {
     return {
       cause: check.detail,
-      impact: "Install, update, rollback, uninstall, or release verification guidance may be incomplete for operators.",
+      impact: "Install, update, rollback, uninstall, channel promotion, or release verification guidance may be incomplete for operators.",
       next_action: "Fix the listed distribution docs or release scripts, then rerun pnpm run doctor and pnpm validate:packaging.",
       doc_ref: "docs/phase10-s3-distribution-ux-hardening.md",
       safe_to_ignore: false,

@@ -74,6 +74,7 @@
 - [ ] WebChat は必須 local console として動いている
 - [ ] Telegram は必要なら live token で確認した
 - [ ] Slack/Discord は release-polished preview 扱いとして typed error / live smoke / failure mode を理解している
+- [ ] Slack/Discord/Teams/LINE は `pnpm validate:channels` の promotion gate を通るまで first-party と呼ばない
 - [ ] WhatsApp は first-party core ではないことを理解している
 - [ ] [CHANNEL_READINESS_MATRIX.md](./CHANNEL_READINESS_MATRIX.md) と互換 matrix が矛盾していない
 
@@ -121,6 +122,6 @@
 - v1.0 RC は automatic updater を持たない
 - v1.0 RC の resident app path は portable launcher 統合であり、native tray app ではない
 - v1.0 RC Daily Brief は scheduled message smoke が既定であり、Gmail/GCal/Drive は read-only source として optional
-- Slack/Discord は release-polished preview-level。実 token / test target での live smoke 完走後に first-party 昇格判断を行う
-- Google write integrations、Teams、LINE は後続 phase
+- Slack/Discord/Teams/LINE は first-party-preview。実 token / test target での live smoke、回復手順 review、`validate:channels` の証跡 gate 完走後に first-party 昇格判断を行う
+- Teams/LINE は gateway-owned inbound listener closure が first-party promotion 前に必要
 - WhatsApp は first-party core から除外

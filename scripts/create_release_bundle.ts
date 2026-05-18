@@ -58,6 +58,9 @@ const REQUIRED_PATHS = [
   "docs/phase11-s9-installer-setup-ux.md",
   "docs/RESIDENT_APP_GUIDE.md",
   "docs/phase11-s10-resident-application-integration.md",
+  "docs/CHANNEL_PROMOTION_GATE.md",
+  "docs/phase11-s11-channel-first-party-promotion.md",
+  "scripts/channel_promotion_gate.ts",
 ] as const;
 
 const INSTALLER_PATHS = [

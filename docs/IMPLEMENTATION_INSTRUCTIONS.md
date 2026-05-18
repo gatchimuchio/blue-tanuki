@@ -2024,6 +2024,28 @@ CHANGELOG.md
 
 ---
 
+# Phase 11-S10 Completion Notes
+
+- Added portable resident helpers under `install/resident/`.
+- Installed launchers expose `resident-start`, `resident-status`, `resident-stop`, `resident-open`, `resident-logs`, and explicit `resident-autostart-*` commands.
+- Resident autostart is opt-in only and uninstallers stop resident state before app/launcher removal.
+- Resident app guide, permanent-use checklist, update/rollback runbook, RC docs, conformance docs, doctor distribution readiness, release bundle, and packaging validation were updated.
+- Signed native tray app and automatic updater remain out of scope.
+- Active execution lane advances to Phase 11-S11 Channel First-Party Promotion.
+
+---
+
+# Phase 11-S11 Completion Notes
+
+- Added `pnpm validate:channels` as the channel first-party promotion gate.
+- Added `scripts/channel_promotion_gate.ts`, `apps/gateway/test/channel_promotion_gate.test.ts`, `docs/CHANNEL_PROMOTION_GATE.md`, and the Phase 11-S11 report.
+- Slack / Discord / Teams / LINE remain `first-party-preview` unless owner-run credentialed live-smoke evidence and recovery review are present.
+- Teams / LINE additionally require gateway-owned inbound listener closure before first-party promotion.
+- WhatsApp remains `reserved-third-party`.
+- Active execution lane advances to Phase 11-S12 Plugin Review Gate Implementation.
+
+---
+
 # Phase 12-S-1 - HDS-BRAIN Standalone Completeness Lock
 
 ## Objective
@@ -2677,7 +2699,7 @@ Do not claim completion unless acceptance criteria are satisfied.
 The active next phase is:
 
 ```txt
-Phase 11-S11 Channel First-Party Promotion
+Phase 11-S12 Plugin Review Gate Implementation
 ```
 
-Phase 11-S10 is complete. Proceed to Phase 11-S11 Channel First-Party Promotion.
+Phase 11-S11 is complete. Proceed to Phase 11-S12 Plugin Review Gate Implementation.

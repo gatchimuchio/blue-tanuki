@@ -49,6 +49,7 @@ TELEGRAM_POLL_TIMEOUT_SEC=25
 ## Slack / Discord / Teams / LINE preview channels
 
 Slack, Discord, Teams, and LINE are preview adapters. Missing credentials keep the adapters in silent fail-closed mode. Credentialed live smoke uses a test target and reports typed delivery errors.
+First-party promotion is gated by `pnpm validate:channels` and requires owner-run live-smoke evidence. Do not store token values or raw target identifiers in promotion evidence.
 
 ```bash
 SLACK_BOT_TOKEN=...

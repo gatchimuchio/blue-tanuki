@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readManifest, manifestPathFor } from "@blue-tanuki/protocol";
+import { validateChannelPromotion } from "../../../scripts/channel_promotion_gate.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,6 +78,13 @@ describe("compatibility matrix conformance", () => {
         target_release: targetRelease,
       });
     }
+  });
+
+  it("passes the first-party channel promotion gate", async () => {
+    const matrix = await readMatrix();
+    const result = validateChannelPromotion(matrix);
+    expect(result.ok).toBe(true);
+    expect(result.promoted_channels).toEqual([]);
   });
 
   it("rejects wildcard capabilities in bundled first-party channel manifests", async () => {

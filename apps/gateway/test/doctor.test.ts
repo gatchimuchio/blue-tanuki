@@ -196,13 +196,39 @@ async function writeDistributionFixture(root: string): Promise<void> {
       "signed native installer",
       "automatic updater",
       "resident app docs",
+      "validate:channels",
       "dry-run",
     ].join("\n"),
   );
   await writeFixtureFile(
     root,
+    "docs/CHANNEL_PROMOTION_GATE.md",
+    [
+      "# Channel Promotion Gate",
+      "pnpm validate:channels",
+      "owner-run evidence",
+      "gateway-owned inbound listener closure",
+      "reserved-third-party",
+      "must not contain token values",
+    ].join("\n"),
+  );
+  await writeFixtureFile(
+    root,
+    "scripts/channel_promotion_gate.ts",
+    [
+      "validateChannelPromotion",
+      "BASELINE_FIRST_PARTY_CHANNELS",
+      "PROMOTION_ELIGIBLE_CHANNELS",
+      "reserved-third-party",
+      "gateway-owned inbound listener",
+    ].join("\n"),
+  );
+  await writeFixtureFile(root, "package.json", '{"scripts":{"validate:channels":"x"}}');
+  await writeFixtureFile(
+    root,
     "scripts/create_release_bundle.ts",
     [
+      "docs/CHANNEL_PROMOTION_GATE.md",
       "install/windows/install.ps1",
       "install/resident/README.md",
       "install/macos/install.sh",
@@ -215,7 +241,13 @@ async function writeDistributionFixture(root: string): Promise<void> {
   await writeFixtureFile(
     root,
     "scripts/verify_release_bundle.ts",
-    ["sha256", "manifest", "isForbiddenFileName", "install/resident/README.md"].join("\n"),
+    [
+      "sha256",
+      "manifest",
+      "isForbiddenFileName",
+      "install/resident/README.md",
+      "docs/CHANNEL_PROMOTION_GATE.md",
+    ].join("\n"),
   );
   await writeFixtureFile(
     root,
@@ -877,7 +909,7 @@ describe("runDoctor — compatibility matrix gate", () => {
     });
     const c = r.checks.find((x) => x.id === "compatibility_matrix");
     expect(c?.level).toBe("ok");
-    expect(c?.detail).toContain("preview quarantine verified");
+    expect(c?.detail).toContain("promotion gate boundary verified");
   });
 
   it("errors when WhatsApp is promoted into first-party core scope", async () => {
@@ -928,7 +960,7 @@ describe("runDoctor - distribution readiness gate", () => {
     });
     const c = r.checks.find((x) => x.id === "distribution_readiness");
     expect(c?.level).toBe("ok");
-    expect(c?.detail).toContain("install/update/uninstall surfaces verified");
+    expect(c?.detail).toContain("install/update/uninstall/channel-promotion surfaces verified");
   });
 
   it("errors when required installer docs are missing from an explicit root", async () => {

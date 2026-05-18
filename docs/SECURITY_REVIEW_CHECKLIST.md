@@ -22,6 +22,7 @@
 - Does this change weaken any compound attack guarantee covered by `packages/hds-brain/test/compound_attack_scenarios.test.ts`?
 - Does this change let detector lifecycle failure, invalid detector output, or unknown detector pattern auto-allow?
 - Does this change let HDS self-health fail-safe emit commands or approve through resume?
+- Does this change promote a preview channel without `pnpm validate:channels` evidence?
 
 追加確認:
 
@@ -43,3 +44,4 @@
 - full-access / wildcard grant / metadata spoof / downstream feedback spoof の複合条件でも L3 final-review が維持されているか
 - detector missing / exception / invalid score / invalid pattern / duplicate axis が `SUSPEND` に落ちるか
 - policy / audit / Runtime Invariants / Approval Gate / HDS availability failure が command emission 前に `SUSPEND` するか
+- Slack / Discord / Teams / LINE の first-party promotion が owner-run live smoke / recovery review / metadata non-authority evidence なしに行われていないか

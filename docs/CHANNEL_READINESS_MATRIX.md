@@ -8,10 +8,10 @@ non-escalation are all verified.
 |---|---|---:|---|---|---|---|---|---|---|---|
 | WebChat | first-party | low | `WEBCHAT_TOKEN`, `WEBCHAT_RESUME_TOKEN` | local smoke | n/a | yes | yes | local only | token missing, token reuse, port conflict | Control Center first-run status |
 | Telegram | first-party | medium | `TELEGRAM_BOT_TOKEN` | credentialed path | silent fallback when unset | yes | yes | Bot API polling interval configurable | bot not started, wrong chat_id, privacy mode, token revoked | stronger live smoke docs |
-| Slack | first-party-preview | medium | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN` | supported when credentials/target exist | yes | yes | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | missing app token, Socket Mode failure, channel permission, token revoked, rate limit | owner credentialed live smoke before first-party promotion |
-| Discord | first-party-preview | medium | `DISCORD_BOT_TOKEN` | supported when credentials/target exist | yes | yes | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | gateway intent, channel permission, token revoked, rate limit | owner credentialed live smoke before first-party promotion |
-| Microsoft Teams | first-party-preview | high | `MICROSOFT_GRAPH_ACCESS_TOKEN` | supported when credentials/target exist | yes | injected transport / no gateway webhook listener yet | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | Graph permission, tenant/app consent, target format, token revoked, rate limit | owner credentialed live smoke before first-party promotion |
-| LINE | first-party-preview | high | `LINE_CHANNEL_ACCESS_TOKEN` | supported when credentials/target exist | yes | injected transport / no gateway webhook listener yet | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | Messaging API permission, target reachability, token revoked, rate limit | owner credentialed live smoke before first-party promotion |
+| Slack | first-party-preview | medium | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN` | supported when credentials/target exist | yes | yes | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | missing app token, Socket Mode failure, channel permission, token revoked, rate limit | `validate:channels` promotion evidence |
+| Discord | first-party-preview | medium | `DISCORD_BOT_TOKEN` | supported when credentials/target exist | yes | yes | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | gateway intent, channel permission, token revoked, rate limit | `validate:channels` promotion evidence |
+| Microsoft Teams | first-party-preview | high | `MICROSOFT_GRAPH_ACCESS_TOKEN` | supported when credentials/target exist | yes | injected transport / no gateway webhook listener yet | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | Graph permission, tenant/app consent, target format, token revoked, rate limit | inbound listener closure + `validate:channels` evidence |
+| LINE | first-party-preview | high | `LINE_CHANNEL_ACCESS_TOKEN` | supported when credentials/target exist | yes | injected transport / no gateway webhook listener yet | yes | adapter retry/backoff + typed recoverable/non-recoverable errors | Messaging API permission, target reachability, token revoked, rate limit | inbound listener closure + `validate:channels` evidence |
 | WhatsApp | reserved-third-party | high | third-party adapter-specific | not first-party | n/a | no core support | no core support | not warranted | ToS/stability/operation responsibility cannot be guaranteed by core | generic adapter interface only |
 
 ## Release Meaning
@@ -28,6 +28,18 @@ metadata, thread metadata, webhook metadata, and adapter-specific metadata are
 downstream context only.
 
 ## Preview Channel Boundaries
+
+### Phase 11-S11 Promotion Gate
+
+First-party promotion is guarded by [CHANNEL_PROMOTION_GATE.md](CHANNEL_PROMOTION_GATE.md)
+and `pnpm validate:channels`.
+
+The current compatibility matrix intentionally keeps Slack, Discord, Teams, and
+LINE as `first-party-preview` because owner-run credentialed live smoke evidence
+is absent in this workspace. A future promotion must provide redacted evidence
+for live smoke, recovery review, docs review, conformance, and metadata
+non-authority. Teams and LINE also require gateway-owned inbound listener
+closure before they can become first-party.
 
 ### Teams / LINE Preview Boundary
 

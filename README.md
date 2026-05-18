@@ -116,6 +116,7 @@ pnpm gateway:serve
 ## Preview channels
 
 Slack, Discord, Teams, and LINE are downstream preview channels. Missing credentials are safe: adapters stay in silent fail-closed mode and `pnpm smoke:live` reports SKIP unless credentials and live targets are set.
+Phase 11-S11 adds `pnpm validate:channels` as the promotion gate: these channels do not become `first-party` until owner-run credentialed live smoke and recovery evidence are recorded. Teams and LINE also require gateway-owned inbound listener closure before promotion.
 
 ```bash
 export MICROSOFT_GRAPH_ACCESS_TOKEN="<graph-oauth-token>"
@@ -445,6 +446,8 @@ curl -H "Authorization: Bearer $WEBCHAT_TOKEN" \
 - [docs/phase11-s9-installer-setup-ux.md](./docs/phase11-s9-installer-setup-ux.md) - Phase 11-S9 implementation report
 - [docs/RESIDENT_APP_GUIDE.md](./docs/RESIDENT_APP_GUIDE.md) - resident launcher lifecycle and explicit autostart
 - [docs/phase11-s10-resident-application-integration.md](./docs/phase11-s10-resident-application-integration.md) - Phase 11-S10 implementation report
+- [docs/CHANNEL_PROMOTION_GATE.md](./docs/CHANNEL_PROMOTION_GATE.md) - channel first-party promotion evidence gate
+- [docs/phase11-s11-channel-first-party-promotion.md](./docs/phase11-s11-channel-first-party-promotion.md) - Phase 11-S11 implementation report
 - [docs/INDEX.md](./docs/INDEX.md) - documentation index
 - [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md) - guided first-run path
 - [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) - permanent-use readiness checks
