@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import * as path from "node:path";
+import { pathToFileURL } from "node:url";
 
 interface PackageJson {
   version: string;
@@ -29,6 +30,28 @@ interface ReleaseManifest {
 
 const root = process.cwd();
 const VERIFY_WORK_DIR = path.join(root, ".codex-tmp", "release-verify");
+
+export interface ExtractedReleaseCommand {
+  command: string;
+  args: readonly string[];
+  env?: Record<string, string>;
+}
+
+export const EXTRACTED_RELEASE_COMMANDS: readonly ExtractedReleaseCommand[] = [
+  { command: "corepack", args: ["pnpm", "install", "--frozen-lockfile"] },
+  { command: "corepack", args: ["pnpm", "build"] },
+  {
+    command: "corepack",
+    args: ["pnpm", "run", "doctor"],
+    env: {
+      WEBCHAT_TOKEN: "release-verify-webchat-token-123456",
+      WEBCHAT_RESUME_TOKEN: "release-verify-resume-token-123456",
+      BLUE_TANUKI_SETTINGS_TOKEN: "release-verify-settings-token-123456",
+      LLM_BACKEND: "stub",
+    },
+  },
+  { command: "corepack", args: ["pnpm", "validate:repo-health"] },
+] as const;
 
 const REQUIRED_ARCHIVE_PATHS = [
   "install/README.md",
@@ -305,21 +328,23 @@ function extractArchive(archiveFile: string, destination: string): void {
   throw new Error(`unsupported archive extension: ${archiveFile}`);
 }
 
-function runInExtractedBundle(command: string, args: readonly string[], cwd: string): void {
-  const result = spawnSync(command, [...args], {
+function runInExtractedBundle(step: ExtractedReleaseCommand, cwd: string): void {
+  const result = spawnSync(step.command, [...step.args], {
     cwd,
     encoding: "utf8",
     env: {
       ...process.env,
       CI: process.env.CI ?? "1",
+      ...step.env,
     },
   });
   if (result.status !== 0) {
     throw new Error(
-      `extracted release command failed: ${command} ${args.join(" ")}\n` +
+      `extracted release command failed: ${step.command} ${step.args.join(" ")}\n` +
         `${result.stdout}\n${result.stderr}`.trim(),
     );
   }
+  console.log(`[release:verify] extracted PASS ${step.command} ${step.args.join(" ")}`);
 }
 
 function assertExtractedInstallability(archiveFile: string): void {
@@ -328,8 +353,9 @@ function assertExtractedInstallability(archiveFile: string): void {
   if (!existsSync(path.join(extractedRoot, "package.json"))) {
     throw new Error("extracted release bundle missing package.json");
   }
-  runInExtractedBundle("corepack", ["pnpm", "install", "--frozen-lockfile"], extractedRoot);
-  runInExtractedBundle("corepack", ["pnpm", "build"], extractedRoot);
+  for (const step of EXTRACTED_RELEASE_COMMANDS) {
+    runInExtractedBundle(step, extractedRoot);
+  }
   rmSync(VERIFY_WORK_DIR, { recursive: true, force: true });
 }
 
@@ -359,4 +385,6 @@ function main(): void {
   console.log(`[release:verify] sha256 ${actualSha}`);
 }
 
-main();
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+  main();
+}

@@ -1,22 +1,22 @@
 import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
+import { pathToFileURL } from "node:url";
+import ts from "typescript";
 
-const root = process.cwd();
-
-const FORBIDDEN_FILES = [
+export const FORBIDDEN_FILES = [
   "scripts/pnpm_exec.mjs",
   "scripts/pnpm-exec.mjs",
   "scripts/pnpm_exec.js",
 ] as const;
 
-const GRAPH_ROOTS = ["apps/gateway/src/main.ts"] as const;
-const PRODUCTION_GRAPH_ALLOWED = new Set([
+export const GRAPH_ROOTS = ["apps/gateway/src/main.ts"] as const;
+export const PRODUCTION_GRAPH_ALLOWED = new Set([
   "apps/gateway/src/main.ts",
   "apps/gateway/src/cli_router.ts",
   "apps/gateway/src/env_file.ts",
   "apps/gateway/src/audit_config.ts",
 ]);
-const FORBIDDEN_GRAPH_FILES = [
+export const FORBIDDEN_GRAPH_FILES = [
   "apps/gateway/src/doctor.ts",
   "apps/gateway/src/setup.ts",
   "apps/gateway/src/audit_dump.ts",
@@ -24,7 +24,7 @@ const FORBIDDEN_GRAPH_FILES = [
   "apps/gateway/src/serve.ts",
   "apps/gateway/src/runtime.ts",
 ] as const;
-const FORBIDDEN_IMPORT_SPECIFIERS = [
+export const FORBIDDEN_IMPORT_SPECIFIERS = [
   "./doctor.js",
   "./setup.js",
   "./audit_dump.js",
@@ -36,7 +36,16 @@ const FORBIDDEN_IMPORT_SPECIFIERS = [
   "install/installer",
 ] as const;
 
-const CORE_RELEASE_ALLOWLIST = [
+export const COMMAND_GATED_CLI_DYNAMIC_IMPORTS = [
+  "./doctor.js",
+  "./setup.js",
+  "./audit_dump.js",
+  "./audit_verify.js",
+  "./serve.js",
+  "./runtime.js",
+] as const;
+
+export const CORE_RELEASE_ALLOWLIST = [
   "packages/hds-brain",
   "packages/protocol",
   "packages/blue-tanuki",
@@ -46,7 +55,7 @@ const CORE_RELEASE_ALLOWLIST = [
   "apps/gateway",
 ] as const;
 
-const PREVIEW_PACKAGE_PATHS = [
+export const PREVIEW_PACKAGE_PATHS = [
   "packages/channel-slack",
   "packages/channel-discord",
   "packages/channel-teams",
@@ -60,12 +69,13 @@ const PREVIEW_PACKAGE_PATHS = [
   "install/macos",
 ] as const;
 
-interface ImportEdge {
-  kind: "import" | "export" | "dynamic";
+export interface ImportEdge {
+  kind: "import" | "export" | "dynamic" | "dynamic_nonliteral";
   specifier: string;
+  type_only: boolean;
 }
 
-function read(rel: string): string {
+function read(root: string, rel: string): string {
   return readFileSync(path.join(root, rel), "utf8");
 }
 
@@ -73,29 +83,59 @@ function fail(message: string): never {
   throw new Error(`repo health gate failed: ${message}`);
 }
 
-function assertForbiddenFilesAbsent(): void {
+function assertForbiddenFilesAbsent(root: string): void {
   for (const rel of FORBIDDEN_FILES) {
     if (existsSync(path.join(root, rel))) fail(`forbidden file exists: ${rel}`);
   }
 }
 
-function importEdges(text: string): ImportEdge[] {
+function stringLiteralText(node: ts.Node | undefined): string | null {
+  return node && ts.isStringLiteralLike(node) ? node.text : null;
+}
+
+export function importEdges(text: string, rel = "source.ts"): ImportEdge[] {
+  const source = ts.createSourceFile(rel, text, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
   const edges: ImportEdge[] = [];
-  const patterns: Array<{ kind: ImportEdge["kind"]; regex: RegExp }> = [
-    { kind: "import", regex: /^\s*import\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/gm },
-    { kind: "export", regex: /^\s*export\s+[^"']*?\s+from\s+["']([^"']+)["']/gm },
-    { kind: "dynamic", regex: /\bimport\s*\(\s*["']([^"']+)["']\s*\)/gm },
-  ];
-  for (const { kind, regex } of patterns) {
-    for (const match of text.matchAll(regex)) {
-      const specifier = match[1];
-      if (specifier) edges.push({ kind, specifier });
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node)) {
+      const specifier = stringLiteralText(node.moduleSpecifier);
+      if (specifier) {
+        edges.push({
+          kind: "import",
+          specifier,
+          type_only: node.importClause?.isTypeOnly === true,
+        });
+      }
+    } else if (ts.isExportDeclaration(node)) {
+      const specifier = stringLiteralText(node.moduleSpecifier);
+      if (specifier) {
+        edges.push({
+          kind: "export",
+          specifier,
+          type_only: node.isTypeOnly === true,
+        });
+      }
+    } else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword
+    ) {
+      const specifier = stringLiteralText(node.arguments[0]);
+      edges.push({
+        kind: specifier ? "dynamic" : "dynamic_nonliteral",
+        specifier: specifier ?? "<non-literal>",
+        type_only: false,
+      });
     }
-  }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
   return edges;
 }
 
-function resolveLocalImport(fromRel: string, specifier: string): string | null {
+function resolveLocalImport(root: string, fromRel: string, specifier: string): string | null {
   if (!specifier.startsWith(".")) return null;
   const base = path.dirname(fromRel);
   const withoutJs = specifier.endsWith(".js") ? specifier.slice(0, -3) : specifier;
@@ -106,7 +146,7 @@ function resolveLocalImport(fromRel: string, specifier: string): string | null {
   return candidates.find((candidate) => existsSync(path.join(root, candidate))) ?? null;
 }
 
-function assertNoForbiddenProductionImports(): void {
+function assertNoForbiddenProductionImports(root: string): void {
   const checked = new Set<string>();
   const queue = [...GRAPH_ROOTS];
   while (queue.length > 0) {
@@ -116,27 +156,25 @@ function assertNoForbiddenProductionImports(): void {
     if (!PRODUCTION_GRAPH_ALLOWED.has(rel)) {
       fail(`production CLI graph reached non-allowed file: ${rel}`);
     }
-    const text = read(rel);
+    const text = read(root, rel);
     for (const edge of importEdges(text)) {
       const commandGatedCliDynamic =
         rel === "apps/gateway/src/cli_router.ts" &&
         edge.kind === "dynamic" &&
-        [
-          "./doctor.js",
-          "./setup.js",
-          "./audit_dump.js",
-          "./audit_verify.js",
-          "./serve.js",
-          "./runtime.js",
-        ].includes(edge.specifier);
+        (COMMAND_GATED_CLI_DYNAMIC_IMPORTS as readonly string[]).includes(edge.specifier);
+      if (edge.kind === "dynamic_nonliteral") {
+        fail(`${rel}: non-literal dynamic import is not allowed in production CLI graph`);
+      }
       if (
+        !edge.type_only &&
         !commandGatedCliDynamic &&
         FORBIDDEN_IMPORT_SPECIFIERS.some((forbidden) => edge.specifier.includes(forbidden))
       ) {
-        fail(`${rel}: forbidden ${edge.kind} import ${edge.specifier}`);
+        fail(`${rel}: forbidden ${edge.kind} ${edge.specifier}`);
       }
       if (edge.kind === "dynamic") continue;
-      const resolved = resolveLocalImport(rel, edge.specifier);
+      if (edge.type_only) continue;
+      const resolved = resolveLocalImport(root, rel, edge.specifier);
       if (!resolved) continue;
       if (FORBIDDEN_GRAPH_FILES.includes(resolved as (typeof FORBIDDEN_GRAPH_FILES)[number])) {
         fail(`${rel}: ${edge.kind} import reaches forbidden production graph file ${resolved}`);
@@ -146,8 +184,8 @@ function assertNoForbiddenProductionImports(): void {
   }
 }
 
-function assertPackageScriptsUseNativePnpm(): void {
-  const pkg = JSON.parse(read("package.json")) as { scripts?: Record<string, string> };
+function assertPackageScriptsUseNativePnpm(root: string): void {
+  const pkg = JSON.parse(read(root, "package.json")) as { scripts?: Record<string, string> };
   for (const [name, script] of Object.entries(pkg.scripts ?? {})) {
     if (/pnpm[_-]?exec|scripts\/pnpm/i.test(script)) {
       fail(`package script ${name} uses a custom pnpm wrapper`);
@@ -155,8 +193,8 @@ function assertPackageScriptsUseNativePnpm(): void {
   }
 }
 
-function assertGatewayCoreDependenciesOnly(): void {
-  const pkg = JSON.parse(read("apps/gateway/package.json")) as {
+function assertGatewayCoreDependenciesOnly(root: string): void {
+  const pkg = JSON.parse(read(root, "apps/gateway/package.json")) as {
     dependencies?: Record<string, string>;
   };
   const deps = Object.keys(pkg.dependencies ?? {});
@@ -174,9 +212,9 @@ function assertGatewayCoreDependenciesOnly(): void {
   }
 }
 
-function assertPreviewScopeDocumented(): void {
-  const inventory = read("docs/repository-health-inventory.md");
-  const preview = read("docs/preview-scope.md");
+function assertPreviewScopeDocumented(root: string): void {
+  const inventory = read(root, "docs/repository-health-inventory.md");
+  const preview = read(root, "docs/preview-scope.md");
   for (const rel of CORE_RELEASE_ALLOWLIST) {
     if (!inventory.includes(rel)) fail(`inventory missing core release path ${rel}`);
   }
@@ -187,8 +225,8 @@ function assertPreviewScopeDocumented(): void {
   }
 }
 
-function assertReleaseBundleDeclaresCoreBoundary(): void {
-  const release = read("scripts/create_release_bundle.ts");
+function assertReleaseBundleDeclaresCoreBoundary(root: string): void {
+  const release = read(root, "scripts/create_release_bundle.ts");
   if (!release.includes("CORE_RELEASE_PATHS")) {
     fail("release bundle creator must declare CORE_RELEASE_PATHS");
   }
@@ -199,14 +237,21 @@ function assertReleaseBundleDeclaresCoreBoundary(): void {
   }
 }
 
+export function validateRepoHealthGate(rootDir = process.cwd()): void {
+  const root = path.resolve(rootDir);
+  assertForbiddenFilesAbsent(root);
+  assertNoForbiddenProductionImports(root);
+  assertPackageScriptsUseNativePnpm(root);
+  assertGatewayCoreDependenciesOnly(root);
+  assertPreviewScopeDocumented(root);
+  assertReleaseBundleDeclaresCoreBoundary(root);
+}
+
 function main(): void {
-  assertForbiddenFilesAbsent();
-  assertNoForbiddenProductionImports();
-  assertPackageScriptsUseNativePnpm();
-  assertGatewayCoreDependenciesOnly();
-  assertPreviewScopeDocumented();
-  assertReleaseBundleDeclaresCoreBoundary();
+  validateRepoHealthGate(process.cwd());
   process.stdout.write("repo health gate passed\n");
 }
 
-main();
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+  main();
+}

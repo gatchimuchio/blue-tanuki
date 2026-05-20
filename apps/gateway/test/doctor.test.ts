@@ -286,6 +286,7 @@ async function writeDistributionFixture(root: string): Promise<void> {
     root,
     "scripts/create_release_bundle.ts",
     [
+      "CORE_RELEASE_PATHS",
       "docs/CHANNEL_PROMOTION_GATE.md",
       "docs/phase11-s12-plugin-review-gate-implementation.md",
       "docs/v1.0-ga-promotion-review.md",
@@ -308,6 +309,10 @@ async function writeDistributionFixture(root: string): Promise<void> {
     [
       "sha256",
       "manifest",
+      "core_release_paths",
+      "EXTRACTED_RELEASE_COMMANDS",
+      "pnpm\", \"run\", \"doctor",
+      "validate:repo-health",
       "isForbiddenFileName",
       "install/resident/README.md",
       "docs/CHANNEL_PROMOTION_GATE.md",
@@ -933,7 +938,50 @@ describe("runDoctor — bundled manifests", () => {
       });
       const c = r.checks.find((x) => x.id === "manifests");
       expect(c?.level).toBe("ok");
-      expect(r.exit_code).toBe(0);
+      expect(
+        r.exit_code,
+        JSON.stringify(r.checks.filter((c) => c.level === "error"), null, 2),
+      ).toBe(0);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("passes core doctor in an extracted core release when preview packages are absent", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "btnk-core-release-doc-"));
+    try {
+      await writeManifestFixture(root);
+      for (const rel of [
+        "packages/channel-slack",
+        "packages/channel-discord",
+        "packages/channel-teams",
+        "packages/channel-line",
+        "install/installer",
+        "install/resident",
+        "install/windows",
+        "install/macos",
+      ]) {
+        await fs.rm(path.join(root, rel), { recursive: true, force: true });
+      }
+
+      const r = await runDoctor({
+        env: baseEnv(),
+        probe_port: false,
+        node_version: "22.14.0",
+        manifest_root: root,
+        distribution_root: root,
+      });
+
+      expect(
+        r.exit_code,
+        JSON.stringify(r.checks.filter((c) => c.level === "error"), null, 2),
+      ).toBe(0);
+      expect(r.checks.find((c) => c.id === "manifests")?.detail).toContain(
+        "preview manifests absent in core release",
+      );
+      expect(r.checks.find((c) => c.id === "distribution_readiness")?.detail).toContain(
+        "preview-only paths absent in core release",
+      );
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

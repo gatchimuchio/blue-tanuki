@@ -191,6 +191,9 @@ function main(): void {
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "sha256");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "manifest");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "core_release_paths");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "EXTRACTED_RELEASE_COMMANDS");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "pnpm\", \"run\", \"doctor");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "validate:repo-health");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "tar");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/CHANNEL_PROMOTION_GATE.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/phase11-s11-channel-first-party-promotion.md");

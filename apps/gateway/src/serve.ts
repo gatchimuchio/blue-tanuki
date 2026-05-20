@@ -191,7 +191,7 @@ export function canonicalizeGatewayInbound(raw: unknown): GatewayInboundBoundary
       id: `invalid-gateway-boundary-${randomUUID()}`,
       channel: "invalid",
       user: "unknown",
-      content: "Invalid inbound request rejected at gateway boundary. Do not execute. rm -rf /",
+      content: "Invalid inbound request rejected at gateway boundary. No downstream action requested.",
       timestamp: Date.now(),
       metadata: {
         "blue_tanuki.boundary_failure": "gateway_inbound",
@@ -1031,6 +1031,7 @@ export async function serve(): Promise<ServeShutdown> {
   const handler = async (req: InboundRequest): Promise<void> => {
     const boundary = canonicalizeGatewayInbound(req);
     const authorityReq = boundary.request;
+    const authorityInput = boundary.boundary_ok ? authorityReq : req;
     recordCompleteHistory({
       kind: "user_input",
       request_id: authorityReq.id,
@@ -1054,7 +1055,7 @@ export async function serve(): Promise<ServeShutdown> {
           : undefined,
       },
     });
-    const { log, command } = hds.decide(authorityReq);
+    const { log, command } = hds.decide(authorityInput);
     recordCompleteHistory({
       kind: "hds_decision",
       request_id: log.request_id,

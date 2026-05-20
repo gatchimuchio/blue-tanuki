@@ -1,7 +1,7 @@
 # BLUE-TANUKI v1.0 RC Quickstart
 
 v1.0 RC の最短経路は **WebChat Control Center + HDS Approval/Audit** である。Telegram は first-party channel として追加できる。Slack / Discord / Teams / LINE は preview adapter であり、credentials がない場合は安全に skip / silent fallback する。
-通常の `pnpm run doctor` は core release health を見る。preview channel credentials の不足は WARN だが core doctor を fail させない。preview readiness は `pnpm run doctor -- --preview`、全 optional surface の strict validation は `pnpm run doctor -- --strict` を使う。
+通常の `pnpm run doctor` は core release health を見る。preview channel credentials や core release bundle から除外された preview package の不足は release blocker ではない。preview readiness は `pnpm run doctor -- --preview`、全 optional surface の strict validation は `pnpm run doctor -- --strict` を使う。
 
 v1.0 RC provides a guided first-run path, not a verified 5-minute beginner guarantee. 詳細な手順は [docs/FIRST_RUN_CHECKLIST.md](./docs/FIRST_RUN_CHECKLIST.md)、常駐運用の確認は [docs/PERMANENT_USE_CHECKLIST.md](./docs/PERMANENT_USE_CHECKLIST.md) を使う。
 
@@ -12,6 +12,7 @@ pnpm install
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm validate:repo-health
 ```
 
 ## 2. Guided first-run

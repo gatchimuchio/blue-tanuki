@@ -121,7 +121,7 @@ pnpm gateway:serve
 ## Preview channels
 
 Slack, Discord, Teams, and LINE are downstream preview channels. Missing credentials are safe: adapters stay in silent fail-closed mode and `pnpm smoke:live` reports SKIP unless credentials and live targets are set.
-Core doctor reports missing preview credentials as WARN without failing the core health check. Use `pnpm run doctor -- --preview` for preview channel readiness and `pnpm run doctor -- --strict` for strict optional-surface validation.
+Core doctor reports missing preview credentials and preview packages absent from the extracted core release bundle without failing the core health check. Use `pnpm run doctor -- --preview` for preview channel readiness and `pnpm run doctor -- --strict` for strict optional-surface validation.
 Phase 11-S11 adds `pnpm validate:channels` as the promotion gate: these channels do not become `first-party` until owner-run credentialed live smoke and recovery evidence are recorded. Teams and LINE also require gateway-owned inbound listener closure before promotion.
 
 ```bash
@@ -501,4 +501,4 @@ Source packages live under `packages/`; runtime apps live under `apps/`. Root fi
 
 Release archives are source bundles, not standalone binaries. They intentionally exclude `node_modules`, local `.env` files, audit/session data, and secret-like backups.
 
-`doctor` includes a `distribution_readiness` gate for installer docs, update and rollback guidance, uninstall/purge paths, and release-bundle checks. BLUE-TANUKI does not currently ship a signed native installer or automatic updater.
+`doctor` includes a `distribution_readiness` gate for installer docs, update and rollback guidance, uninstall/purge paths, and release-bundle checks. `pnpm release:verify` checks sidecar integrity, archive contents, and an extracted core release install/build/doctor/`validate:repo-health` run. BLUE-TANUKI does not currently ship a signed native installer or automatic updater.

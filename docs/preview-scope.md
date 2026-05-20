@@ -32,10 +32,10 @@
 
 Preview items remain downstream-only. Missing preview credentials are WARN in core doctor and do not fail core health. `doctor --preview` validates preview channel readiness; `doctor --strict` validates all optional surfaces strictly.
 
-`apps/gateway` does not carry hard workspace dependencies on preview channel or operator packages. In the full workspace those packages are discovered through plugin manifests; in the extracted core release bundle they are absent and skipped.
+`apps/gateway` does not carry hard workspace dependencies on preview channel or operator packages. In the full workspace those packages are discovered through plugin manifests; in the extracted core release bundle they are absent and skipped. Core doctor treats that absence as an intentional preview limitation, not as a product regression.
 
 ## Regression Gate
 
-`pnpm validate:repo-health` blocks custom pnpm wrapper revival, forbidden eager production import graph edges, undocumented preview scope, hard preview gateway dependencies, and preview paths in the core release allowlist.
+`pnpm validate:repo-health` blocks custom pnpm wrapper revival, forbidden eager production import graph edges, non-literal dynamic imports in the production CLI graph, undocumented preview scope, hard preview gateway dependencies, and preview paths in the core release allowlist. Import graph checks use the TypeScript AST, so comments and plain string content do not count as imports.
 
-`pnpm release:verify` now extracts the generated source bundle and runs `corepack pnpm install --frozen-lockfile` plus `corepack pnpm build` inside the extracted tree.
+`pnpm release:verify` extracts the generated source bundle and runs `corepack pnpm install --frozen-lockfile`, `corepack pnpm build`, `corepack pnpm run doctor`, and `corepack pnpm validate:repo-health` inside the extracted tree.

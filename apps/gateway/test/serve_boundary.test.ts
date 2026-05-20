@@ -37,6 +37,7 @@ describe("gateway inbound boundary", () => {
         "blue_tanuki.boundary_failure": "gateway_inbound",
       });
       expect(JSON.stringify(result.request)).not.toContain("polluted");
+      expect(result.request.content).not.toMatch(/rm\s+-rf|DROP\s+TABLE|shutdown\s+-/i);
     }
   });
 });

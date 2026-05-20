@@ -116,17 +116,25 @@ interface Remediation {
  */
 export const MIN_NODE_VERSION = "22.14.0";
 
-const EXPECTED_MANIFEST_PACKAGES = [
+const CORE_MANIFEST_PACKAGES = [
   "packages/hds-brain",
   "packages/protocol",
   "packages/blue-tanuki",
   "packages/channel-base",
   "packages/channel-webchat",
+  "packages/channel-telegram",
+] as const;
+
+const PREVIEW_MANIFEST_PACKAGES = [
   "packages/channel-slack",
   "packages/channel-discord",
-  "packages/channel-telegram",
   "packages/channel-teams",
   "packages/channel-line",
+] as const;
+
+const EXPECTED_MANIFEST_PACKAGES = [
+  ...CORE_MANIFEST_PACKAGES,
+  ...PREVIEW_MANIFEST_PACKAGES,
 ] as const;
 
 interface ChannelCompatibility {
@@ -144,6 +152,7 @@ interface DistributionRequirement {
   rel: string;
   label: string;
   needles: readonly string[];
+  optional_in_core_release?: boolean;
 }
 
 const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
@@ -170,6 +179,7 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
   {
     rel: "install/installer/README.md",
     label: "guided first-run installer docs",
+    optional_in_core_release: true,
     needles: [
       "guided first-run",
       "pnpm installer:run",
@@ -194,6 +204,7 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
   {
     rel: "install/resident/README.md",
     label: "resident helper docs",
+    optional_in_core_release: true,
     needles: [
       "resident-start",
       "resident-autostart-enable",
@@ -341,6 +352,9 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "sha256",
       "manifest",
       "core_release_paths",
+      "EXTRACTED_RELEASE_COMMANDS",
+      "pnpm\", \"run\", \"doctor",
+      "validate:repo-health",
       "isForbiddenFileName",
       "docs/CHANNEL_PROMOTION_GATE.md",
       "scripts/plugin_review_gate.ts",
@@ -363,11 +377,13 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
   {
     rel: "install/windows/uninstall.ps1",
     label: "Windows uninstaller",
+    optional_in_core_release: true,
     needles: ["Purge", "DryRun", "Assert-SafeTarget", "resident-autostart-disable", "Data retained"],
   },
   {
     rel: "install/macos/uninstall.sh",
     label: "macOS uninstaller",
+    optional_in_core_release: true,
     needles: ["PURGE", "DRY_RUN", "safe_target", "resident-autostart-disable", "Data retained"],
   },
   {
@@ -1001,6 +1017,52 @@ async function locateRepoRoot(): Promise<string | null> {
   return null;
 }
 
+async function pathExists(filepath: string): Promise<boolean> {
+  return await fs
+    .stat(filepath)
+    .then(() => true)
+    .catch(() => false);
+}
+
+async function isCoreReleaseExtraction(root: string): Promise<boolean> {
+  return (
+    !(await pathExists(path.join(root, "packages/channel-slack"))) &&
+    !(await pathExists(path.join(root, "install/installer")))
+  );
+}
+
+async function validateManifestPackage(root: string, rel: string): Promise<string[]> {
+  const failures: string[] = [];
+  const pkgDir = path.join(root, rel);
+  try {
+    const manifest = await readManifest(manifestPathFor(pkgDir));
+    const pkgRaw = await fs.readFile(path.join(pkgDir, "package.json"), "utf8");
+    const pkg = JSON.parse(pkgRaw) as {
+      name?: unknown;
+      version?: unknown;
+      main?: unknown;
+    };
+
+    if (manifest.name !== pkg.name) {
+      failures.push(`${rel}: name mismatch (${manifest.name} != ${String(pkg.name)})`);
+    }
+    if (manifest.version !== pkg.version) {
+      failures.push(
+        `${rel}: version mismatch (${manifest.version} != ${String(pkg.version)})`,
+      );
+    }
+    if (manifest.entry !== "./dist/index.js") {
+      failures.push(`${rel}: entry must be ./dist/index.js`);
+    }
+    if (typeof pkg.main === "string" && manifest.entry !== pkg.main) {
+      failures.push(`${rel}: entry mismatch with package main`);
+    }
+  } catch (e) {
+    failures.push(`${rel}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return failures;
+}
+
 async function checkBundledManifests(rootOverride?: string): Promise<CheckDraft> {
   const root = rootOverride ? path.resolve(rootOverride) : await locateRepoRoot();
   if (!root) {
@@ -1013,34 +1075,17 @@ async function checkBundledManifests(rootOverride?: string): Promise<CheckDraft>
   }
 
   const failures: string[] = [];
-  for (const rel of EXPECTED_MANIFEST_PACKAGES) {
-    const pkgDir = path.join(root, rel);
-    try {
-      const manifest = await readManifest(manifestPathFor(pkgDir));
-      const pkgRaw = await fs.readFile(path.join(pkgDir, "package.json"), "utf8");
-      const pkg = JSON.parse(pkgRaw) as {
-        name?: unknown;
-        version?: unknown;
-        main?: unknown;
-      };
-
-      if (manifest.name !== pkg.name) {
-        failures.push(`${rel}: name mismatch (${manifest.name} != ${String(pkg.name)})`);
-      }
-      if (manifest.version !== pkg.version) {
-        failures.push(
-          `${rel}: version mismatch (${manifest.version} != ${String(pkg.version)})`,
-        );
-      }
-      if (manifest.entry !== "./dist/index.js") {
-        failures.push(`${rel}: entry must be ./dist/index.js`);
-      }
-      if (typeof pkg.main === "string" && manifest.entry !== pkg.main) {
-        failures.push(`${rel}: entry mismatch with package main`);
-      }
-    } catch (e) {
-      failures.push(`${rel}: ${e instanceof Error ? e.message : String(e)}`);
+  const skipped: string[] = [];
+  const coreReleaseExtraction = await isCoreReleaseExtraction(root);
+  for (const rel of CORE_MANIFEST_PACKAGES) {
+    failures.push(...await validateManifestPackage(root, rel));
+  }
+  for (const rel of PREVIEW_MANIFEST_PACKAGES) {
+    if (coreReleaseExtraction && !(await pathExists(path.join(root, rel)))) {
+      skipped.push(rel);
+      continue;
     }
+    failures.push(...await validateManifestPackage(root, rel));
   }
 
   if (failures.length > 0) {
@@ -1055,7 +1100,9 @@ async function checkBundledManifests(rootOverride?: string): Promise<CheckDraft>
     id: "manifests",
     level: "ok",
     label: "plugin manifests",
-    detail: `${EXPECTED_MANIFEST_PACKAGES.length} manifests valid`,
+    detail: skipped.length === 0
+      ? `${EXPECTED_MANIFEST_PACKAGES.length} manifests valid`
+      : `${CORE_MANIFEST_PACKAGES.length} core manifests valid; preview manifests absent in core release: ${skipped.join(", ")}`,
   };
 }
 
@@ -1071,6 +1118,8 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDra
   }
 
   const failures: string[] = [];
+  const skippedPreviewManifests: string[] = [];
+  const coreReleaseExtraction = await isCoreReleaseExtraction(root);
   let matrix: CompatibilityMatrix;
   try {
     matrix = JSON.parse(
@@ -1147,9 +1196,18 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDra
   }
 
   for (const channel of ["webchat", "telegram", "discord", "slack", "teams", "line"]) {
+    const channelPackage = path.join(root, "packages", `channel-${channel}`);
+    if (
+      coreReleaseExtraction &&
+      ["discord", "slack", "teams", "line"].includes(channel) &&
+      !(await pathExists(channelPackage))
+    ) {
+      skippedPreviewManifests.push(channel);
+      continue;
+    }
     try {
       const manifest = await readManifest(
-        manifestPathFor(path.join(root, "packages", `channel-${channel}`)),
+        manifestPathFor(channelPackage),
       );
       for (const permission of manifest.permissions) {
         if (permission === "*" || permission.includes(":*")) {
@@ -1174,7 +1232,9 @@ async function checkCompatibilityMatrix(rootOverride?: string): Promise<CheckDra
     id: "compatibility_matrix",
     level: "ok",
     label: "compatibility matrix",
-    detail: "channel scope, preview quarantine, and promotion gate boundary verified",
+    detail: skippedPreviewManifests.length === 0
+      ? "channel scope, preview quarantine, and promotion gate boundary verified"
+      : `channel scope, preview quarantine, and promotion gate boundary verified; preview manifests absent in core release: ${skippedPreviewManifests.join(", ")}`,
   };
 }
 
@@ -1190,12 +1250,18 @@ async function checkDistributionReadiness(rootOverride?: string): Promise<CheckD
   }
 
   const failures: string[] = [];
+  const skipped: string[] = [];
+  const coreReleaseExtraction = await isCoreReleaseExtraction(root);
   for (const req of DISTRIBUTION_REQUIREMENTS) {
     const file = path.join(root, req.rel);
     let text = "";
     try {
       text = await fs.readFile(file, "utf8");
     } catch (e) {
+      if (req.optional_in_core_release && coreReleaseExtraction) {
+        skipped.push(req.rel);
+        continue;
+      }
       failures.push(
         `${req.rel}: cannot read ${req.label}: ${e instanceof Error ? e.message : String(e)}`,
       );
@@ -1221,7 +1287,9 @@ async function checkDistributionReadiness(rootOverride?: string): Promise<CheckD
     id: "distribution_readiness",
     level: "ok",
     label: "distribution readiness",
-    detail: `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall/channel-promotion/plugin-review/ga-promotion surfaces verified`,
+    detail: skipped.length === 0
+      ? `${DISTRIBUTION_REQUIREMENTS.length} install/update/uninstall/channel-promotion/plugin-review/ga-promotion surfaces verified`
+      : `${DISTRIBUTION_REQUIREMENTS.length - skipped.length} core distribution surfaces verified; preview-only paths absent in core release: ${skipped.join(", ")}`,
   };
 }
 

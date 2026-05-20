@@ -67,6 +67,18 @@ pnpm run doctor -- --strict
 `--preview` treats preview channel credentials as required for readiness.
 `--strict` treats optional external surfaces as required for full validation.
 
+## Release bundle extraction
+
+`pnpm release:verify` now extracts the generated source bundle and runs install,
+build, core doctor, and `validate:repo-health` inside the extracted tree.
+Failures from those extracted commands are product regressions unless the exact
+error is a host tool failure such as missing `corepack`, missing `tar`/zip
+support, or network outage while installing dependencies.
+
+Missing Slack / Discord / Teams / LINE packages inside the extracted bundle are
+intentional preview limitations, not environment failures. Core doctor and
+`validate:repo-health` must pass with those packages absent.
+
 ## Report Format
 
 For any environment-limited validation, report:
