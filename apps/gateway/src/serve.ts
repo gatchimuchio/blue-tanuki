@@ -18,7 +18,7 @@ import {
   ToolRegistry,
   createLogger,
 } from "@blue-tanuki/core";
-import { buildHDSMemoryStore, buildSessionStore } from "./main.js";
+import { buildHDSMemoryStore, buildSessionStore } from "./runtime.js";
 import { buildAuditLog } from "./audit_config.js";
 import {
   buildLLMBackendFromEnv,

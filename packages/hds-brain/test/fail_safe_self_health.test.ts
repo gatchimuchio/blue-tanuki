@@ -28,12 +28,42 @@ describe("Phase 12-S8 HDS-BRAIN fail-safe / self-health policy", () => {
     const health = evaluateHDSBrainHealth(controller.getRuntimeSnapshot(), { now: 1 });
 
     expect(health.status).toBe("ok");
+    expect(health.config_validation_status).toBe("PASS");
+    expect(health.runtime_checks.some((check) => check.name === "process.uptime" && check.status === "PASS")).toBe(true);
+    expect(health.runtime_checks.every((check) => check.used_for_authority === false)).toBe(true);
     expect(health.fail_safe).toBe(false);
     expect(health.failed_preconditions).toEqual([]);
     expect(health.command_execution_allowed).toBe(true);
     expect(health.downstream_execution_allowed).toBe(true);
     expect(health.used_for_authority).toBe(false);
     expect(health.operator_next_action).toBeNull();
+  });
+
+  it("separates runtime health UNKNOWN from config validation", () => {
+    const controller = new HDSUpperController();
+    const health = controller.getSelfHealth();
+
+    expect(health.config_validation_status).toBe("PASS");
+    expect(["PASS", "WARN", "FAIL", "UNKNOWN"]).toContain(health.runtime_health_status);
+    expect(health.runtime_checks.find((check) => check.name === "required_directories")?.status).toBe("UNKNOWN");
+  });
+
+  it("suspends invalid raw inbound objects at the authority boundary", () => {
+    const controller = new HDSUpperController();
+    const { log, command } = controller.decide({
+      id: "bad",
+      channel: "webchat",
+      user: "owner",
+      content: "hello",
+      timestamp: 1,
+      unexpected: true,
+    });
+
+    expect(command).toBeNull();
+    expect(log.commit.decision).toBe("SUSPEND");
+    expect(log.commit.reason).toContain("authority_input_boundary");
+    expect(log.model.structure.raw_input_used_for_authority).toBe(false);
+    expect(controller.listSuspended()[0]?.resume_allowed).toBe(false);
   });
 
   it("maps failed runtime invariants into fail-safe self-health", () => {

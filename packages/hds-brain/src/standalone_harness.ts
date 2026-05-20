@@ -19,7 +19,7 @@ export interface StandaloneHDSBrainInput {
   user: string;
   content: string;
   timestamp?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: InboundRequest["metadata"];
 }
 
 export interface StandaloneHDSBrainResult {

@@ -1,5 +1,23 @@
 import { z } from "zod";
 
+const DangerousObjectKeySchema = z.string().refine(
+  (key) => key !== "__proto__" && key !== "prototype" && key !== "constructor",
+  "dangerous object key is not allowed",
+);
+
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue | undefined };
+
+const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number().finite(),
+    z.boolean(),
+    z.null(),
+    z.array(JsonValueSchema),
+    z.record(DangerousObjectKeySchema, JsonValueSchema.optional()),
+  ]),
+);
+
 /**
  * Decision values returned by HDS-BRAIN's commit phase.
  * - ASSERT       : Execute. Pass command to BLUE-TANUKI.
@@ -163,11 +181,103 @@ export type ExecuteFeedback = z.infer<typeof ExecuteFeedbackSchema>;
  * BLUE-TANUKI's channel adapters normalize raw channel events into this shape.
  */
 export const InboundRequestSchema = z.object({
-  id: z.string(),
-  channel: z.string(),
-  user: z.string(),
-  content: z.string(),
-  timestamp: z.number(),
-  metadata: z.record(z.unknown()).optional(),
-});
+  id: z.string().min(1).max(200),
+  channel: z.string().min(1).max(80),
+  user: z.string().min(1).max(200),
+  content: z.string().max(200_000),
+  timestamp: z.number().finite().nonnegative(),
+  metadata: z.record(DangerousObjectKeySchema, JsonValueSchema.optional()).optional(),
+}).strict();
 export type InboundRequest = z.infer<typeof InboundRequestSchema>;
+
+export type InboundRequestBoundaryFailureReason =
+  | "schema_validation_failed"
+  | "canonicalization_failed";
+
+export interface InboundRequestBoundaryFailure {
+  ok: false;
+  reason: InboundRequestBoundaryFailureReason;
+  issues: string[];
+}
+
+export interface InboundRequestBoundarySuccess {
+  ok: true;
+  request: InboundRequest;
+}
+
+export type InboundRequestBoundaryResult =
+  | InboundRequestBoundarySuccess
+  | InboundRequestBoundaryFailure;
+
+export function parseInboundRequestAtBoundary(raw: unknown): InboundRequestBoundaryResult {
+  const parsed = InboundRequestSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      reason: "schema_validation_failed",
+      issues: parsed.error.issues.map((issue) => `${issue.path.join(".") || "<root>"}: ${issue.message}`),
+    };
+  }
+  try {
+    return {
+      ok: true,
+      request: normalizeInboundRequestForAuthority(parsed.data),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: "canonicalization_failed",
+      issues: [error instanceof Error ? error.message : String(error)],
+    };
+  }
+}
+
+export function normalizeInboundRequestForAuthority(request: InboundRequest): InboundRequest {
+  return {
+    id: normalizeScalar(request.id, "id"),
+    channel: normalizeScalar(request.channel, "channel"),
+    user: normalizeScalar(request.user, "user"),
+    content: request.content.normalize("NFKC"),
+    timestamp: request.timestamp,
+    ...(request.metadata ? { metadata: canonicalJsonObject(request.metadata) } : {}),
+  };
+}
+
+function normalizeScalar(value: string, field: string): string {
+  const normalized = value.normalize("NFKC").trim();
+  if (normalized.length === 0) {
+    throw new Error(`${field} normalized to empty string`);
+  }
+  if (normalized.includes("/") || normalized.includes("\\") || normalized.includes("..")) {
+    throw new Error(`${field} contains path-like traversal characters`);
+  }
+  return normalized;
+}
+
+function canonicalJsonObject(value: Record<string, JsonValue | undefined>): Record<string, JsonValue> {
+  const out: Record<string, JsonValue> = Object.create(null) as Record<string, JsonValue>;
+  for (const [key, item] of Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) {
+    if (item === undefined) continue;
+    const normalizedKey = normalizeMetadataKey(key);
+    out[normalizedKey] = canonicalJsonValue(item);
+  }
+  return out;
+}
+
+function canonicalJsonValue(value: JsonValue): JsonValue {
+  if (typeof value === "string") return value.normalize("NFKC");
+  if (Array.isArray(value)) return value.map((item) => canonicalJsonValue(item));
+  if (value && typeof value === "object") return canonicalJsonObject(value);
+  return value;
+}
+
+function normalizeMetadataKey(key: string): string {
+  const normalized = key.normalize("NFKC").trim();
+  if (normalized.length === 0) {
+    throw new Error("metadata key normalized to empty string");
+  }
+  if (normalized === "__proto__" || normalized === "prototype" || normalized === "constructor") {
+    throw new Error(`metadata key is not allowed: ${normalized}`);
+  }
+  return normalized;
+}

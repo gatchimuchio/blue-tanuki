@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ExecuteCommandSchema } from "../src/types.js";
+import {
+  ExecuteCommandSchema,
+  parseInboundRequestAtBoundary,
+} from "../src/types.js";
 
 const upstream = {
   frame_goal: "g",
@@ -42,5 +45,59 @@ describe("ExecuteCommandSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("InboundRequest boundary", () => {
+  it("normalizes only canonical inbound requests for authority", () => {
+    const result = parseInboundRequestAtBoundary({
+      id: " req-1 ",
+      channel: "webchat",
+      user: "owner",
+      content: "ＡＢＣ",
+      timestamp: 1,
+      metadata: { note: "ｔｅｓｔ" },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.request.id).toBe("req-1");
+      expect(result.request.content).toBe("ABC");
+      expect(result.request.metadata?.note).toBe("test");
+    }
+  });
+
+  it("rejects unknown fields and dangerous metadata keys", () => {
+    const withUnknown = parseInboundRequestAtBoundary({
+      id: "req-1",
+      channel: "webchat",
+      user: "owner",
+      content: "hello",
+      timestamp: 1,
+      extra: true,
+    });
+    expect(withUnknown.ok).toBe(false);
+
+    const withDangerousKey = parseInboundRequestAtBoundary({
+      id: "req-1",
+      channel: "webchat",
+      user: "owner",
+      content: "hello",
+      timestamp: 1,
+      metadata: { constructor: "pollute" },
+    });
+    expect(withDangerousKey.ok).toBe(false);
+  });
+
+  it("rejects path-like authority identifiers", () => {
+    const result = parseInboundRequestAtBoundary({
+      id: "../req",
+      channel: "webchat",
+      user: "owner",
+      content: "hello",
+      timestamp: 1,
+    });
+
+    expect(result.ok).toBe(false);
   });
 });

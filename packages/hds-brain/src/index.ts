@@ -62,6 +62,10 @@ export {
   type HDSBrainHealthOptions,
   type HDSBrainHealthPrecondition,
   type HDSBrainHealthStatus,
+  type HDSRuntimeHealthCheck,
+  type HealthCheckStatus,
+  type RuntimeDependencyCheck,
+  type RuntimePathCheck,
 } from "./health.js";
 export {
   runStandaloneHDSBrain,

@@ -74,6 +74,7 @@
 - [Update / Rollback / Recovery Runbook](UPDATE_ROLLBACK_RUNBOOK.md)
 - [Known Environment Failures](known-environment-failures.md)
 - [Doctor Output](doctor-output.md)
+- [Repository Health Inventory](repository-health-inventory.md)
 
 ## Distribution
 

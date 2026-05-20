@@ -127,7 +127,7 @@ describe("HDSUpperController.decide()", () => {
     const { log, command } = c.decide(inbound(raw, "r-unicode-llm"));
 
     expect(log.commit.decision).toBe("ASSERT");
-    expect(log.input?.raw_content).toBe(raw);
+    expect(log.input?.raw_content).toBe("hello PASS\u200B");
     expect(log.input?.normalized_content).toBe("hello PASS");
     expect(log.frame.goal).toBe("hello PASS");
     expect(command).not.toBeNull();

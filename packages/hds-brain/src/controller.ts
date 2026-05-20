@@ -6,6 +6,7 @@ import type {
   UpstreamDecision,
   LLMCallPayload,
 } from "@blue-tanuki/protocol";
+import { parseInboundRequestAtBoundary } from "@blue-tanuki/protocol";
 import type {
   ApprovalGateLog,
   AuthorityEventLog,
@@ -50,6 +51,8 @@ import { fReferenceForId } from "./f_reference.js";
 import {
   evaluateHDSBrainHealth,
   type HDSBrainHealth,
+  type RuntimeDependencyCheck,
+  type RuntimePathCheck,
 } from "./health.js";
 
 interface LongTermMemoryPort {
@@ -112,6 +115,10 @@ export interface ControllerSelfHealthOptions {
   policy_valid?: boolean;
   approval_gate_available?: boolean;
   runtime_invariants?: RuntimeInvariantEvidenceReport;
+  required_directories?: readonly RuntimePathCheck[];
+  storage_paths?: readonly RuntimePathCheck[];
+  optional_dependencies?: readonly RuntimeDependencyCheck[];
+  audit_appendable?: boolean;
 }
 
 export interface ResumeAuditOptions {
@@ -268,10 +275,81 @@ export class HDSUpperController {
    *   - OUT_OF_SCOPE → audit only; no command
    *   - FAIL         → audit only; no command
    */
-  decide(req: InboundRequest): {
+  decide(raw: unknown): {
     log: DecisionLog;
     command: ExecuteCommand | null;
   } {
+    const boundary = parseInboundRequestAtBoundary(raw);
+    if (!boundary.ok) {
+      const fallbackReq: InboundRequest = {
+        id: "invalid-inbound-boundary",
+        channel: "invalid",
+        user: "unknown",
+        content: "Invalid inbound request rejected at authority boundary",
+        timestamp: Date.now(),
+      };
+      const input = normalizeForDetection(fallbackReq.content);
+      const f = frame(fallbackReq, {
+        default_policy: this.policy,
+        memory_reader: this.memory,
+      });
+      const c = suspendCommit(
+        "authority_input_boundary",
+        boundary.reason,
+        {
+          request_id: fallbackReq.id,
+          issue_count: boundary.issues.length,
+        },
+        ["authority_input_boundary:suspend", `authority_input_boundary:${boundary.reason}`],
+      );
+      const m: ModelResult = {
+        abstraction: "authority_input_boundary:invalid",
+        structure: {
+          problem_definition_id: f.problem_definition_id,
+          validation_failure: boundary.reason,
+          issues: boundary.issues,
+          raw_input_used_for_authority: false,
+          canonical_frame_only: true,
+        },
+        scoring: {
+          axis_scores: [
+            {
+              axis: "authority_input_boundary",
+              score: 0,
+              detector: "strict_inbound_request_schema",
+              evidence: boundary.reason,
+              lifecycle: {
+                status: "ok",
+                reason: "boundary_validation_failed_closed",
+              },
+            },
+          ],
+          weights: { authority_input_boundary: 1 },
+          aggregate: 0,
+        },
+      };
+      const log: DecisionLog = {
+        request_id: fallbackReq.id,
+        input,
+        frame: f,
+        model: m,
+        commit: c,
+        timestamp: Date.now(),
+      };
+      this.audit.append(log);
+      this.state = "SUSPENDED";
+      this.suspended.set(fallbackReq.id, {
+        request_id: fallbackReq.id,
+        log,
+        suspended_at: Date.now(),
+        reason: c.reason,
+        fail_safe: true,
+        resume_allowed: false,
+      });
+      this.suspendedRequests.set(fallbackReq.id, fallbackReq);
+      return { log, command: null };
+    }
+    const req = boundary.request;
     const input = normalizeForDetection(req.content);
     const authorityReq: InboundRequest = {
       ...req,
@@ -754,6 +832,10 @@ export class HDSUpperController {
       hds_available: this.self_health.hds_available,
       policy_valid: this.self_health.policy_valid ?? this.policyStructurallyValid(),
       approval_gate_available: this.self_health.approval_gate_available,
+      required_directories: this.self_health.required_directories,
+      storage_paths: this.self_health.storage_paths,
+      optional_dependencies: this.self_health.optional_dependencies,
+      audit_appendable: this.self_health.audit_appendable,
     });
   }
 
@@ -859,6 +941,9 @@ function selfHealthModel(frameResult: DecisionLog["frame"], health: HDSBrainHeal
       },
       self_health: {
         status: health.status,
+        config_validation_status: health.config_validation_status,
+        runtime_health_status: health.runtime_health_status,
+        runtime_checks: health.runtime_checks,
         failed_preconditions: health.failed_preconditions,
         command_execution_allowed: health.command_execution_allowed,
         downstream_execution_allowed: health.downstream_execution_allowed,

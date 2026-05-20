@@ -9,11 +9,15 @@ import {
 } from "./runtime_invariants.js";
 
 export type HDSBrainHealthStatus = "ok" | "fail_safe";
+export type HealthCheckStatus = "PASS" | "WARN" | "FAIL" | "UNKNOWN";
 
 export type HDSBrainHealthPrecondition = keyof FailSafeInput;
 
 export interface HDSBrainHealth {
   status: HDSBrainHealthStatus;
+  config_validation_status: HealthCheckStatus;
+  runtime_health_status: HealthCheckStatus;
+  runtime_checks: HDSRuntimeHealthCheck[];
   hds_available: boolean;
   policy_valid: boolean;
   audit_chain_valid: boolean;
@@ -38,6 +42,30 @@ export interface HDSBrainHealthOptions {
   hds_available?: boolean;
   policy_valid?: boolean;
   approval_gate_available?: boolean;
+  required_directories?: readonly RuntimePathCheck[];
+  storage_paths?: readonly RuntimePathCheck[];
+  optional_dependencies?: readonly RuntimeDependencyCheck[];
+  audit_appendable?: boolean;
+}
+
+export interface RuntimePathCheck {
+  path: string;
+  readable?: boolean;
+  writable?: boolean;
+}
+
+export interface RuntimeDependencyCheck {
+  name: string;
+  available?: boolean;
+}
+
+export interface HDSRuntimeHealthCheck {
+  name: string;
+  status: HealthCheckStatus;
+  expected: string;
+  actual: string;
+  evidence: string;
+  used_for_authority: false;
 }
 
 export function evaluateHDSBrainHealth(
@@ -56,8 +84,13 @@ export function evaluateHDSBrainHealth(
     memory_chain_valid: snapshot.memory.chain_valid,
   };
   const failSafe = evaluateFailSafeBoundary(failSafeInput);
+  const runtime_checks = buildRuntimeChecks(snapshot, opts, runtime_invariants_ok);
+  const runtime_health_status = aggregateRuntimeStatus(runtime_checks);
   return {
     status: failSafe.allowed ? "ok" : "fail_safe",
+    config_validation_status: failSafeInput.policy_valid ? "PASS" : "FAIL",
+    runtime_health_status,
+    runtime_checks,
     hds_available: failSafeInput.hds_available,
     policy_valid: failSafeInput.policy_valid,
     audit_chain_valid: snapshot.audit.chain_valid,
@@ -76,6 +109,117 @@ export function evaluateHDSBrainHealth(
     used_for_authority: false,
     checked_at_ms: opts.now ?? Date.now(),
   };
+}
+
+function buildRuntimeChecks(
+  snapshot: HDSRuntimeSnapshot,
+  opts: HDSBrainHealthOptions,
+  runtime_invariants_ok: boolean,
+): HDSRuntimeHealthCheck[] {
+  const checks: HDSRuntimeHealthCheck[] = [
+    {
+      name: "process.uptime",
+      status: typeof process?.uptime === "function" && process.uptime() >= 0 ? "PASS" : "UNKNOWN",
+      expected: "process uptime is observable",
+      actual: typeof process?.uptime === "function" ? `${Math.round(process.uptime() * 1000)}ms` : "unavailable",
+      evidence: "Node process telemetry",
+      used_for_authority: false,
+    },
+    {
+      name: "process.memory",
+      status: typeof process?.memoryUsage === "function" ? "PASS" : "UNKNOWN",
+      expected: "process memory usage is observable",
+      actual: typeof process?.memoryUsage === "function" ? `${process.memoryUsage().rss} rss bytes` : "unavailable",
+      evidence: "Node process telemetry",
+      used_for_authority: false,
+    },
+    {
+      name: "audit.chain",
+      status: snapshot.audit.chain_valid ? "PASS" : "FAIL",
+      expected: "audit hash-chain verifies",
+      actual: snapshot.audit.chain_valid ? "valid" : "invalid",
+      evidence: `${snapshot.audit.entries} audit entries`,
+      used_for_authority: false,
+    },
+    {
+      name: "audit.appendability",
+      status: opts.audit_appendable === undefined ? "UNKNOWN" : opts.audit_appendable ? "PASS" : "FAIL",
+      expected: "audit log can append",
+      actual: opts.audit_appendable === undefined ? "not probed" : opts.audit_appendable ? "appendable" : "not appendable",
+      evidence: "caller-provided audit appendability probe",
+      used_for_authority: false,
+    },
+    {
+      name: "runtime_invariants",
+      status: runtime_invariants_ok ? "PASS" : "FAIL",
+      expected: "Runtime Invariants evidence passes",
+      actual: runtime_invariants_ok ? "all_ok" : "failed",
+      evidence: snapshot.runtime_invariants.report_digest,
+      used_for_authority: false,
+    },
+  ];
+
+  for (const item of opts.required_directories ?? []) {
+    checks.push(pathCheck(`required_directory:${item.path}`, item, true));
+  }
+  if (!opts.required_directories || opts.required_directories.length === 0) {
+    checks.push({
+      name: "required_directories",
+      status: "UNKNOWN",
+      expected: "required runtime directories are probed by the gateway",
+      actual: "no directory probe supplied",
+      evidence: "self-health was evaluated without filesystem directory probes",
+      used_for_authority: false,
+    });
+  }
+
+  for (const item of opts.storage_paths ?? []) {
+    checks.push(pathCheck(`storage_path:${item.path}`, item, true));
+  }
+  if (!opts.storage_paths || opts.storage_paths.length === 0) {
+    checks.push({
+      name: "storage_paths",
+      status: snapshot.memory.configured ? "UNKNOWN" : "PASS",
+      expected: "configured storage paths are accessible",
+      actual: snapshot.memory.configured ? "memory configured but no path probe supplied" : "no configured storage path",
+      evidence: "storage path accessibility must be supplied by the adapter that owns the path",
+      used_for_authority: false,
+    });
+  }
+
+  for (const item of opts.optional_dependencies ?? []) {
+    checks.push({
+      name: `optional_dependency:${item.name}`,
+      status: item.available === undefined ? "UNKNOWN" : item.available ? "PASS" : "WARN",
+      expected: "optional channel dependency is either available or clearly absent",
+      actual: item.available === undefined ? "not checked" : item.available ? "available" : "not available",
+      evidence: "optional downstream dependency check",
+      used_for_authority: false,
+    });
+  }
+
+  return checks;
+}
+
+function pathCheck(name: string, item: RuntimePathCheck, required: boolean): HDSRuntimeHealthCheck {
+  const readable = item.readable === true;
+  const writable = item.writable === true;
+  const unknown = item.readable === undefined || item.writable === undefined;
+  return {
+    name,
+    status: unknown ? "UNKNOWN" : readable && writable ? "PASS" : required ? "FAIL" : "WARN",
+    expected: "path is readable and writable",
+    actual: `readable=${String(item.readable)}, writable=${String(item.writable)}`,
+    evidence: item.path,
+    used_for_authority: false,
+  };
+}
+
+function aggregateRuntimeStatus(checks: readonly HDSRuntimeHealthCheck[]): HealthCheckStatus {
+  if (checks.some((check) => check.status === "FAIL")) return "FAIL";
+  if (checks.some((check) => check.status === "UNKNOWN")) return "UNKNOWN";
+  if (checks.some((check) => check.status === "WARN")) return "WARN";
+  return "PASS";
 }
 
 function nextAction(failed: HDSBrainHealthPrecondition[]): string | null {
