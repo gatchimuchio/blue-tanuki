@@ -100,4 +100,51 @@ describe("InboundRequest boundary", () => {
 
     expect(result.ok).toBe(false);
   });
+
+  it("rejects malformed timestamps, oversized content, and nested dangerous metadata", () => {
+    expect(parseInboundRequestAtBoundary({
+      id: "req-1",
+      channel: "webchat",
+      user: "owner",
+      content: "hello",
+      timestamp: Number.NaN,
+    }).ok).toBe(false);
+
+    expect(parseInboundRequestAtBoundary({
+      id: "req-1",
+      channel: "webchat",
+      user: "owner",
+      content: "x".repeat(200_001),
+      timestamp: 1,
+    }).ok).toBe(false);
+
+    expect(parseInboundRequestAtBoundary({
+      id: "req-1",
+      channel: "webchat",
+      user: "owner",
+      content: "hello",
+      timestamp: 1,
+      metadata: { safe: { prototype: "pollute" } },
+    }).ok).toBe(false);
+  });
+
+  it("normalizes unicode and blocks prototype-pollution shaped metadata", () => {
+    const polluted = JSON.parse('{"id":"req-1","channel":"webchat","user":"owner","content":"ｈｅｌｌｏ","timestamp":1,"metadata":{"__proto__":{"admin":true}}}');
+    const blocked = parseInboundRequestAtBoundary(polluted);
+    expect(blocked.ok).toBe(false);
+
+    const normalized = parseInboundRequestAtBoundary({
+      id: "req-2",
+      channel: "webchat",
+      user: "owner",
+      content: "ｈｅｌｌｏ",
+      timestamp: 1,
+      metadata: { " ｒｅｐｌｙ＿ｔｏ ": " ｌｏｃａｌ " },
+    });
+    expect(normalized.ok).toBe(true);
+    if (normalized.ok) {
+      expect(normalized.request.content).toBe("hello");
+      expect(normalized.request.metadata?.reply_to).toBe(" local ");
+    }
+  });
 });

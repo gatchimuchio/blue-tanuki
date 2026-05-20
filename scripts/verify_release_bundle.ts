@@ -17,6 +17,7 @@ interface ReleaseManifest {
     sha256?: string;
   };
   sha256_file?: string;
+  core_release_paths?: string[];
   required_paths?: string[];
   installer_paths?: string[];
   boundaries?: {
@@ -30,18 +31,6 @@ const root = process.cwd();
 
 const REQUIRED_ARCHIVE_PATHS = [
   "install/README.md",
-  "install/installer/README.md",
-  "install/installer/src/index.ts",
-  "install/installer/src/setup_flow.ts",
-  "install/installer/src/api_provisioning.ts",
-  "install/installer/src/verify.ts",
-  "install/resident/README.md",
-  "install/resident/blue-tanuki-resident.ps1",
-  "install/resident/blue-tanuki-resident.sh",
-  "install/windows/install.ps1",
-  "install/windows/uninstall.ps1",
-  "install/macos/install.sh",
-  "install/macos/uninstall.sh",
   "install/linux/install.sh",
   "install/linux/uninstall.sh",
   "apps/gateway/dist/main.js",
@@ -52,10 +41,6 @@ const REQUIRED_ARCHIVE_PATHS = [
   "docs/history/phase7-s2-approval-gate-execution-bridge.md",
   "docs/history/phase7-s3-full-access-default.md",
   "docs/history/phase7-s4-transparent-full-access-authority.md",
-  "docs/INSTALLER_GUIDE.md",
-  "docs/phase11-s9-installer-setup-ux.md",
-  "docs/RESIDENT_APP_GUIDE.md",
-  "docs/phase11-s10-resident-application-integration.md",
   "docs/CHANNEL_PROMOTION_GATE.md",
   "docs/phase11-s11-channel-first-party-promotion.md",
   "scripts/channel_promotion_gate.ts",
@@ -192,6 +177,19 @@ function assertManifest(
   }
   if (manifest.boundaries?.external_dynamic_imports_included !== false) {
     throw new Error("manifest must declare external_dynamic_imports_included=false");
+  }
+  for (const required of [
+    "packages/hds-brain",
+    "packages/protocol",
+    "packages/blue-tanuki",
+    "packages/channel-base",
+    "packages/channel-webchat",
+    "packages/channel-telegram",
+    "apps/gateway",
+  ]) {
+    if (!manifest.core_release_paths?.includes(required)) {
+      throw new Error(`manifest core_release_paths missing ${required}`);
+    }
   }
 }
 

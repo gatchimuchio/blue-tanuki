@@ -163,6 +163,10 @@ function main(): void {
   requireIncludes("install/linux/uninstall.sh", linuxUninstall, "Config retained");
 
   const releaseBundle = read("scripts/create_release_bundle.ts");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "CORE_RELEASE_PATHS");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "packages/hds-brain");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "packages/channel-webchat");
+  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "packages/channel-telegram");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/CHANNEL_PROMOTION_GATE.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/phase11-s11-channel-first-party-promotion.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "scripts/channel_promotion_gate.ts");
@@ -172,17 +176,10 @@ function main(): void {
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "scripts/ga_promotion_gate.ts");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/v1.0-ga-promotion-review.md");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "docs/phase11-s13-v1-ga-promotion-execution.md");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/README.md");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/README.md");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/blue-tanuki-resident.ps1");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/resident/blue-tanuki-resident.sh");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/installer/src/index.ts");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/windows/install.ps1");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/windows/uninstall.ps1");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/macos/install.sh");
-  requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/macos/uninstall.sh");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/linux/install.sh");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "install/linux/uninstall.sh");
+  requireNotIncludes("scripts/create_release_bundle.ts", releaseBundle, "\"packages/channel-slack\"");
+  requireNotIncludes("scripts/create_release_bundle.ts", releaseBundle, "\"install/installer\"");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, ".sha256");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, ".manifest.json");
   requireIncludes("scripts/create_release_bundle.ts", releaseBundle, "isSecretLikeFileName");
@@ -193,6 +190,7 @@ function main(): void {
   const releaseVerify = read("scripts/verify_release_bundle.ts");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "sha256");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "manifest");
+  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "core_release_paths");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "tar");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/CHANNEL_PROMOTION_GATE.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/phase11-s11-channel-first-party-promotion.md");
@@ -203,14 +201,9 @@ function main(): void {
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "scripts/ga_promotion_gate.ts");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/v1.0-ga-promotion-review.md");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "docs/phase11-s13-v1-ga-promotion-execution.md");
-  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/README.md");
-  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/README.md");
-  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/blue-tanuki-resident.ps1");
-  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/resident/blue-tanuki-resident.sh");
-  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/installer/src/index.ts");
-  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/windows/uninstall.ps1");
-  requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/macos/uninstall.sh");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "install/linux/uninstall.sh");
+  requireNotIncludes("scripts/verify_release_bundle.ts", releaseVerify, "\"packages/channel-slack\"");
+  requireNotIncludes("scripts/verify_release_bundle.ts", releaseVerify, "\"install/installer\"");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "isForbiddenFileName");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, "blue-tanuki.env.");
   requireIncludes("scripts/verify_release_bundle.ts", releaseVerify, ".env.bak");
@@ -259,6 +252,7 @@ function main(): void {
   const packageJson = read("package.json");
   requireIncludes("package.json", packageJson, "\"installer:run\"");
   requireIncludes("package.json", packageJson, "\"installer:verify\"");
+  requireIncludes("package.json", packageJson, "\"validate:repo-health\"");
   requireIncludes("package.json", packageJson, "\"validate:channels\"");
   requireIncludes("package.json", packageJson, "\"validate:ga\"");
   requireIncludes("package.json", packageJson, "\"plugin:review\"");

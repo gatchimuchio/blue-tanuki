@@ -143,6 +143,11 @@ Goal:
 - operator usability closure exists,
 - release bundle and validation pass.
 
+Repository health phase 2 adds a core release path purity gate: production
+runtime must not static-import doctor/setup/audit/installer utilities, preview
+credentials must not fail core doctor, and `pnpm validate:repo-health` must pass
+before release-path changes are considered complete.
+
 Remaining primary work:
 
 - v0.1 live smoke cleanup

@@ -91,7 +91,13 @@ export interface DoctorOptions {
   node_version?: string;
   /** Override repo root for manifest validation. Used by tests. */
   manifest_root?: string;
+  /** Override repo root for distribution-readiness validation. Used by tests. */
+  distribution_root?: string;
+  /** core=release health, preview=preview credential readiness, strict=all configured surfaces strict. */
+  mode?: DoctorMode;
 }
+
+export type DoctorMode = "core" | "preview" | "strict";
 
 type CheckDraft = Pick<CheckResult, "id" | "level" | "label" | "detail">;
 
@@ -314,6 +320,7 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
     rel: "scripts/create_release_bundle.ts",
     label: "release bundle creator",
     needles: [
+      "CORE_RELEASE_PATHS",
       "docs/CHANNEL_PROMOTION_GATE.md",
       "docs/phase11-s12-plugin-review-gate-implementation.md",
       "docs/v1.0-ga-promotion-review.md",
@@ -321,9 +328,6 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
       "scripts/ga_promotion_gate.ts",
       "scripts/plugin_review_gate.ts",
       "apps/gateway/src/plugin_review_gate.ts",
-      "install/resident/README.md",
-      "install/windows/install.ps1",
-      "install/macos/install.sh",
       "install/linux/install.sh",
       ".sha256",
       ".manifest.json",
@@ -336,8 +340,8 @@ const DISTRIBUTION_REQUIREMENTS: readonly DistributionRequirement[] = [
     needles: [
       "sha256",
       "manifest",
+      "core_release_paths",
       "isForbiddenFileName",
-      "install/resident/README.md",
       "docs/CHANNEL_PROMOTION_GATE.md",
       "scripts/plugin_review_gate.ts",
       "scripts/ga_promotion_gate.ts",
@@ -424,14 +428,18 @@ function checkRequiredEnv(env: NodeJS.ProcessEnv, name: string): CheckDraft {
   };
 }
 
-function checkOptionalEnv(env: NodeJS.ProcessEnv, name: string): CheckDraft {
+function checkOptionalEnv(
+  env: NodeJS.ProcessEnv,
+  name: string,
+  opts: { required?: boolean } = {},
+): CheckDraft {
   const v = env[name];
   if (!v) {
     return {
       id: `env:${name}`,
-      level: "warn",
+      level: opts.required ? "error" : "warn",
       label: `env ${name}`,
-      detail: "unset (optional)",
+      detail: opts.required ? "missing (required for selected doctor mode)" : "unset (optional)",
     };
   }
   return {
@@ -1449,6 +1457,9 @@ function remediationFor(check: CheckDraft): Remediation {
 export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport> {
   const env = opts.env ?? process.env;
   const node_version = opts.node_version ?? process.versions.node;
+  const mode = opts.mode ?? "core";
+  const previewRequired = mode === "preview" || mode === "strict";
+  const strictRequired = mode === "strict";
 
   const draftChecks: CheckDraft[] = [];
   draftChecks.push(checkNodeVersion(node_version));
@@ -1457,14 +1468,14 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   draftChecks.push(checkWebchatTokenSeparation(env));
   draftChecks.push(checkWebhookToken(env));
   draftChecks.push(checkSettingsToken(env));
-  draftChecks.push(checkOptionalEnv(env, "SLACK_BOT_TOKEN"));
-  draftChecks.push(checkOptionalEnv(env, "SLACK_APP_TOKEN"));
-  draftChecks.push(checkOptionalEnv(env, "DISCORD_BOT_TOKEN"));
-  draftChecks.push(checkOptionalEnv(env, "MICROSOFT_GRAPH_ACCESS_TOKEN"));
-  draftChecks.push(checkOptionalEnv(env, "LINE_CHANNEL_ACCESS_TOKEN"));
-  draftChecks.push(checkOptionalEnv(env, "ANTHROPIC_API_KEY"));
-  draftChecks.push(checkOptionalEnv(env, "GITHUB_TOKEN"));
-  draftChecks.push(checkOptionalEnv(env, "BLUE_TANUKI_GITHUB_REPOS"));
+  draftChecks.push(checkOptionalEnv(env, "SLACK_BOT_TOKEN", { required: previewRequired }));
+  draftChecks.push(checkOptionalEnv(env, "SLACK_APP_TOKEN", { required: previewRequired }));
+  draftChecks.push(checkOptionalEnv(env, "DISCORD_BOT_TOKEN", { required: previewRequired }));
+  draftChecks.push(checkOptionalEnv(env, "MICROSOFT_GRAPH_ACCESS_TOKEN", { required: previewRequired }));
+  draftChecks.push(checkOptionalEnv(env, "LINE_CHANNEL_ACCESS_TOKEN", { required: previewRequired }));
+  draftChecks.push(checkOptionalEnv(env, "ANTHROPIC_API_KEY", { required: strictRequired }));
+  draftChecks.push(checkOptionalEnv(env, "GITHUB_TOKEN", { required: strictRequired }));
+  draftChecks.push(checkOptionalEnv(env, "BLUE_TANUKI_GITHUB_REPOS", { required: strictRequired }));
   draftChecks.push(checkLlmBackend(env));
   draftChecks.push(checkLlmCommandRoute(env));
   draftChecks.push(checkCronSchedules(env));
@@ -1475,7 +1486,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
   draftChecks.push(await checkShellRoot(env));
   draftChecks.push(await checkBundledManifests(opts.manifest_root));
   draftChecks.push(await checkCompatibilityMatrix(opts.manifest_root));
-  draftChecks.push(await checkDistributionReadiness(opts.manifest_root));
+  draftChecks.push(await checkDistributionReadiness(opts.distribution_root));
 
   if (opts.probe_port !== false) {
     const port = parseInt(env.WEBCHAT_PORT ?? "8787", 10);
@@ -1485,7 +1496,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
 
   const checks = draftChecks.map(enrichCheck);
   const has_error = checks.some((c) => c.level === "error");
-  const has_warn = checks.some((c) => c.level === "warn");
+  const has_warn = checks.some((c) => c.level === "warn" && !c.safe_to_ignore);
   const exit_code: 0 | 1 | 2 = has_error ? 2 : has_warn ? 1 : 0;
 
   return {

@@ -75,6 +75,8 @@
 - [Known Environment Failures](known-environment-failures.md)
 - [Doctor Output](doctor-output.md)
 - [Repository Health Inventory](repository-health-inventory.md)
+- [Production Import Graph](production-import-graph.md)
+- [Preview Scope](preview-scope.md)
 
 ## Distribution
 

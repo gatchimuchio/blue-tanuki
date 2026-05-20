@@ -37,14 +37,9 @@ import type {
   ExecuteFeedback,
   InboundRequest,
 } from "@blue-tanuki/protocol";
-import {
-  DAILY_OPERATOR_REQUIRED_PERMISSIONS,
-  type DailySurfaceSnapshot,
-} from "@blue-tanuki/operator-daily";
-import {
-  DEVELOPER_OPERATOR_REQUIRED_PERMISSIONS,
-  type DeveloperSurfaceSnapshot,
-} from "@blue-tanuki/operator-developer";
+import { parseInboundRequestAtBoundary } from "@blue-tanuki/protocol";
+import type { DailySurfaceSnapshot } from "@blue-tanuki/operator-daily";
+import type { DeveloperSurfaceSnapshot } from "@blue-tanuki/operator-developer";
 import type {
   WebChatChannel,
   WebChatApprovalQueueItem,
@@ -54,10 +49,7 @@ import type {
   WebChatHistorySnapshot,
   WebChatResumeContext,
 } from "@blue-tanuki/channel-webchat";
-import {
-  WRITING_OPERATOR_REQUIRED_PERMISSIONS,
-  type WritingSurfaceSnapshot,
-} from "@blue-tanuki/operator-writing";
+import type { WritingSurfaceSnapshot } from "@blue-tanuki/operator-writing";
 import { renderCommandOutput } from "./result_render.js";
 import { approvalDeniedFeedback, approvalRequiredMessage, buildApprovalRuntime } from "./approval_runtime.js";
 import { loadPluginRuntime } from "./plugin_loader.js";
@@ -68,13 +60,9 @@ import {
   RuntimeScheduleManager,
   runtimeScheduleMutationCommand,
 } from "./runtime_schedule.js";
-import {
-  auditDumpReportFromLog,
-  formatAuditJsonReport,
-  formatAuditTextReport,
-} from "./audit_dump.js";
 import { buildRuntimeStatusSnapshot } from "./runtime_status.js";
 import { buildResidentNotificationsSnapshot } from "./resident_notifications.js";
+import { probeGatewaySelfHealth } from "./runtime_health.js";
 
 /**
  * Gateway serve mode.
@@ -97,6 +85,75 @@ const teamsLog = createLogger({ scope: "teams" });
 const lineLog = createLogger({ scope: "line" });
 const telegramLog = createLogger({ scope: "telegram" });
 const cronLog = createLogger({ scope: "cron" });
+
+const DAILY_OPERATOR_REQUIRED_PERMISSIONS = [
+  "tool:schedule.list",
+  "tool:schedule.create",
+  "tool:schedule.update",
+  "tool:schedule.delete",
+  "schedule:read",
+  "schedule:create",
+  "schedule:update",
+  "schedule:delete",
+  "tool:gmail.read",
+  "tool:google.calendar.read",
+  "tool:google.drive.read",
+  "tool:gmail.write",
+  "tool:google.calendar.write",
+  "tool:google.drive.write",
+  "network:googleapis.com",
+  "secrets:GOOGLE_ACCESS_TOKEN",
+  "secrets:GMAIL_ACCESS_TOKEN",
+  "secrets:GOOGLE_CALENDAR_ACCESS_TOKEN",
+  "secrets:GOOGLE_DRIVE_ACCESS_TOKEN",
+  "google:gmail.read",
+  "google:calendar.read",
+  "google:drive.read",
+  "google:gmail.write",
+  "google:calendar.write",
+  "google:drive.write",
+  "channel:send",
+  "external:send",
+  "email:send",
+] as const;
+const DEVELOPER_OPERATOR_REQUIRED_PERMISSIONS = [
+  "tool:file.search",
+  "fs:read",
+  "tool:file.write",
+  "tool:file.edit",
+  "fs:write",
+  "tool:github.read",
+  "tool:github.write",
+  "network:github.com",
+  "secrets:GITHUB_TOKEN",
+  "github:issue.write",
+  "github:pr.write",
+  "github:comment.write",
+  "tool:browser.snapshot",
+  "tool:browser.automation",
+  "browser:snapshot",
+  "browser:act",
+  "network:http",
+  "tool:shell.exec",
+  "shell:exec",
+] as const;
+const WRITING_OPERATOR_REQUIRED_PERMISSIONS = [
+  "tool:file.search",
+  "fs:read",
+  "tool:file.write",
+  "tool:file.edit",
+  "fs:write",
+  "tool:gmail.write",
+  "tool:google.drive.write",
+  "network:googleapis.com",
+  "secrets:GOOGLE_ACCESS_TOKEN",
+  "secrets:GMAIL_ACCESS_TOKEN",
+  "secrets:GOOGLE_DRIVE_ACCESS_TOKEN",
+  "google:gmail.write",
+  "google:drive.write",
+  "external:send",
+  "email:send",
+] as const;
 
 interface PendingApproval {
   command: ExecuteCommand;
@@ -142,10 +199,12 @@ export async function serve(): Promise<ServeShutdown> {
   plugins.registerTools(tools);
   const llm = buildLLMBackendFromEnv();
 
+  const runtimeSelfHealth = await probeGatewaySelfHealth(process.env);
   const hds = new HDSUpperController({
     audit: buildAuditLog(),
     memory: buildHDSMemoryStore(process.env),
     llm_route: buildLLMCommandRouteFromEnv(),
+    self_health: runtimeSelfHealth,
   });
   const completeHistoryFile = nonEmptyEnv(process.env.BLUE_TANUKI_COMPLETE_HISTORY_FILE);
   const completeHistoryMaxEntries = parsePositiveInt(process.env.BLUE_TANUKI_COMPLETE_HISTORY_MAX_ENTRIES);
@@ -507,6 +566,11 @@ export async function serve(): Promise<ServeShutdown> {
       },
       audit: {
         dump: async (format: "json" | "text") => {
+          const {
+            auditDumpReportFromLog,
+            formatAuditJsonReport,
+            formatAuditTextReport,
+          } = await import("./audit_dump.js");
           const report = auditDumpReportFromLog(hds.getAudit());
           return format === "text"
             ? {
@@ -920,28 +984,32 @@ export async function serve(): Promise<ServeShutdown> {
   });
 
   const handler = async (req: InboundRequest): Promise<void> => {
+    const boundary = parseInboundRequestAtBoundary(req);
+    const authorityReq = boundary.ok ? boundary.request : req;
     recordCompleteHistory({
       kind: "user_input",
-      request_id: req.id,
-      actor: req.user,
-      source: req.channel,
-      timestamp: req.timestamp,
+      request_id: authorityReq.id,
+      actor: authorityReq.user,
+      source: authorityReq.channel,
+      timestamp: authorityReq.timestamp,
       payload: {
-        channel: req.channel,
-        user: req.user,
-        content_digest: digestString(req.content),
-        content_chars: req.content.length,
-        metadata_keys: metadataKeys(req.metadata),
-        reply_to_present: typeof req.metadata?.["reply_to"] === "string",
-        webhook_source: typeof req.metadata?.["webhook_source"] === "string"
-          ? req.metadata["webhook_source"]
+        channel: authorityReq.channel,
+        user: authorityReq.user,
+        content_digest: digestString(authorityReq.content),
+        content_chars: authorityReq.content.length,
+        metadata_keys: metadataKeys(authorityReq.metadata),
+        boundary_status: boundary.ok ? "canonical" : "invalid_fail_closed",
+        boundary_issues_count: boundary.ok ? 0 : boundary.issues.length,
+        reply_to_present: typeof authorityReq.metadata?.["reply_to"] === "string",
+        webhook_source: typeof authorityReq.metadata?.["webhook_source"] === "string"
+          ? authorityReq.metadata["webhook_source"]
           : undefined,
-        operator_surface: typeof req.metadata?.["blue_tanuki.operator_surface"] === "string"
-          ? req.metadata["blue_tanuki.operator_surface"]
+        operator_surface: typeof authorityReq.metadata?.["blue_tanuki.operator_surface"] === "string"
+          ? authorityReq.metadata["blue_tanuki.operator_surface"]
           : undefined,
       },
     });
-    const { log, command } = hds.decide(req);
+    const { log, command } = hds.decide(authorityReq);
     recordCompleteHistory({
       kind: "hds_decision",
       request_id: log.request_id,

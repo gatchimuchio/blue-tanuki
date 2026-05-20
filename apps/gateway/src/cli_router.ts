@@ -14,7 +14,12 @@ async function runDoctorCli(): Promise<void> {
     "./doctor.js"
   );
   const json = process.argv.includes("--json");
-  const report = await runDoctor();
+  const mode = process.argv.includes("--strict")
+    ? "strict"
+    : process.argv.includes("--preview")
+    ? "preview"
+    : "core";
+  const report = await runDoctor({ mode });
   if (json) {
     writeStdout(formatJsonReport(report));
   } else {

@@ -39,6 +39,7 @@
 | `scripts/typecheck.mjs` | CORE | kept; wraps TypeScript project references |
 | `scripts/check_docs.mjs` | CORE | kept; release docs consistency gate |
 | `scripts/validate_packaging.ts` | CORE | kept; package/release path validation |
+| `scripts/repo_health_gate.ts` | CORE | kept; regression gate for runtime import purity and preview/core release boundary |
 | `scripts/create_release_bundle.ts` | CORE | kept; release bundle production |
 | `scripts/verify_release_bundle.ts` | CORE | kept; release verification |
 | `scripts/smoke_serve.ts` | CORE | kept; root workspace smoke entrypoint |
@@ -67,11 +68,19 @@
 - tsconfig references include CORE and PREVIEW packages so typecheck covers the full repository.
 - v0.1 release path is CORE-first; PREVIEW package type/test coverage may remain in validation without becoming release scope.
 - workspace dependencies from `apps/gateway` currently include preview adapters because the gateway can host them, but promotion remains gated by compatibility matrix and channel promotion evidence.
+- core release bundle allowlist is declared as `CORE_RELEASE_PATHS` in `scripts/create_release_bundle.ts`; preview packages, operator packages, installer/resident helpers, Windows/macOS installers, and credential-dependent live smoke are excluded from that allowlist.
 
 ## Health Phase Decisions
 
 - native Linux / WSL baseline uses Corepack pnpm 9.12.0.
 - Windows-native fallback wrappers are not added.
 - production runtime entry no longer imports doctor/audit/setup modules directly; those are routed through `cli_router.ts`.
+- `serve.ts` no longer static-imports audit dump formatting or operator package runtime constants; audit dump is dynamic on owner request and operator packages remain plugin-loaded downstream surfaces.
 - raw inbound objects must pass strict boundary validation and canonicalization before HDS-BRAIN receives an authority frame.
-- self-health now separates config validation from runtime health evidence. Runtime evidence uses PASS / WARN / FAIL / UNKNOWN and remains `used_for_authority=false`.
+- gateway now supplies real self-health probes for required runtime directories, configured memory file appendability, audit appendability, process telemetry, audit chain validity, and Runtime Invariants. Runtime evidence uses PASS / WARN / FAIL / UNKNOWN and remains `used_for_authority=false`.
+- core doctor treats missing preview credentials as WARN with `exit_code=0`; `doctor --preview` and `doctor --strict` fail missing credentials for their selected validation scope.
+
+## Phase 2 Added Docs
+
+- `docs/production-import-graph.md`
+- `docs/preview-scope.md`

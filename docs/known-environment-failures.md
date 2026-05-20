@@ -50,6 +50,23 @@ If either smoke check fails:
 - inspect child gateway logs before changing product code
 - report platform-specific failures separately from CI failures
 
+## Doctor preview credentials
+
+Missing Slack / Discord / Teams / LINE credentials are not a core release
+environment failure. In default mode, `pnpm run doctor` reports them as WARN and
+can still exit 0 when core health is otherwise good.
+
+Use these modes deliberately:
+
+```bash
+pnpm run doctor
+pnpm run doctor -- --preview
+pnpm run doctor -- --strict
+```
+
+`--preview` treats preview channel credentials as required for readiness.
+`--strict` treats optional external surfaces as required for full validation.
+
 ## Report Format
 
 For any environment-limited validation, report:

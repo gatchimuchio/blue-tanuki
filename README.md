@@ -39,6 +39,7 @@ BLUE-TANUKI is a local resident AI control plane.
 - WhatsApp is not a first-party core target. It is `reserved-third-party` and may only be approached through the generic adapter interface.
 - Google integrations are credential-scoped downstream tools. Reads are summary/metadata only; writes are bounded and always final-review.
 - Teams / LINE are preview channel adapters until owner-run credentialed live smoke and permanent-use recovery are verified.
+- Preview channels, operator packages, installer/resident helpers, and historical phase docs are excluded from the core release allowlist. See [docs/preview-scope.md](./docs/preview-scope.md).
 - Voice / Mobile / rich Canvas are deferred to v0.2+.
 - Public third-party Skill registry is intentionally excluded.
 - Plugin / skill / third-party adapter review evidence is downstream-only and cannot approve, execute, classify risk, or promote support status.
@@ -120,6 +121,7 @@ pnpm gateway:serve
 ## Preview channels
 
 Slack, Discord, Teams, and LINE are downstream preview channels. Missing credentials are safe: adapters stay in silent fail-closed mode and `pnpm smoke:live` reports SKIP unless credentials and live targets are set.
+Core doctor reports missing preview credentials as WARN without failing the core health check. Use `pnpm run doctor -- --preview` for preview channel readiness and `pnpm run doctor -- --strict` for strict optional-surface validation.
 Phase 11-S11 adds `pnpm validate:channels` as the promotion gate: these channels do not become `first-party` until owner-run credentialed live smoke and recovery evidence are recorded. Teams and LINE also require gateway-owned inbound listener closure before promotion.
 
 ```bash

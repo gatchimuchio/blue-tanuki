@@ -362,8 +362,7 @@ describe("runDoctor — happy paths", () => {
       probe_port: false,
       node_version: "22.14.0",
     });
-    // Optional env unset → warns are present, so default would be 1.
-    // Set the optionals too for a clean OK.
+    // Optional preview env unset still emits WARN, but core doctor stays green.
     const r2 = await runDoctor({
       env: {
         ...baseEnv(),
@@ -381,17 +380,16 @@ describe("runDoctor — happy paths", () => {
     });
     expect(r2.exit_code).toBe(0);
     expect(r2.ok).toBe(true);
-    // r is included to demonstrate the warn-only behavior below.
-    expect(r.exit_code).toBe(1);
+    expect(r.exit_code).toBe(0);
   });
 
-  it("emits warns for unset optional envs (exit_code=1)", async () => {
+  it("emits safe-to-ignore warns for unset optional preview envs in core mode", async () => {
     const r = await runDoctor({
       env: baseEnv(),
       probe_port: false,
       node_version: "22.14.0",
     });
-    expect(r.exit_code).toBe(1);
+    expect(r.exit_code).toBe(0);
     expect(r.ok).toBe(true);
     const warned = r.checks.filter((c) => c.level === "warn").map((c) => c.id);
     expect(warned).toEqual(
@@ -402,6 +400,18 @@ describe("runDoctor — happy paths", () => {
         "env:LINE_CHANNEL_ACCESS_TOKEN",
       ]),
     );
+  });
+
+  it("fails preview mode when preview channel credentials are missing", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+      mode: "preview",
+    });
+    expect(r.exit_code).toBe(2);
+    expect(r.ok).toBe(false);
+    expect(r.checks.find((c) => c.id === "env:SLACK_BOT_TOKEN")?.level).toBe("error");
   });
 
   it("accepts configured read-only Google Daily Brief source", async () => {
@@ -904,7 +914,7 @@ describe("runDoctor — bundled manifests", () => {
       });
       const c = r.checks.find((x) => x.id === "manifests");
       expect(c?.level).toBe("ok");
-      expect(r.exit_code).toBe(1);
+      expect(r.exit_code).toBe(0);
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }
@@ -1042,7 +1052,7 @@ describe("runDoctor - distribution readiness gate", () => {
         env: baseEnv(),
         probe_port: false,
         node_version: "22.14.0",
-        manifest_root: root,
+        distribution_root: root,
       });
       const detail = r.checks.find((x) => x.id === "distribution_readiness")?.detail ?? "";
       expect(detail).toContain("install/README.md");

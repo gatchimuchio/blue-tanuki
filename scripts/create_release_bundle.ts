@@ -10,6 +10,16 @@ interface PackageJson {
 
 const root = process.cwd();
 
+const CORE_RELEASE_PATHS = [
+  "apps/gateway",
+  "packages/hds-brain",
+  "packages/protocol",
+  "packages/blue-tanuki",
+  "packages/channel-base",
+  "packages/channel-webchat",
+  "packages/channel-telegram",
+] as const;
+
 const INCLUDED_PATHS = [
   ".dockerignore",
   ".github",
@@ -17,33 +27,21 @@ const INCLUDED_PATHS = [
   "CHANGELOG.md",
   "Dockerfile",
   "README.md",
-  "apps",
   "deploy",
   "docker-compose.yml",
   "docs",
-  "install",
+  "install/linux",
+  "install/README.md",
   "package.json",
-  "packages",
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
   "scripts",
   "tsconfig.base.json",
+  ...CORE_RELEASE_PATHS,
 ] as const;
 
 const REQUIRED_PATHS = [
   "install/README.md",
-  "install/installer/README.md",
-  "install/installer/src/index.ts",
-  "install/installer/src/setup_flow.ts",
-  "install/installer/src/api_provisioning.ts",
-  "install/installer/src/verify.ts",
-  "install/resident/README.md",
-  "install/resident/blue-tanuki-resident.ps1",
-  "install/resident/blue-tanuki-resident.sh",
-  "install/windows/install.ps1",
-  "install/windows/uninstall.ps1",
-  "install/macos/install.sh",
-  "install/macos/uninstall.sh",
   "install/linux/install.sh",
   "install/linux/uninstall.sh",
   "apps/gateway/dist/main.js",
@@ -54,10 +52,6 @@ const REQUIRED_PATHS = [
   "docs/history/phase7-s2-approval-gate-execution-bridge.md",
   "docs/history/phase7-s3-full-access-default.md",
   "docs/history/phase7-s4-transparent-full-access-authority.md",
-  "docs/INSTALLER_GUIDE.md",
-  "docs/phase11-s9-installer-setup-ux.md",
-  "docs/RESIDENT_APP_GUIDE.md",
-  "docs/phase11-s10-resident-application-integration.md",
   "docs/CHANNEL_PROMOTION_GATE.md",
   "docs/phase11-s11-channel-first-party-promotion.md",
   "scripts/channel_promotion_gate.ts",
@@ -70,18 +64,6 @@ const REQUIRED_PATHS = [
 ] as const;
 
 const INSTALLER_PATHS = [
-  "install/installer/README.md",
-  "install/installer/src/index.ts",
-  "install/installer/src/setup_flow.ts",
-  "install/installer/src/api_provisioning.ts",
-  "install/installer/src/verify.ts",
-  "install/resident/README.md",
-  "install/resident/blue-tanuki-resident.ps1",
-  "install/resident/blue-tanuki-resident.sh",
-  "install/windows/install.ps1",
-  "install/windows/uninstall.ps1",
-  "install/macos/install.sh",
-  "install/macos/uninstall.sh",
   "install/linux/install.sh",
   "install/linux/uninstall.sh",
 ] as const;
@@ -119,6 +101,7 @@ interface ReleaseManifest {
   };
   sha256_file: string;
   included_paths: readonly string[];
+  core_release_paths: readonly string[];
   required_paths: readonly string[];
   installer_paths: readonly string[];
   boundaries: {
@@ -264,6 +247,7 @@ async function writeIntegrityFiles(
     },
     sha256_file: shaFileName,
     included_paths: INCLUDED_PATHS,
+    core_release_paths: CORE_RELEASE_PATHS,
     required_paths: REQUIRED_PATHS,
     installer_paths: INSTALLER_PATHS,
     boundaries: {
