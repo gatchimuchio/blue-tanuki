@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import * as path from "node:path";
 
 interface PackageJson {
@@ -28,6 +28,7 @@ interface ReleaseManifest {
 }
 
 const root = process.cwd();
+const VERIFY_WORK_DIR = path.join(root, ".codex-tmp", "release-verify");
 
 const REQUIRED_ARCHIVE_PATHS = [
   "install/README.md",
@@ -280,6 +281,58 @@ function assertSafeEntries(entries: string[]): void {
   }
 }
 
+function extractArchive(archiveFile: string, destination: string): void {
+  rmSync(destination, { recursive: true, force: true });
+  mkdirSync(destination, { recursive: true });
+  if (archiveFile.endsWith(".tar.gz") || archiveFile.endsWith(".tgz")) {
+    const result = spawnSync("tar", ["-xzf", archiveFile, "-C", destination], { encoding: "utf8" });
+    if (result.status !== 0) {
+      throw new Error(`tar extract failed: ${result.stderr || result.stdout}`);
+    }
+    return;
+  }
+  if (archiveFile.endsWith(".zip")) {
+    const result = spawnSync("powershell.exe", [
+      "-NoProfile",
+      "-Command",
+      `Expand-Archive -LiteralPath ${JSON.stringify(archiveFile)} -DestinationPath ${JSON.stringify(destination)} -Force`,
+    ], { encoding: "utf8" });
+    if (result.status !== 0) {
+      throw new Error(`zip extract failed: ${result.stderr || result.stdout}`);
+    }
+    return;
+  }
+  throw new Error(`unsupported archive extension: ${archiveFile}`);
+}
+
+function runInExtractedBundle(command: string, args: readonly string[], cwd: string): void {
+  const result = spawnSync(command, [...args], {
+    cwd,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      CI: process.env.CI ?? "1",
+    },
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `extracted release command failed: ${command} ${args.join(" ")}\n` +
+        `${result.stdout}\n${result.stderr}`.trim(),
+    );
+  }
+}
+
+function assertExtractedInstallability(archiveFile: string): void {
+  extractArchive(archiveFile, VERIFY_WORK_DIR);
+  const extractedRoot = path.join(VERIFY_WORK_DIR, "blue-tanuki");
+  if (!existsSync(path.join(extractedRoot, "package.json"))) {
+    throw new Error("extracted release bundle missing package.json");
+  }
+  runInExtractedBundle("corepack", ["pnpm", "install", "--frozen-lockfile"], extractedRoot);
+  runInExtractedBundle("corepack", ["pnpm", "build"], extractedRoot);
+  rmSync(VERIFY_WORK_DIR, { recursive: true, force: true });
+}
+
 function main(): void {
   const archiveFile = path.resolve(argValue("--file") ?? defaultArchivePath());
   const { shaFile, manifestFile } = integrityPaths(archiveFile);
@@ -300,6 +353,7 @@ function main(): void {
   const entries = listArchiveEntries(archiveFile);
   assertRequiredEntries(entries);
   assertSafeEntries(entries);
+  assertExtractedInstallability(archiveFile);
 
   console.log(`[release:verify] PASS ${archiveFile}`);
   console.log(`[release:verify] sha256 ${actualSha}`);

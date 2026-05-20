@@ -67,18 +67,19 @@
 
 - tsconfig references include CORE and PREVIEW packages so typecheck covers the full repository.
 - v0.1 release path is CORE-first; PREVIEW package type/test coverage may remain in validation without becoming release scope.
-- workspace dependencies from `apps/gateway` currently include preview adapters because the gateway can host them, but promotion remains gated by compatibility matrix and channel promotion evidence.
+- `apps/gateway` hard dependencies are core-only. Preview adapters and operator packages are discovered through plugin manifests in the full workspace and skipped when absent from the extracted core release bundle.
 - core release bundle allowlist is declared as `CORE_RELEASE_PATHS` in `scripts/create_release_bundle.ts`; preview packages, operator packages, installer/resident helpers, Windows/macOS installers, and credential-dependent live smoke are excluded from that allowlist.
 
 ## Health Phase Decisions
 
 - native Linux / WSL baseline uses Corepack pnpm 9.12.0.
 - Windows-native fallback wrappers are not added.
-- production runtime entry no longer imports doctor/audit/setup modules directly; those are routed through `cli_router.ts`.
-- `serve.ts` no longer static-imports audit dump formatting or operator package runtime constants; audit dump is dynamic on owner request and operator packages remain plugin-loaded downstream surfaces.
-- raw inbound objects must pass strict boundary validation and canonicalization before HDS-BRAIN receives an authority frame.
-- gateway now supplies real self-health probes for required runtime directories, configured memory file appendability, audit appendability, process telemetry, audit chain validity, and Runtime Invariants. Runtime evidence uses PASS / WARN / FAIL / UNKNOWN and remains `used_for_authority=false`.
+- production runtime entry no longer imports doctor/audit/setup modules directly; those are command-gated dynamic imports from `cli_router.ts`, and the eager `main -> cli_router` graph does not load serve/runtime/doctor/setup/audit tools.
+- `serve.ts` no longer imports audit dump formatting or operator package runtime constants; operator packages remain plugin-loaded downstream surfaces and are skipped when absent from core release extraction.
+- raw inbound objects must pass strict boundary validation and canonicalization before HDS-BRAIN receives an authority frame. Invalid gateway inbound values are replaced with a safe fallback request and only boundary failure metadata is recorded.
+- gateway now supplies self-health probes for required runtime directories, configured memory file appendability, audit appendability, process telemetry, audit chain validity, and Runtime Invariants. The serve-time probe is repair-capable and may create configured runtime directories; read-only mode is available for non-mutating checks. Runtime evidence uses PASS / WARN / FAIL / UNKNOWN and remains `used_for_authority=false`. Persistent audit and memory-only audit are distinguished.
 - core doctor treats missing preview credentials as WARN with `exit_code=0`; `doctor --preview` and `doctor --strict` fail missing credentials for their selected validation scope.
+- `release:verify` extracts the bundle and verifies install/build inside the extracted core release tree.
 
 ## Phase 2 Added Docs
 

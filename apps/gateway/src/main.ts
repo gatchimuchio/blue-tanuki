@@ -2,7 +2,6 @@ import { createLogger } from "@blue-tanuki/core";
 import { runGatewayCliRouter } from "./cli_router.js";
 
 export { buildAuditLog, AUDIT_FILENAME } from "./audit_config.js";
-export { buildHDSMemoryStore, buildSessionStore, runCli } from "./runtime.js";
 
 const gatewayLog = createLogger({ scope: "gateway" });
 

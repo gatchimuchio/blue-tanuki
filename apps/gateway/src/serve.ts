@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   COMPLETE_HISTORY_SCHEMA_VERSION,
   CompleteHistoryStore,
@@ -38,8 +38,6 @@ import type {
   InboundRequest,
 } from "@blue-tanuki/protocol";
 import { parseInboundRequestAtBoundary } from "@blue-tanuki/protocol";
-import type { DailySurfaceSnapshot } from "@blue-tanuki/operator-daily";
-import type { DeveloperSurfaceSnapshot } from "@blue-tanuki/operator-developer";
 import type {
   WebChatChannel,
   WebChatApprovalQueueItem,
@@ -49,7 +47,6 @@ import type {
   WebChatHistorySnapshot,
   WebChatResumeContext,
 } from "@blue-tanuki/channel-webchat";
-import type { WritingSurfaceSnapshot } from "@blue-tanuki/operator-writing";
 import { renderCommandOutput } from "./result_render.js";
 import { approvalDeniedFeedback, approvalRequiredMessage, buildApprovalRuntime } from "./approval_runtime.js";
 import { loadPluginRuntime } from "./plugin_loader.js";
@@ -164,10 +161,58 @@ interface PendingApproval {
   approval_token_expires_at_ms?: number;
 }
 
+type OperatorSnapshot = Record<string, unknown>;
+type DailySurfaceSnapshotFn = (input: {
+  env: NodeJS.ProcessEnv;
+  scheduled_tasks: readonly unknown[];
+  runtime_schedules: readonly unknown[];
+}) => OperatorSnapshot;
+type OperatorSurfaceSnapshotFn = () => OperatorSnapshot;
+
+export interface GatewayInboundBoundaryResult {
+  request: InboundRequest;
+  boundary_ok: boolean;
+  boundary_issues: readonly string[];
+}
+
 /** Resolve the address to send replies back to. */
 function replyTarget(req: InboundRequest): string {
   const m = req.metadata?.["reply_to"];
   return typeof m === "string" && m.length > 0 ? m : req.user;
+}
+
+export function canonicalizeGatewayInbound(raw: unknown): GatewayInboundBoundaryResult {
+  const boundary = parseInboundRequestAtBoundary(raw);
+  if (boundary.ok) {
+    return { request: boundary.request, boundary_ok: true, boundary_issues: [] };
+  }
+  return {
+    request: {
+      id: `invalid-gateway-boundary-${randomUUID()}`,
+      channel: "invalid",
+      user: "unknown",
+      content: "Invalid inbound request rejected at gateway boundary. Do not execute. rm -rf /",
+      timestamp: Date.now(),
+      metadata: {
+        "blue_tanuki.boundary_failure": "gateway_inbound",
+      },
+    },
+    boundary_ok: false,
+    boundary_issues: boundary.issues,
+  };
+}
+
+function unavailableOperatorSurface(surface: "daily" | "developer" | "writing"): OperatorSnapshot {
+  return {
+    surface,
+    layer: "A",
+    status: "preview_unavailable",
+    authority: "hds_brain_downstream_device",
+    replaces_authority: false,
+    raw_authority_added: false,
+    operations: [],
+    next_recommended_action: `Install the ${surface} operator preview package outside the core release path if this surface is needed.`,
+  };
 }
 
 export async function serve(): Promise<ServeShutdown> {
@@ -175,21 +220,30 @@ export async function serve(): Promise<ServeShutdown> {
   plugins.enforceLLMConfig(process.env);
   plugins.enforceSessionConfig(process.env);
   plugins.enforceAuditConfig(process.env);
-  const dailySurfaceSnapshot = plugins.getSurface<typeof import("@blue-tanuki/operator-daily").getDailySurfaceSnapshot>({
-    package_name: "@blue-tanuki/operator-daily",
-    required_permissions: DAILY_OPERATOR_REQUIRED_PERMISSIONS,
-    action: "register daily operator surface",
-  });
-  const developerSurfaceSnapshot = plugins.getSurface<() => DeveloperSurfaceSnapshot>({
-    package_name: "@blue-tanuki/operator-developer",
-    required_permissions: DEVELOPER_OPERATOR_REQUIRED_PERMISSIONS,
-    action: "register developer operator surface",
-  });
-  const writingSurfaceSnapshot = plugins.getSurface<() => WritingSurfaceSnapshot>({
-    package_name: "@blue-tanuki/operator-writing",
-    required_permissions: WRITING_OPERATOR_REQUIRED_PERMISSIONS,
-    action: "register writing operator surface",
-  });
+  const dailySurfaceSnapshot: DailySurfaceSnapshotFn =
+    plugins.has("@blue-tanuki/operator-daily")
+      ? plugins.getSurface<DailySurfaceSnapshotFn>({
+          package_name: "@blue-tanuki/operator-daily",
+          required_permissions: DAILY_OPERATOR_REQUIRED_PERMISSIONS,
+          action: "register daily operator surface",
+        })
+      : () => unavailableOperatorSurface("daily");
+  const developerSurfaceSnapshot: OperatorSurfaceSnapshotFn =
+    plugins.has("@blue-tanuki/operator-developer")
+      ? plugins.getSurface<OperatorSurfaceSnapshotFn>({
+          package_name: "@blue-tanuki/operator-developer",
+          required_permissions: DEVELOPER_OPERATOR_REQUIRED_PERMISSIONS,
+          action: "register developer operator surface",
+        })
+      : () => unavailableOperatorSurface("developer");
+  const writingSurfaceSnapshot: OperatorSurfaceSnapshotFn =
+    plugins.has("@blue-tanuki/operator-writing")
+      ? plugins.getSurface<OperatorSurfaceSnapshotFn>({
+          package_name: "@blue-tanuki/operator-writing",
+          required_permissions: WRITING_OPERATOR_REQUIRED_PERMISSIONS,
+          action: "register writing operator surface",
+        })
+      : () => unavailableOperatorSurface("writing");
 
   gatewayLog.info("BLUE-TANUKI starting (Phase 5-S2: plugin-loaded serve mode)");
   gatewayLog.info("LLM config", describeLLMConfig());
@@ -551,7 +605,7 @@ export async function serve(): Promise<ServeShutdown> {
                 env: process.env,
                 scheduled_tasks: scheduledTasks,
                 runtime_schedules: runtimeScheduleSnapshot,
-              }) satisfies DailySurfaceSnapshot,
+              }),
               developer: developerSurfaceSnapshot(),
               writing: writingSurfaceSnapshot(),
             },
@@ -566,20 +620,38 @@ export async function serve(): Promise<ServeShutdown> {
       },
       audit: {
         dump: async (format: "json" | "text") => {
-          const {
-            auditDumpReportFromLog,
-            formatAuditJsonReport,
-            formatAuditTextReport,
-          } = await import("./audit_dump.js");
-          const report = auditDumpReportFromLog(hds.getAudit());
+          const entries = hds.getAudit().list();
+          const chainValid = hds.getAudit().verify();
+          const report = {
+            status: entries.length === 0 ? "empty" : chainValid ? "ok" : "broken",
+            exit_code: chainValid ? 0 : 1,
+            filepath: null,
+            entry_count: entries.length,
+            chain_valid: chainValid,
+            detail: entries.length === 0
+              ? "live audit chain is empty"
+              : chainValid
+              ? `loaded ${entries.length} live entries; chain verified`
+              : `loaded ${entries.length} live entries; chain DOES NOT verify`,
+            entries,
+            timestamp: new Date().toISOString(),
+          };
           return format === "text"
             ? {
                 content_type: "text/plain; charset=utf-8",
-                body: formatAuditTextReport(report),
+                body: [
+                  `blue-tanuki audit-dump - ${String(report.status).toUpperCase()} (${report.timestamp})`,
+                  `  filepath:    ${report.filepath ?? "(live)"}`,
+                  `  entries:     ${report.entry_count}`,
+                  `  chain_valid: ${report.chain_valid}`,
+                  `  detail:      ${report.detail}`,
+                  "",
+                  `Exit code: ${report.exit_code}`,
+                ].join("\n"),
               }
             : {
                 content_type: "application/json",
-                body: formatAuditJsonReport(report),
+                body: JSON.stringify(report, null, 2),
               };
         },
       },
@@ -865,6 +937,27 @@ export async function serve(): Promise<ServeShutdown> {
     };
   }
 
+  function optionalPreviewChannel(
+    packageName: string,
+    requiredPermissions: readonly string[],
+    action: string,
+    constructorArgs: Record<string, unknown>,
+  ): (InboundChannel & OutboundChannel) | null {
+    if (!plugins.has(packageName)) {
+      gatewayLog.info("preview channel skipped", {
+        package_name: packageName,
+        reason: "plugin_not_present_in_core_release",
+      });
+      return null;
+    }
+    return plugins.createChannel<InboundChannel & OutboundChannel>({
+      package_name: packageName,
+      required_permissions: requiredPermissions,
+      action,
+      constructor_args: [constructorArgs],
+    });
+  }
+
   const telegramPermissions = [
     "network:api.telegram.org",
     "secrets:TELEGRAM_BOT_TOKEN",
@@ -886,95 +979,47 @@ export async function serve(): Promise<ServeShutdown> {
     }],
   });
 
-  const slackPermissions = [
-    "network:slack.com",
-    "secrets:SLACK_BOT_TOKEN",
-    "secrets:SLACK_APP_TOKEN",
-  ] as const;
-  plugins.requirePermissions(
-    "@blue-tanuki/channel-slack",
-    slackPermissions,
-    "read/register slack channel",
-  );
-  const slack = plugins.createChannel<InboundChannel & OutboundChannel>({
-    package_name: "@blue-tanuki/channel-slack",
-    required_permissions: slackPermissions,
-    action: "register slack channel",
-    constructor_args: [{
+  const previewChannels = [
+    optionalPreviewChannel("@blue-tanuki/channel-slack", [
+      "network:slack.com",
+      "secrets:SLACK_BOT_TOKEN",
+      "secrets:SLACK_APP_TOKEN",
+    ], "register slack channel", {
       bot_token: process.env.SLACK_BOT_TOKEN,
       app_token: process.env.SLACK_APP_TOKEN,
       log: (line: string) => slackLog.info(line),
-    }],
-  });
-  const discordPermissions = [
-    "network:discord.com",
-    "secrets:DISCORD_BOT_TOKEN",
-  ] as const;
-  plugins.requirePermissions(
-    "@blue-tanuki/channel-discord",
-    discordPermissions,
-    "read/register discord channel",
-  );
-  const discord = plugins.createChannel<InboundChannel & OutboundChannel>({
-    package_name: "@blue-tanuki/channel-discord",
-    required_permissions: discordPermissions,
-    action: "register discord channel",
-    constructor_args: [{
+    }),
+    optionalPreviewChannel("@blue-tanuki/channel-discord", [
+      "network:discord.com",
+      "secrets:DISCORD_BOT_TOKEN",
+    ], "register discord channel", {
       bot_token: process.env.DISCORD_BOT_TOKEN,
       log: (line: string) => discordLog.info(line),
-    }],
-  });
-  const teamsPermissions = [
-    "network:graph.microsoft.com",
-    "secrets:MICROSOFT_GRAPH_ACCESS_TOKEN",
-  ] as const;
-  plugins.requirePermissions(
-    "@blue-tanuki/channel-teams",
-    teamsPermissions,
-    "read/register teams channel",
-  );
-  const teams = plugins.createChannel<InboundChannel & OutboundChannel>({
-    package_name: "@blue-tanuki/channel-teams",
-    required_permissions: teamsPermissions,
-    action: "register teams channel",
-    constructor_args: [{
+    }),
+    optionalPreviewChannel("@blue-tanuki/channel-teams", [
+      "network:graph.microsoft.com",
+      "secrets:MICROSOFT_GRAPH_ACCESS_TOKEN",
+    ], "register teams channel", {
       access_token: process.env.MICROSOFT_GRAPH_ACCESS_TOKEN,
       log: (line: string) => teamsLog.info(line),
-    }],
-  });
-  const linePermissions = [
-    "network:api.line.me",
-    "secrets:LINE_CHANNEL_ACCESS_TOKEN",
-  ] as const;
-  plugins.requirePermissions(
-    "@blue-tanuki/channel-line",
-    linePermissions,
-    "read/register line channel",
-  );
-  const line = plugins.createChannel<InboundChannel & OutboundChannel>({
-    package_name: "@blue-tanuki/channel-line",
-    required_permissions: linePermissions,
-    action: "register line channel",
-    constructor_args: [{
+    }),
+    optionalPreviewChannel("@blue-tanuki/channel-line", [
+      "network:api.line.me",
+      "secrets:LINE_CHANNEL_ACCESS_TOKEN",
+    ], "register line channel", {
       channel_access_token: process.env.LINE_CHANNEL_ACCESS_TOKEN,
       log: (lineText: string) => lineLog.info(lineText),
-    }],
-  });
+    }),
+  ].filter((channel): channel is InboundChannel & OutboundChannel => channel !== null);
 
   router.register(webchat);
   router.register(telegram);
-  router.register(slack);
-  router.register(discord);
-  router.register(teams);
-  router.register(line);
+  for (const channel of previewChannels) router.register(channel);
   router.register(cron);
 
   dispatcher.register(webchat);
   dispatcher.register(telegram);
-  dispatcher.register(slack);
-  dispatcher.register(discord);
-  dispatcher.register(teams);
-  dispatcher.register(line);
+  for (const channel of previewChannels) dispatcher.register(channel);
 
   executor = new Executor({
     llm,
@@ -984,8 +1029,8 @@ export async function serve(): Promise<ServeShutdown> {
   });
 
   const handler = async (req: InboundRequest): Promise<void> => {
-    const boundary = parseInboundRequestAtBoundary(req);
-    const authorityReq = boundary.ok ? boundary.request : req;
+    const boundary = canonicalizeGatewayInbound(req);
+    const authorityReq = boundary.request;
     recordCompleteHistory({
       kind: "user_input",
       request_id: authorityReq.id,
@@ -995,11 +1040,11 @@ export async function serve(): Promise<ServeShutdown> {
       payload: {
         channel: authorityReq.channel,
         user: authorityReq.user,
-        content_digest: digestString(authorityReq.content),
-        content_chars: authorityReq.content.length,
+        content_digest: boundary.boundary_ok ? digestString(authorityReq.content) : undefined,
+        content_chars: boundary.boundary_ok ? authorityReq.content.length : 0,
         metadata_keys: metadataKeys(authorityReq.metadata),
-        boundary_status: boundary.ok ? "canonical" : "invalid_fail_closed",
-        boundary_issues_count: boundary.ok ? 0 : boundary.issues.length,
+        boundary_status: boundary.boundary_ok ? "canonical" : "invalid_fail_closed",
+        boundary_issues_count: boundary.boundary_issues.length,
         reply_to_present: typeof authorityReq.metadata?.["reply_to"] === "string",
         webhook_source: typeof authorityReq.metadata?.["webhook_source"] === "string"
           ? authorityReq.metadata["webhook_source"]
@@ -1014,38 +1059,48 @@ export async function serve(): Promise<ServeShutdown> {
       kind: "hds_decision",
       request_id: log.request_id,
       command_id: command?.id,
-      actor: req.user,
+      actor: authorityReq.user,
       source: "hds-brain",
       timestamp: log.timestamp,
       payload: hdsDecisionHistoryPayload(log, command),
     });
     hdsLog.info("decision", {
-      channel: req.channel,
-      user: req.user,
-      request_id: req.id.slice(0, 8),
+      channel: authorityReq.channel,
+      user: authorityReq.user,
+      request_id: authorityReq.id.slice(0, 8),
       decision: log.commit.decision,
       hash: log.commit.hash.slice(0, 12),
     });
 
+    if (!boundary.boundary_ok) {
+      if (command) {
+        hds.onCommandLifecycle(command.id, "approval_rejected", {
+          actor: "gateway",
+          reason: "gateway_inbound_boundary_invalid",
+        });
+      }
+      return;
+    }
+
     if (command) {
-      await executeAndEcho(command, log, req);
+      await executeAndEcho(command, log, authorityReq);
       return;
     }
 
     // No command means the upstream decision is sent back to the user.
     const issued =
       log.commit.decision === "SUSPEND"
-        ? await webchat.issueResumeApprovalToken(req.id)
+        ? await webchat.issueResumeApprovalToken(authorityReq.id)
         : null;
     const human = humanizeDecision(
       log.commit.decision,
       log.commit.reason,
-      req.id,
+      authorityReq.id,
       issued?.token,
     );
     await dispatcher.dispatch(
-      { channel: req.channel, target: replyTarget(req), content: human },
-      { command_id: `notify-${req.id}`, upstream_commit_hash: log.commit.hash },
+      { channel: authorityReq.channel, target: replyTarget(authorityReq), content: human },
+      { command_id: `notify-${authorityReq.id}`, upstream_commit_hash: log.commit.hash },
     );
   };
 

@@ -339,6 +339,10 @@ export class PluginRuntime {
     return plugin;
   }
 
+  has(name: string): boolean {
+    return this.byName.has(name);
+  }
+
   permissionsFor(name: string): Set<string> {
     return new Set(this.get(name).manifest.permissions);
   }

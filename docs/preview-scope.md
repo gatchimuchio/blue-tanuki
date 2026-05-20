@@ -1,6 +1,6 @@
 # Preview Scope
 
-この文書は v0.1 core release path から外す実体を明示する。削除ではなく隔離を優先し、workspace typecheck/test は維持する。
+この文書は core release path から外す実体を明示する。削除ではなく隔離を優先し、workspace typecheck/test は維持する。
 
 ## Core Release Include
 
@@ -30,8 +30,12 @@
 - `apps/gateway/src/smoke_live.ts`
 - historical `docs/phase*.md` and `docs/history/*`
 
-Preview items remain downstream-only. Missing preview credentials are WARN in core doctor and do not fail v0.1 core health. `doctor --preview` validates preview channel readiness; `doctor --strict` validates all optional surfaces strictly.
+Preview items remain downstream-only. Missing preview credentials are WARN in core doctor and do not fail core health. `doctor --preview` validates preview channel readiness; `doctor --strict` validates all optional surfaces strictly.
+
+`apps/gateway` does not carry hard workspace dependencies on preview channel or operator packages. In the full workspace those packages are discovered through plugin manifests; in the extracted core release bundle they are absent and skipped.
 
 ## Regression Gate
 
-`pnpm validate:repo-health` blocks custom pnpm wrapper revival, forbidden production static imports, undocumented preview scope, and preview paths in the core release allowlist.
+`pnpm validate:repo-health` blocks custom pnpm wrapper revival, forbidden eager production import graph edges, undocumented preview scope, hard preview gateway dependencies, and preview paths in the core release allowlist.
+
+`pnpm release:verify` now extracts the generated source bundle and runs `corepack pnpm install --frozen-lockfile` plus `corepack pnpm build` inside the extracted tree.

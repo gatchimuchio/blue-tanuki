@@ -37,6 +37,7 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - run: pnpm docs:check
+      - run: pnpm validate:repo-health
       - run: pnpm validate:packaging
       - run: pnpm validate:channels
       - run: pnpm plugin:review -- --package packages/channel-slack --bundled
@@ -45,6 +46,13 @@ jobs:
       - run: pnpm smoke:resume
       - run: pnpm smoke:live
       - run: pnpm run doctor
+      - name: Doctor fails closed without core credentials
+        run: |
+          set +e
+          WEBCHAT_TOKEN= WEBCHAT_RESUME_TOKEN= pnpm run doctor
+          status=$?
+          set -e
+          test "$status" -eq 2
       - run: pnpm release:bundle -- --dry-run
       - run: pnpm release:bundle
       - run: pnpm release:verify

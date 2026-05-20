@@ -411,7 +411,26 @@ describe("runDoctor — happy paths", () => {
     });
     expect(r.exit_code).toBe(2);
     expect(r.ok).toBe(false);
-    expect(r.checks.find((c) => c.id === "env:SLACK_BOT_TOKEN")?.level).toBe("error");
+    const json = JSON.parse(formatJsonReport(r)) as typeof r;
+    expect(json.checks.find((c) => c.id === "env:SLACK_BOT_TOKEN")).toMatchObject({
+      level: "error",
+      safe_to_ignore: false,
+    });
+  });
+
+  it("marks strict-mode required optional credentials as not safe to ignore", async () => {
+    const r = await runDoctor({
+      env: baseEnv(),
+      probe_port: false,
+      node_version: "22.14.0",
+      mode: "strict",
+    });
+    const json = JSON.parse(formatJsonReport(r)) as typeof r;
+    expect(json.exit_code).toBe(2);
+    expect(json.checks.find((c) => c.id === "env:ANTHROPIC_API_KEY")).toMatchObject({
+      level: "error",
+      safe_to_ignore: false,
+    });
   });
 
   it("accepts configured read-only Google Daily Brief source", async () => {

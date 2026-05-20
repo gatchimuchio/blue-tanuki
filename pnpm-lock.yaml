@@ -32,18 +32,6 @@ importers:
       '@blue-tanuki/channel-base':
         specifier: workspace:*
         version: link:../../packages/channel-base
-      '@blue-tanuki/channel-discord':
-        specifier: workspace:*
-        version: link:../../packages/channel-discord
-      '@blue-tanuki/channel-line':
-        specifier: workspace:*
-        version: link:../../packages/channel-line
-      '@blue-tanuki/channel-slack':
-        specifier: workspace:*
-        version: link:../../packages/channel-slack
-      '@blue-tanuki/channel-teams':
-        specifier: workspace:*
-        version: link:../../packages/channel-teams
       '@blue-tanuki/channel-telegram':
         specifier: workspace:*
         version: link:../../packages/channel-telegram
@@ -56,15 +44,6 @@ importers:
       '@blue-tanuki/hds-brain':
         specifier: workspace:*
         version: link:../../packages/hds-brain
-      '@blue-tanuki/operator-daily':
-        specifier: workspace:*
-        version: link:../../packages/operator-daily
-      '@blue-tanuki/operator-developer':
-        specifier: workspace:*
-        version: link:../../packages/operator-developer
-      '@blue-tanuki/operator-writing':
-        specifier: workspace:*
-        version: link:../../packages/operator-writing
       '@blue-tanuki/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol

@@ -118,7 +118,7 @@ export interface ControllerSelfHealthOptions {
   required_directories?: readonly RuntimePathCheck[];
   storage_paths?: readonly RuntimePathCheck[];
   optional_dependencies?: readonly RuntimeDependencyCheck[];
-  audit_appendable?: boolean;
+  audit_appendable?: import("./health.js").AuditAppendabilityStatus;
 }
 
 export interface ResumeAuditOptions {

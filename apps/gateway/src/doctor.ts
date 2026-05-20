@@ -1334,7 +1334,7 @@ function remediationFor(check: CheckDraft): Remediation {
       impact: "The related preview channel, live smoke path, or external write tool may be skipped; WebChat and HDS authority remain usable.",
       next_action: `Leave ${name} unset if unused, or set it and rerun the relevant smoke/doctor command.`,
       doc_ref: "docs/CREDENTIAL_READINESS_MATRIX.md",
-      safe_to_ignore: true,
+      safe_to_ignore: check.level === "warn",
     };
   }
 

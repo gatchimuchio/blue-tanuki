@@ -1,7 +1,5 @@
 import { createLogger } from "@blue-tanuki/core";
-import { runServe } from "./serve.js";
 import { loadEnvFileFromArgv } from "./env_file.js";
-import { runCli } from "./runtime.js";
 
 const gatewayLog = createLogger({ scope: "gateway" });
 
@@ -62,6 +60,16 @@ async function runSetupCliMode(): Promise<void> {
   await runSetupCli(process.argv.slice(2));
 }
 
+async function runServeCliMode(): Promise<void> {
+  const { runServe } = await import("./serve.js");
+  await runServe();
+}
+
+async function runOneShotCliMode(argv: readonly string[]): Promise<void> {
+  const { runCli } = await import("./runtime.js");
+  await runCli(argv);
+}
+
 export async function runGatewayCliRouter(): Promise<void> {
   const envFile = await loadEnvFileFromArgv(process.argv.slice(2));
   if (envFile) {
@@ -91,8 +99,8 @@ export async function runGatewayCliRouter(): Promise<void> {
   const serveMode =
     process.argv.includes("--serve") || process.env.BLUE_TANUKI_SERVE === "1";
   if (serveMode) {
-    await runServe();
+    await runServeCliMode();
     return;
   }
-  await runCli(process.argv.slice(2));
+  await runOneShotCliMode(process.argv.slice(2));
 }

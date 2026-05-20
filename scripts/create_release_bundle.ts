@@ -68,6 +68,25 @@ const INSTALLER_PATHS = [
   "install/linux/uninstall.sh",
 ] as const;
 
+const CORE_ROOT_TSCONFIG_REFERENCES = [
+  "./packages/protocol",
+  "./packages/channel-base",
+  "./packages/hds-brain",
+  "./packages/blue-tanuki",
+  "./packages/channel-webchat",
+  "./packages/channel-telegram",
+  "./apps/gateway",
+] as const;
+
+const CORE_GATEWAY_TSCONFIG_REFERENCES = [
+  "../../packages/protocol",
+  "../../packages/hds-brain",
+  "../../packages/blue-tanuki",
+  "../../packages/channel-base",
+  "../../packages/channel-webchat",
+  "../../packages/channel-telegram",
+] as const;
+
 const EXCLUDED_DIR_NAMES = new Set([
   "node_modules",
   ".codex-tmp",
@@ -178,6 +197,32 @@ async function copyIncluded(staging: string): Promise<void> {
       filter: shouldIncludeSource,
     });
   }
+}
+
+async function rewriteCoreTsconfigs(staging: string): Promise<void> {
+  await writeFile(
+    path.join(staging, "tsconfig.json"),
+    `${JSON.stringify({
+      extends: "./tsconfig.base.json",
+      files: [],
+      references: CORE_ROOT_TSCONFIG_REFERENCES.map((ref) => ({ path: ref })),
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(
+    path.join(staging, "apps/gateway/tsconfig.json"),
+    `${JSON.stringify({
+      extends: "../../tsconfig.base.json",
+      compilerOptions: {
+        outDir: "./dist",
+        rootDir: "./src",
+      },
+      include: ["src/**/*"],
+      exclude: ["dist", "node_modules"],
+      references: CORE_GATEWAY_TSCONFIG_REFERENCES.map((ref) => ({ path: ref })),
+    }, null, 2)}\n`,
+    "utf8",
+  );
 }
 
 function archive(stagingParent: string, outFile: string): void {
@@ -304,6 +349,7 @@ async function main(): Promise<void> {
   await mkdir(staging, { recursive: true });
   await mkdir(outDir, { recursive: true });
   await copyIncluded(staging);
+  await rewriteCoreTsconfigs(staging);
   archive(stagingParent, outFile);
   await rm(stagingParent, { recursive: true, force: true });
   const integrity = await writeIntegrityFiles(outFile, pkg.version);

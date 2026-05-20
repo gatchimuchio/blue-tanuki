@@ -12,11 +12,6 @@
     { "path": "../../packages/blue-tanuki" },
     { "path": "../../packages/channel-base" },
     { "path": "../../packages/channel-webchat" },
-    { "path": "../../packages/channel-slack" },
-    { "path": "../../packages/channel-discord" },
-    { "path": "../../packages/channel-telegram" },
-    { "path": "../../packages/operator-daily" },
-    { "path": "../../packages/operator-developer" },
-    { "path": "../../packages/operator-writing" }
+    { "path": "../../packages/channel-telegram" }
   ]
 }

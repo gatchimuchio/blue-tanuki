@@ -25,13 +25,6 @@
     "@blue-tanuki/core": "workspace:*",
     "@blue-tanuki/channel-base": "workspace:*",
     "@blue-tanuki/channel-webchat": "workspace:*",
-    "@blue-tanuki/channel-slack": "workspace:*",
-    "@blue-tanuki/channel-discord": "workspace:*",
-    "@blue-tanuki/channel-telegram": "workspace:*",
-    "@blue-tanuki/channel-teams": "workspace:*",
-    "@blue-tanuki/channel-line": "workspace:*",
-    "@blue-tanuki/operator-daily": "workspace:*",
-    "@blue-tanuki/operator-developer": "workspace:*",
-    "@blue-tanuki/operator-writing": "workspace:*"
+    "@blue-tanuki/channel-telegram": "workspace:*"
   }
 }

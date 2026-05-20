@@ -4,8 +4,13 @@ import type { HDSBrainHealthOptions, RuntimePathCheck } from "@blue-tanuki/hds-b
 import { AUDIT_FILENAME } from "./audit_config.js";
 
 type Env = Record<string, string | undefined>;
+export type RuntimeHealthProbeMode = "read_only" | "repair_capable";
 
-export async function probeGatewaySelfHealth(env: Env = process.env): Promise<HDSBrainHealthOptions> {
+export async function probeGatewaySelfHealth(
+  env: Env = process.env,
+  opts: { mode?: RuntimeHealthProbeMode } = {},
+): Promise<HDSBrainHealthOptions> {
+  const mode = opts.mode ?? "repair_capable";
   const requiredDirectories = [
     env.BLUE_TANUKI_SESSION_DIR,
     env.BLUE_TANUKI_SCHEDULES_DIR ?? ".blue-tanuki/schedules",
@@ -16,14 +21,14 @@ export async function probeGatewaySelfHealth(env: Env = process.env): Promise<HD
   ].filter((item): item is string => Boolean(item));
 
   const required_directories = await Promise.all(
-    requiredDirectories.map((dir) => probeDirectory(dir)),
+    requiredDirectories.map((dir) => probeDirectory(dir, mode)),
   );
   const storage_paths = await Promise.all(
-    storagePaths.map((file) => probeAppendableFile(file)),
+    storagePaths.map((file) => probeAppendableFile(file, mode)),
   );
   const audit_appendable = env.BLUE_TANUKI_AUDIT_DIR
-    ? (await probeAppendableFile(path.join(path.resolve(env.BLUE_TANUKI_AUDIT_DIR), AUDIT_FILENAME))).writable === true
-    : true;
+    ? (await probeAppendableFile(path.join(path.resolve(env.BLUE_TANUKI_AUDIT_DIR), AUDIT_FILENAME), mode)).writable === true
+    : "memory_only";
 
   return {
     required_directories,
@@ -39,26 +44,35 @@ export async function probeGatewaySelfHealth(env: Env = process.env): Promise<HD
   };
 }
 
-async function probeDirectory(dir: string): Promise<RuntimePathCheck> {
+async function probeDirectory(dir: string, mode: RuntimeHealthProbeMode): Promise<RuntimePathCheck> {
   const resolved = path.resolve(dir);
   try {
-    await fs.mkdir(resolved, { recursive: true });
-    const probe = path.join(resolved, `.btnk-health-${process.pid}-${Date.now()}.tmp`);
-    await fs.writeFile(probe, "health-probe", { flag: "wx" });
-    await fs.readFile(probe, "utf8");
-    await fs.unlink(probe);
+    if (mode === "repair_capable") {
+      await fs.mkdir(resolved, { recursive: true });
+      await fs.access(resolved, fsConstants.R_OK | fsConstants.W_OK);
+      const probe = path.join(resolved, `.btnk-health-${process.pid}-${Date.now()}.tmp`);
+      await fs.writeFile(probe, "health-probe", { flag: "wx" });
+      await fs.readFile(probe, "utf8");
+      await fs.unlink(probe);
+      return { path: resolved, readable: true, writable: true };
+    }
+    await fs.access(resolved, fsConstants.R_OK | fsConstants.W_OK);
     return { path: resolved, readable: true, writable: true };
   } catch {
     return { path: resolved, readable: false, writable: false };
   }
 }
 
-async function probeAppendableFile(file: string): Promise<RuntimePathCheck> {
+async function probeAppendableFile(file: string, mode: RuntimeHealthProbeMode): Promise<RuntimePathCheck> {
   const resolved = path.resolve(file);
   try {
-    await fs.mkdir(path.dirname(resolved), { recursive: true });
-    const handle = await fs.open(resolved, "a");
-    await handle.close();
+    if (mode === "repair_capable") {
+      await fs.mkdir(path.dirname(resolved), { recursive: true });
+      const handle = await fs.open(resolved, "a");
+      await handle.close();
+      await fs.access(resolved, fsConstants.R_OK | fsConstants.W_OK);
+      return { path: resolved, readable: true, writable: true };
+    }
     await fs.access(resolved, fsConstants.R_OK | fsConstants.W_OK);
     return { path: resolved, readable: true, writable: true };
   } catch {

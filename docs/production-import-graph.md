@@ -1,6 +1,6 @@
 # Production Import Graph
 
-この文書は Repository health phase 2 時点の gateway 実行境界を固定する。
+この文書は Repository health phase 3 時点の gateway 実行境界を固定する。
 
 ## Production Entrypoints
 
@@ -10,11 +10,11 @@
 | `apps/gateway/src/runtime.ts` | CLI one-shot runtime | HDS-BRAIN / executor / plugin loader / runtime schedule のみ |
 | `apps/gateway/src/serve.ts` | long-running runtime | HDS-BRAIN / executor / WebChat / Telegram / plugin loader / runtime schedule のみ |
 
-Production runtime は `doctor`, `setup`, `audit_dump`, `audit_verify`, `repair`, `installer` を static import しない。WebChat の audit dump surface は owner action が要求された時だけ `import("./audit_dump.js")` で読み込む。
+Production runtime は `doctor`, `setup`, `audit_dump`, `audit_verify`, `repair`, `installer` を import / export / dynamic import しない。WebChat の live audit surface は `serve.ts` 内で live audit metadata を直接整形し、CLI-only audit dump module を読み込まない。
 
 ## CLI-only Entrypoint
 
-`apps/gateway/src/cli_router.ts` は CLI-only router である。`--doctor`, `--setup`, `--audit-dump`, `--audit-verify` は dynamic import で隔離される。
+`apps/gateway/src/cli_router.ts` は CLI-only router である。`--doctor`, `--setup`, `--audit-dump`, `--audit-verify`, `--serve`, and one-shot CLI runtime are command-gated dynamic imports. `main -> cli_router` の eager graph は `serve.ts` / `runtime.ts` / doctor / setup / audit tools を読み込まない。
 
 ## Preview / Installer Boundary
 

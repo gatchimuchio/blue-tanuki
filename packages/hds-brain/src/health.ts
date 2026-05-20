@@ -45,8 +45,10 @@ export interface HDSBrainHealthOptions {
   required_directories?: readonly RuntimePathCheck[];
   storage_paths?: readonly RuntimePathCheck[];
   optional_dependencies?: readonly RuntimeDependencyCheck[];
-  audit_appendable?: boolean;
+  audit_appendable?: AuditAppendabilityStatus;
 }
+
+export type AuditAppendabilityStatus = boolean | "memory_only" | "not_configured";
 
 export interface RuntimePathCheck {
   path: string;
@@ -143,9 +145,9 @@ function buildRuntimeChecks(
     },
     {
       name: "audit.appendability",
-      status: opts.audit_appendable === undefined ? "UNKNOWN" : opts.audit_appendable ? "PASS" : "FAIL",
-      expected: "audit log can append",
-      actual: opts.audit_appendable === undefined ? "not probed" : opts.audit_appendable ? "appendable" : "not appendable",
+      status: auditAppendabilityCheckStatus(opts.audit_appendable),
+      expected: "persistent audit log can append when configured, or memory audit is explicitly identified",
+      actual: auditAppendabilityActual(opts.audit_appendable),
       evidence: "caller-provided audit appendability probe",
       used_for_authority: false,
     },
@@ -199,6 +201,19 @@ function buildRuntimeChecks(
   }
 
   return checks;
+}
+
+function auditAppendabilityCheckStatus(status: AuditAppendabilityStatus | undefined): HealthCheckStatus {
+  if (status === undefined || status === "not_configured") return "UNKNOWN";
+  if (status === "memory_only") return "WARN";
+  return status ? "PASS" : "FAIL";
+}
+
+function auditAppendabilityActual(status: AuditAppendabilityStatus | undefined): string {
+  if (status === undefined) return "not probed";
+  if (status === "not_configured") return "persistent audit not configured";
+  if (status === "memory_only") return "memory audit only";
+  return status ? "persistent audit appendable" : "persistent audit not appendable";
 }
 
 function pathCheck(name: string, item: RuntimePathCheck, required: boolean): HDSRuntimeHealthCheck {
