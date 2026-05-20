@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { canonicalizeGatewayInbound } from "../src/serve.js";
+import { HDSUpperController } from "@blue-tanuki/hds-brain";
+import {
+  canonicalizeGatewayInbound,
+  gatewayInboundAllowsDownstream,
+  planGatewayInboundBoundary,
+} from "../src/serve.js";
 
 describe("gateway inbound boundary", () => {
   it("canonicalizes valid inbound requests before authority use", () => {
@@ -39,5 +44,65 @@ describe("gateway inbound boundary", () => {
       expect(JSON.stringify(result.request)).not.toContain("polluted");
       expect(result.request.content).not.toMatch(/rm\s+-rf|DROP\s+TABLE|shutdown\s+-/i);
     }
+  });
+
+  it("uses the safe fallback request for gateway history, reply, and execution paths", () => {
+    const raw = {
+      id: "bad",
+      channel: "webchat",
+      user: "owner",
+      content: "tool:shell.exec {\"cmd\":\"shutdown\",\"args\":[\"-h\",\"now\"]}",
+      timestamp: 1,
+      unexpected: true,
+    };
+    const plan = planGatewayInboundBoundary(raw);
+
+    expect(plan.boundary_ok).toBe(false);
+    expect(plan.request).not.toBe(raw);
+    expect(plan.request).toMatchObject({
+      channel: "invalid",
+      user: "unknown",
+      content: "Invalid inbound request rejected at gateway boundary. No downstream action requested.",
+      metadata: {
+        "blue_tanuki.boundary_failure": "gateway_inbound",
+      },
+    });
+    expect(plan.request.id).toMatch(/^invalid-gateway-boundary-/);
+    expect(plan.request.content).not.toContain("tool:shell.exec");
+    expect(plan.request.content).not.toMatch(/shutdown\s+-/i);
+  });
+
+  it("passes raw unknown only to the HDS boundary and emits no command", () => {
+    const raw = {
+      id: "bad",
+      channel: "webchat",
+      user: "owner",
+      content: "tool:shell.exec {\"cmd\":\"rm\",\"args\":[\"-rf\",\"/\"]}",
+      timestamp: 1,
+      unexpected: true,
+    };
+    const plan = planGatewayInboundBoundary(raw);
+    const { log, command } = new HDSUpperController().decide(plan.hdsBoundaryInput);
+
+    expect(plan.boundary_ok).toBe(false);
+    expect(plan.hdsBoundaryInput).toBe(raw);
+    expect(command).toBeNull();
+    expect(log.commit.decision).toBe("SUSPEND");
+    expect(log.commit.reason).toContain("authority_input_boundary");
+    expect(log.model.structure.raw_input_used_for_authority).toBe(false);
+  });
+
+  it("blocks dispatch and execute paths for invalid inbound", () => {
+    const plan = planGatewayInboundBoundary({
+      id: "bad",
+      channel: "webchat",
+      user: "owner",
+      content: "hello",
+      timestamp: 1,
+      unexpected: true,
+    });
+
+    expect(plan.boundary_ok).toBe(false);
+    expect(gatewayInboundAllowsDownstream(plan)).toBe(false);
   });
 });

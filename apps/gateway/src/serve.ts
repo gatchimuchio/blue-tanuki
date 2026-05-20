@@ -175,6 +175,10 @@ export interface GatewayInboundBoundaryResult {
   boundary_issues: readonly string[];
 }
 
+export interface GatewayInboundBoundaryPlan extends GatewayInboundBoundaryResult {
+  hdsBoundaryInput: unknown;
+}
+
 /** Resolve the address to send replies back to. */
 function replyTarget(req: InboundRequest): string {
   const m = req.metadata?.["reply_to"];
@@ -200,6 +204,18 @@ export function canonicalizeGatewayInbound(raw: unknown): GatewayInboundBoundary
     boundary_ok: false,
     boundary_issues: boundary.issues,
   };
+}
+
+export function planGatewayInboundBoundary(raw: unknown): GatewayInboundBoundaryPlan {
+  const boundary = canonicalizeGatewayInbound(raw);
+  return {
+    ...boundary,
+    hdsBoundaryInput: boundary.boundary_ok ? boundary.request : raw,
+  };
+}
+
+export function gatewayInboundAllowsDownstream(boundary: Pick<GatewayInboundBoundaryPlan, "boundary_ok">): boolean {
+  return boundary.boundary_ok;
 }
 
 function unavailableOperatorSurface(surface: "daily" | "developer" | "writing"): OperatorSnapshot {
@@ -1029,9 +1045,13 @@ export async function serve(): Promise<ServeShutdown> {
   });
 
   const handler = async (req: InboundRequest): Promise<void> => {
-    const boundary = canonicalizeGatewayInbound(req);
+    const boundary = planGatewayInboundBoundary(req);
     const authorityReq = boundary.request;
-    const authorityInput = boundary.boundary_ok ? authorityReq : req;
+    // Gateway history, reply, and execution paths use only authorityReq, which
+    // is a canonical request or the safe invalid-inbound fallback. Raw invalid
+    // input is passed to HDS-BRAIN only for its independent fail-closed
+    // authority-boundary audit; raw input must not be used for execution.
+    const hdsBoundaryInput = boundary.hdsBoundaryInput;
     recordCompleteHistory({
       kind: "user_input",
       request_id: authorityReq.id,
@@ -1055,7 +1075,7 @@ export async function serve(): Promise<ServeShutdown> {
           : undefined,
       },
     });
-    const { log, command } = hds.decide(authorityInput);
+    const { log, command } = hds.decide(hdsBoundaryInput);
     recordCompleteHistory({
       kind: "hds_decision",
       request_id: log.request_id,
@@ -1073,7 +1093,7 @@ export async function serve(): Promise<ServeShutdown> {
       hash: log.commit.hash.slice(0, 12),
     });
 
-    if (!boundary.boundary_ok) {
+    if (!gatewayInboundAllowsDownstream(boundary)) {
       if (command) {
         hds.onCommandLifecycle(command.id, "approval_rejected", {
           actor: "gateway",

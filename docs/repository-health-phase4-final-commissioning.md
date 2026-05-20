@@ -17,6 +17,12 @@ HDS-BRAIN authority path、Approval Gate、Runtime Invariants、hash-chain audit
 
 `repo_health_gate` は downstream preview / installer / resident / external adapter を authority に昇格しない。AST import graph gate は production CLI graph の eager import purity を守るための regression gate であり、HDS-BRAIN の判断、ApprovalRisk、ApprovalLevel、final-review operation list は変更しない。
 
+## Phase 4.1 Boundary Semantics
+
+gateway invalid inbound の責務は二段に分かれる。gateway の complete history / reply / execution path は、canonical request または safe fallback request だけを使う。invalid raw input は、HDS-BRAIN が gateway とは独立に authority boundary fail-closed audit を残すためだけに渡す。raw invalid input は execution、reply target、history payload、Approval Gate origin として使ってはならない。
+
+この境界では、HDS-BRAIN が raw unknown を受け取っても command は出さず、`authority_input_boundary` の SUSPEND audit に閉じる。gateway は invalid inbound では dispatch / execute path を発火しない。
+
 ## Gate Limits
 
 `pnpm validate:repo-health` は source-level static gate である。Node resolver 全体、外部 package side effect、runtime branch coverage、build output の全 dependency tree は単独では証明しない。これらは `pnpm typecheck`、`pnpm build`、`pnpm test`、`pnpm release:verify` の extracted bundle commissioning と組み合わせて閉じる。
