@@ -39,6 +39,7 @@
 - [HDS-BRAIN Output / Result Audit Plane](hds-brain-output-audit-plane.md)
 - [Phase 12-S1 Output / Result Audit Plane](phase12-s1-output-result-audit-plane.md)
 - [HDS-BRAIN Complete History Substrate](hds-brain-complete-history-substrate.md)
+- [HDS-BRAIN Failure Memory Control](hds-brain-failure-memory-control.md)
 - [Phase 12-S2 Local Complete History Substrate](phase12-s2-local-complete-history-substrate.md)
 - [HDS-BRAIN Runtime Invariants Evidence](hds-brain-runtime-invariants-evidence.md)
 - [Phase 12-S3 Runtime Invariants Evidence](phase12-s3-runtime-invariants-evidence.md)

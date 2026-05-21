@@ -3,6 +3,8 @@ import {
   COMPLETE_HISTORY_SCHEMA_VERSION,
   CompleteHistoryStore,
   HDSUpperController,
+  extractFailureSignatures,
+  runPeriodicFailureMemoryVerification,
 } from "@blue-tanuki/hds-brain";
 import type {
   ApprovalEvaluation,
@@ -12,13 +14,14 @@ import type {
   CompleteHistoryReplayFilter,
   DecisionLog,
   OutputAuditLog,
+  PeriodicVerificationTrigger,
 } from "@blue-tanuki/hds-brain";
 import {
   Executor,
   ToolRegistry,
   createLogger,
 } from "@blue-tanuki/core";
-import { buildHDSMemoryStore, buildSessionStore } from "./runtime.js";
+import { buildFailureMemoryStore, buildHDSMemoryStore, buildSessionStore } from "./runtime.js";
 import { buildAuditLog } from "./audit_config.js";
 import {
   buildLLMBackendFromEnv,
@@ -276,6 +279,7 @@ export async function serve(): Promise<ServeShutdown> {
     llm_route: buildLLMCommandRouteFromEnv(),
     self_health: runtimeSelfHealth,
   });
+  const failureMemory = buildFailureMemoryStore(process.env);
   const completeHistoryFile = nonEmptyEnv(process.env.BLUE_TANUKI_COMPLETE_HISTORY_FILE);
   const completeHistoryMaxEntries = parsePositiveInt(process.env.BLUE_TANUKI_COMPLETE_HISTORY_MAX_ENTRIES);
   const completeHistory = new CompleteHistoryStore({
@@ -349,9 +353,9 @@ export async function serve(): Promise<ServeShutdown> {
   let executor: Executor;
   let webchat: WebChatChannel;
 
-  function recordCompleteHistory(input: CompleteHistoryAppendInput): void {
+  function recordCompleteHistory(input: CompleteHistoryAppendInput): CompleteHistoryEntry | null {
     try {
-      completeHistory.append(input);
+      return completeHistory.append(input);
     } catch (e) {
       gatewayLog.error("complete history append failed", {
         kind: input.kind,
@@ -359,8 +363,32 @@ export async function serve(): Promise<ServeShutdown> {
         command_id: input.command_id ?? null,
         error: e instanceof Error ? e.message : String(e),
       });
+      return null;
     }
   }
+
+  function runFailureMemoryVerification(trigger: PeriodicVerificationTrigger): void {
+    const report = runPeriodicFailureMemoryVerification({
+      entries: completeHistory.all(),
+      existing_rules: failureMemory.list(),
+      trigger,
+    });
+    gatewayLog.info("failure memory verification", {
+      trigger,
+      detected_failures: report.detected_failures.length,
+      repeated_failures: report.repeated_failures.length,
+      recommended_rules: report.recommended_rules.length,
+      stale_rules: report.stale_rules.length,
+      requires_human_review: report.requires_human_review.length,
+    });
+  }
+
+  runFailureMemoryVerification("startup");
+  const failureMemoryVerificationTimer = setInterval(
+    () => runFailureMemoryVerification("daily"),
+    24 * 60 * 60 * 1000,
+  );
+  failureMemoryVerificationTimer.unref();
 
   function recordApprovalHistory(
     event: string,
@@ -399,8 +427,8 @@ export async function serve(): Promise<ServeShutdown> {
     origin: InboundRequest,
     actor: string,
     feedback: ExecuteFeedback,
-  ): void {
-    recordCompleteHistory({
+  ): CompleteHistoryEntry | null {
+    return recordCompleteHistory({
       kind: "execution_history",
       request_id: log.request_id,
       command_id: cmd.id,
@@ -465,11 +493,46 @@ export async function serve(): Promise<ServeShutdown> {
     opts: { skip_approval?: boolean; actor?: string } = {},
   ): Promise<{ status: string }> {
     const actor = opts.actor ?? origin.user;
+    const failureGate = failureMemory.evaluateCommandGate(cmd, {
+      actor,
+      channel: origin.channel,
+      request_id: log.request_id,
+      origin_user: origin.user,
+    });
+    recordApprovalHistory("failure_memory_gate", cmd, log, origin, actor, null, {
+      gate_decision: failureGate.decision,
+      gate_reason: failureGate.reason,
+      matched_signature_ids: failureGate.applied_signature_ids,
+      requires_human_review: failureGate.requires_human_review,
+    });
+    if (failureGate.decision === "block") {
+      hds.onCommandLifecycle(cmd.id, "approval_rejected", {
+        actor,
+        reason: `failure_memory:${failureGate.reason}`,
+      });
+      const content = `[blocked] Failure memory gate blocked execution. command_id=${cmd.id} reason=${failureGate.reason}`;
+      await dispatcher.dispatch(
+        { channel: origin.channel, target: replyTarget(origin), content },
+        { command_id: `failure-memory-blocked-${cmd.id}`, upstream_commit_hash: log.commit.hash },
+      );
+      return { status: "failure_memory_blocked" };
+    }
     if (!opts.skip_approval) {
       const evaluation = approval.evaluate(cmd, actor);
       hds.onApprovalEvaluation(evaluation, { request_id: log.request_id });
       recordApprovalHistory("policy_evaluation", cmd, log, origin, actor, evaluation);
-      if (evaluation.decision === "ask") {
+      if (evaluation.decision === "deny") {
+        hds.onCommandLifecycle(cmd.id, "approval_rejected", { actor, reason: evaluation.reason });
+        recordApprovalHistory("approval_denied", cmd, log, origin, actor, evaluation);
+        const fb = approvalDeniedFeedback(cmd, evaluation.reason);
+        const content = renderCommandOutput(cmd, fb);
+        const output = hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
+        recordFinalOutputHistory(log, origin, actor, output);
+        if (content) await dispatcher.dispatch({ channel: origin.channel, target: replyTarget(origin), content }, { command_id: cmd.id, upstream_commit_hash: log.commit.hash });
+        return { status: "approval_denied" };
+      }
+      const failureMemoryRequiresApproval = failureGate.decision === "require_approval";
+      if (evaluation.decision === "ask" || failureMemoryRequiresApproval) {
         if (runtimeScheduleMutationCommand(cmd)) {
           const prepared = runtimeSchedules.preparePending(cmd, evaluation, {
             request_id: log.request_id,
@@ -491,9 +554,14 @@ export async function serve(): Promise<ServeShutdown> {
             return { status: "schedule_rejected" };
           }
         }
-        hds.onCommandLifecycle(cmd.id, "approval_pending", { actor, reason: evaluation.reason });
+        hds.onCommandLifecycle(cmd.id, "approval_pending", {
+          actor,
+          reason: failureMemoryRequiresApproval ? `failure_memory:${failureGate.reason}` : evaluation.reason,
+        });
         const issued = await webchat.issueResumeApprovalToken(cmd.id);
         recordApprovalHistory("approval_pending", cmd, log, origin, actor, evaluation, {
+          failure_memory_required: failureMemoryRequiresApproval,
+          failure_memory_reason: failureMemoryRequiresApproval ? failureGate.reason : undefined,
           approval_token_issued: Boolean(issued?.token),
           approval_token_expires_at_ms: issued?.expires_at_ms,
         });
@@ -505,28 +573,28 @@ export async function serve(): Promise<ServeShutdown> {
           approval_token: issued?.token,
           approval_token_expires_at_ms: issued?.expires_at_ms,
         });
+        const approvalContent = failureMemoryRequiresApproval
+          ? `${approvalRequiredMessage(evaluation, cmd.id, issued?.token)} failure_memory_gate=${failureGate.reason}`
+          : approvalRequiredMessage(evaluation, cmd.id, issued?.token);
         await dispatcher.dispatch(
-          { channel: origin.channel, target: replyTarget(origin), content: approvalRequiredMessage(evaluation, cmd.id, issued?.token) },
+          { channel: origin.channel, target: replyTarget(origin), content: approvalContent },
           { command_id: `approval-${cmd.id}`, upstream_commit_hash: log.commit.hash },
         );
         return { status: "approval_required" };
-      }
-      if (evaluation.decision === "deny") {
-        hds.onCommandLifecycle(cmd.id, "approval_rejected", { actor, reason: evaluation.reason });
-        recordApprovalHistory("approval_denied", cmd, log, origin, actor, evaluation);
-        const fb = approvalDeniedFeedback(cmd, evaluation.reason);
-        const content = renderCommandOutput(cmd, fb);
-        const output = hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
-        recordFinalOutputHistory(log, origin, actor, output);
-        if (content) await dispatcher.dispatch({ channel: origin.channel, target: replyTarget(origin), content }, { command_id: cmd.id, upstream_commit_hash: log.commit.hash });
-        return { status: "approval_denied" };
       }
       hds.onCommandLifecycle(cmd.id, "approval_approved", { actor, reason: evaluation.reason });
       recordApprovalHistory("approval_approved", cmd, log, origin, actor, evaluation);
     }
     const fb = await executor.execute(cmd);
     hds.onFeedback(fb);
-    recordExecutionHistory(cmd, log, origin, actor, fb);
+    const executionHistory = recordExecutionHistory(cmd, log, origin, actor, fb);
+    if (fb.status === "failed") {
+      const extracted = executionHistory
+        ? extractFailureSignatures({ kind: "complete_history", entry: executionHistory })
+        : extractFailureSignatures({ kind: "command_result", command: cmd, feedback: fb });
+      for (const signature of extracted) failureMemory.upsertSignature(signature);
+      runFailureMemoryVerification("post_failure");
+    }
     coreLog.info("command", { command: cmd.id.slice(0, 8), status: fb.status, duration_ms: fb.metrics.duration_ms });
     const content = renderCommandOutput(cmd, fb);
     const output = hds.onOutputAudit({ command: cmd, feedback: fb, rendered_output: content, target_surface: "channel", request_id: log.request_id });
@@ -1135,6 +1203,7 @@ export async function serve(): Promise<ServeShutdown> {
   return {
     shutdown: async () => {
       gatewayLog.info("shutting down");
+      clearInterval(failureMemoryVerificationTimer);
       await router.stop();
       auditLog.info("summary", {
         entries: hds.getAudit().size(),

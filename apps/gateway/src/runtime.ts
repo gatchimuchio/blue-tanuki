@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import * as path from "node:path";
-import { HDSUpperController, LongTermMemoryStore } from "@blue-tanuki/hds-brain";
+import {
+  FailureMemoryStore,
+  HDSUpperController,
+  LongTermMemoryStore,
+  extractFailureSignatures,
+} from "@blue-tanuki/hds-brain";
 import {
   Executor,
   ToolRegistry,
@@ -40,6 +45,19 @@ export function buildHDSMemoryStore(env: NodeJS.ProcessEnv = process.env): LongT
   if (file) return new LongTermMemoryStore({ filepath: path.resolve(file), max_entries });
   if (dir) return new LongTermMemoryStore({ filepath: path.join(path.resolve(dir), "memory.jsonl"), max_entries });
   return new LongTermMemoryStore({ max_entries });
+}
+
+/**
+ * Build the HDS failure-memory store from explicit env configuration.
+ * Failure memory is a deterministic pre-execution control asset; it does not
+ * let complete history or LLM proposals become authority.
+ */
+export function buildFailureMemoryStore(env: NodeJS.ProcessEnv = process.env): FailureMemoryStore {
+  const file = env.BLUE_TANUKI_FAILURE_MEMORY_FILE;
+  const dir = env.BLUE_TANUKI_FAILURE_MEMORY_DIR;
+  if (file) return new FailureMemoryStore({ filepath: path.resolve(file) });
+  if (dir) return new FailureMemoryStore({ filepath: path.join(path.resolve(dir), "failure-memory.json") });
+  return new FailureMemoryStore();
 }
 
 export function buildSessionStore(
@@ -96,6 +114,7 @@ export async function runCli(argv: readonly string[] = process.argv.slice(2)): P
     memory: buildHDSMemoryStore(process.env),
     llm_route: buildLLMCommandRouteFromEnv(),
   });
+  const failureMemory = buildFailureMemoryStore(process.env);
   const approval = buildApprovalRuntime(process.env);
   const executor = new Executor({ llm, tools, session_store });
 
@@ -150,6 +169,36 @@ export async function runCli(argv: readonly string[] = process.argv.slice(2)): P
     return;
   }
 
+  const failureGate = failureMemory.evaluateCommandGate(command, {
+    actor: inbound.user,
+    channel: inbound.channel,
+    request_id: inbound.id,
+    surface: "cli",
+  });
+  if (failureGate.decision === "block" || failureGate.decision === "require_approval") {
+    const phase = failureGate.decision === "block" ? "approval_rejected" : "approval_pending";
+    hds.onCommandLifecycle(command.id, phase, {
+      actor: inbound.user,
+      reason: `failure_memory:${failureGate.reason}`,
+    });
+    coreLog.info("failure_memory_gate", {
+      command: command.id.slice(0, 8),
+      decision: failureGate.decision,
+      matches: failureGate.applied_signature_ids.join(", "),
+      reason: failureGate.reason,
+    });
+    auditLog.info("summary", { entries: hds.getAudit().size(), chain_valid: hds.getAudit().verify() });
+    return;
+  }
+  if (failureGate.decision !== "allow") {
+    coreLog.info("failure_memory_gate", {
+      command: command.id.slice(0, 8),
+      decision: failureGate.decision,
+      matches: failureGate.applied_signature_ids.join(", "),
+      reason: failureGate.reason,
+    });
+  }
+
   const approvalEval = approval.evaluate(command, inbound.user);
   hds.onApprovalEvaluation(approvalEval, { request_id: inbound.id });
   if (approvalEval.decision !== "allow") {
@@ -165,6 +214,11 @@ export async function runCli(argv: readonly string[] = process.argv.slice(2)): P
   hds.onCommandLifecycle(command.id, "approval_approved", { actor: inbound.user, reason: approvalEval.reason });
 
   const feedback = await executor.execute(command);
+  if (feedback.status === "failed") {
+    for (const signature of extractFailureSignatures({ kind: "command_result", command, feedback })) {
+      failureMemory.upsertSignature(signature);
+    }
+  }
   coreLog.info("command", {
     command: command.id.slice(0, 8),
     status: feedback.status,

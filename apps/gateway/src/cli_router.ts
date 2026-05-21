@@ -55,6 +55,33 @@ async function runAuditVerifyCli(): Promise<void> {
   process.exit(report.exit_code);
 }
 
+async function runFailureMemoryVerifyCli(): Promise<void> {
+  const {
+    runFailureMemoryVerify,
+    formatFailureMemoryVerifyJson,
+    formatFailureMemoryVerifyText,
+  } = await import("./failure_memory_verify.js");
+  const json = process.argv.includes("--json");
+  const trigger = process.argv.includes("--before-release")
+    ? "before_release"
+    : process.argv.includes("--daily")
+    ? "daily"
+    : process.argv.includes("--startup")
+    ? "startup"
+    : process.argv.includes("--post-failure")
+    ? "post_failure"
+    : process.argv.includes("--after-test-failure")
+    ? "after_test_failure"
+    : "manual";
+  const report = runFailureMemoryVerify({ trigger });
+  if (json) {
+    writeStdout(formatFailureMemoryVerifyJson(report));
+  } else {
+    writeStdout(formatFailureMemoryVerifyText(report));
+  }
+  process.exit(report.unresolved_risks.length > 0 || report.requires_human_review.length > 0 ? 1 : 0);
+}
+
 async function runSetupCliMode(): Promise<void> {
   const { runSetupCli } = await import("./setup.js");
   await runSetupCli(process.argv.slice(2));
@@ -94,6 +121,10 @@ export async function runGatewayCliRouter(): Promise<void> {
   }
   if (process.argv.includes("--audit-verify")) {
     await runAuditVerifyCli();
+    return;
+  }
+  if (process.argv.includes("--failure-memory-verify")) {
+    await runFailureMemoryVerifyCli();
     return;
   }
   const serveMode =
