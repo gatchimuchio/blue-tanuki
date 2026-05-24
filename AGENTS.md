@@ -1,4 +1,85 @@
-# AGENTS.md
+# BLUE-TANUKI Agent Instructions
+
+This file defines repository-wide work discipline, prohibitions, validation, and reporting rules for AI agents working in **BLUE-TANUKI**. It is not a philosophy document or a normal app-scaffold guide.
+
+If a short rule in this opening section overlaps with later detail, apply the stricter rule that preserves HDS-BRAIN authority, release integrity, and operator safety.
+
+## Core Rule
+
+Do not treat this repository as a normal app scaffold.
+
+BLUE-TANUKI is an HDS-BRAIN upstream control-plane project.
+HDS-BRAIN owns authority. LLMs, channels, plugins, operators, installers, external tools, memory, history, UI, schedulers, and downstream automation are downstream only.
+
+## Non-Negotiable Priorities
+
+1. Safety
+2. Robustness
+3. UX / operator clarity
+4. Features
+5. Convenience
+
+## Forbidden Patterns
+
+- Do not add custom pnpm wrappers.
+- Do not bypass workspace tooling because of host friction.
+- Do not make Windows-native workaround scripts unless explicitly requested.
+- Do not add preview packages as gateway hard dependencies.
+- Do not static-import doctor / setup / audit / installer / repair modules from production runtime.
+- Do not pass raw invalid inbound into gateway history, reply, approval origin, or execution path.
+- Do not mark required credential errors as `safe_to_ignore`.
+- Do not claim release readiness without extracted bundle verification and GitHub Actions green.
+
+## Required Before Any Commit
+
+Run:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm docs:check
+pnpm validate:repo-health
+```
+
+For release-path changes also run:
+
+```bash
+pnpm validate:packaging
+pnpm validate:ga
+pnpm release:bundle
+pnpm release:verify
+```
+
+## Boundary Semantics
+
+Gateway boundary and HDS-BRAIN boundary are separate.
+
+Gateway history / reply / execution paths must use only a canonical request or safe fallback request.
+Raw invalid input may be passed only to HDS-BRAIN for independent fail-closed authority audit.
+Raw invalid input must never be used for execution.
+
+## Environment
+
+Preferred dev loop:
+
+- WSL / native Linux
+- Corepack pnpm 9.12.0
+- Node 22.14.0+
+
+Avoid `/mnt/c` pathing for the active workspace.
+
+## Report Format
+
+Every change report must include:
+
+1. Summary
+2. Changed files
+3. Risk classification
+4. Validation results
+5. Remaining risks
+6. Commit hash
 
 ## Purpose
 
@@ -216,14 +297,15 @@ Priority order is immutable:
 
 1. Safety
 2. Robustness
-3. Comfort / UX
+3. UX / operator clarity
 4. Feature coverage / channel coverage / extensibility
+5. Convenience
 
 If a requested change improves feature coverage but weakens safety or robustness, reject it or isolate it behind a disabled preview boundary.
 
 Feature coverage never outranks safety.
 
-Comfort / UX is mandatory only after safety and robustness are preserved.
+Convenience never outranks UX / operator clarity, and UX / operator clarity is mandatory only after safety and robustness are preserved.
 
 ---
 
@@ -559,19 +641,20 @@ Safety violation を発見した場合は本 Phase 内で解消する。解消�
 
 検証コマンドを実行する。
 
-最低セット (全 Phase 共通):
+commit 前の必須セット (全 Phase 共通):
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm typecheck
+pnpm build
 pnpm test
 pnpm docs:check
+pnpm validate:repo-health
 ```
 
 実装を含む Phase は追加で:
 
 ```bash
-pnpm build
 pnpm run doctor
 pnpm validate:packaging
 ```
@@ -579,10 +662,12 @@ pnpm validate:packaging
 Release Phase は追加で:
 
 ```bash
-pnpm release:bundle -- --dry-run
+pnpm validate:ga
 pnpm release:bundle
 pnpm release:verify
 ```
+
+Release bundle の挙動を変更する場合は、必要に応じて `pnpm release:bundle -- --dry-run` も実行する。
 
 既知環境失敗 (Known Environment Failures 章準拠):
 
@@ -1132,24 +1217,27 @@ During implementation:
 - prefer fail-closed behavior,
 - preserve release-bundle validation.
 
-After implementation, run available checks:
+After implementation and before commit, run:
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 pnpm test
-pnpm smoke:live
-pnpm run doctor
-pnpm validate:packaging
-pnpm release:bundle -- --dry-run
+pnpm docs:check
+pnpm validate:repo-health
 ```
 
-Run `pnpm smoke:serve` and `pnpm smoke:resume` when the task explicitly targets CI, smoke checks,
-root workspace resolution, or release validation. For unrelated feature work, follow the active phase
-validation set and report skipped smoke checks as scope-limited. If `pnpm` remains unavailable after
-the Corepack recovery path in `docs/known-environment-failures.md`, stop pnpm-based validation and
-report it as an environment limitation.
+For release-path changes also run:
+
+```bash
+pnpm validate:packaging
+pnpm validate:ga
+pnpm release:bundle
+pnpm release:verify
+```
+
+Run `pnpm run doctor`, `pnpm smoke:serve`, `pnpm smoke:resume`, and `pnpm smoke:live` when the task explicitly targets CI, smoke checks, root workspace resolution, runtime behavior, release validation, or operator setup. For unrelated feature work, follow the active phase validation set and report skipped smoke checks as scope-limited. If `pnpm` remains unavailable after the Corepack recovery path in `docs/known-environment-failures.md`, stop pnpm-based validation and report it as an environment limitation.
 
 If a command is unavailable or fails, report:
 
@@ -1167,29 +1255,16 @@ Never hide failed tests.
 
 Every phase's Final Report must only be emitted after Phase Completion Discipline (Step 1 through Step 7) is fully complete. If any step is incomplete or blocked, do not emit a Final Report; emit a blocker report instead, naming the blocking step and the unresolved condition.
 
-Every implementation phase must end with:
+Every change report must include:
 
-```md
-## Files changed
+1. Summary
+2. Changed files
+3. Risk classification
+4. Validation results
+5. Remaining risks
+6. Commit hash
 
-## Summary
-
-## Safety boundary impact
-
-## Runtime Invariants impact
-
-## Approval Gate impact
-
-## Operator usability impact
-
-## Audit impact
-
-## Tests / validation
-
-## Remaining risks
-
-## Recommended next task
-```
+For larger implementation phases, also include safety boundary impact, Runtime Invariants impact, Approval Gate impact, operator usability impact, and audit impact where relevant.
 
 Do not claim validation passed unless the command actually ran and passed.
 
